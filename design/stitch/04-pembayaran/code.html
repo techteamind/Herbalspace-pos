@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Herbaspace POS - Pembayaran</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#002112",
+                        "secondary-container": "#fdb244",
+                        "surface-container-low": "#f1f5ef",
+                        "primary-fixed-dim": "#82d8aa",
+                        "surface-tint": "#056c47",
+                        "surface": "#f6faf5",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#835400",
+                        "secondary-fixed-dim": "#ffb956",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-container-highest": "#dfe4de",
+                        "surface-container": "#ebefe9",
+                        "on-tertiary-fixed-variant": "#782e33",
+                        "on-primary-fixed-variant": "#005234",
+                        "primary-fixed": "#9ef5c4",
+                        "on-secondary-container": "#6e4600",
+                        "surface-container-high": "#e5e9e4",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#a65256",
+                        "on-background": "#181d19",
+                        "inverse-on-surface": "#eef2ec",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb5",
+                        "outline-variant": "#bec9c0",
+                        "on-tertiary-container": "#ffe9e8",
+                        "tertiary-fixed": "#ffdad9",
+                        "surface-bright": "#f6faf5",
+                        "inverse-surface": "#2d322e",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#1f7a53",
+                        "on-surface": "#181d19",
+                        "tertiary": "#883b3f",
+                        "primary": "#00603e",
+                        "surface-dim": "#d7dbd6",
+                        "surface-variant": "#dfe4de",
+                        "tertiary-fixed-dim": "#ffb3b4",
+                        "on-primary-container": "#aeffd1",
+                        "error": "#ba1a1a",
+                        "background": "#f6faf5",
+                        "inverse-primary": "#82d8aa",
+                        "on-secondary-fixed": "#2a1800",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#3f4942",
+                        "on-error": "#ffffff",
+                        "outline": "#6f7a72",
+                        "on-tertiary-fixed": "#3e030c",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "base-unit": "4px",
+                        "touch-target-min": "44px",
+                        "container-padding": "16px",
+                        "gutter": "12px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "h2": ["Inter"],
+                        "display-price": ["Inter"],
+                        "h1": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-price-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-price": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h1": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-price-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md h-screen w-screen overflow-hidden flex flex-col antialiased">
+<!-- Mock Background App Content -->
+<div class="flex-1 overflow-y-auto p-container-padding opacity-40 grayscale pointer-events-none">
+<header class="flex justify-between items-center mb-section-gap">
+<div class="font-h1 text-h1 text-primary">Herbaspace</div>
+</header>
+<div class="grid grid-cols-2 gap-gutter">
+<div class="bg-surface-container-lowest p-gutter rounded-xl h-32"></div>
+<div class="bg-surface-container-lowest p-gutter rounded-xl h-32"></div>
+<div class="bg-surface-container-lowest p-gutter rounded-xl h-32"></div>
+<div class="bg-surface-container-lowest p-gutter rounded-xl h-32"></div>
+</div>
+</div>
+<!-- Overlay Background -->
+<div aria-hidden="true" class="fixed inset-0 bg-inverse-surface/40 z-40 transition-opacity"></div>
+<!-- Bottom Sheet -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.05)] z-50 flex flex-col max-h-[795px]">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full"></div>
+</div>
+<!-- Header -->
+<div class="px-container-padding pb-4 flex justify-between items-center border-b border-surface-variant/50">
+<h2 class="font-h2 text-h2 text-on-surface">Pembayaran</h2>
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-container-padding space-y-section-gap">
+<!-- Pilih Pelanggan (Optional) -->
+<div class="flex items-center justify-between p-3 rounded-lg border border-outline-variant bg-surface-bright cursor-pointer active:bg-surface-container-low">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined">person_add</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">Pilih Pelanggan</p>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs">Opsional untuk poin loyalitas</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</div>
+<!-- Order Summary -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-3 uppercase">Ringkasan Pesanan</h3>
+<div class="space-y-3">
+<!-- Item 1 -->
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="font-body-md text-body-md font-medium text-on-surface">1x</span>
+<div>
+<p class="font-body-md text-body-md text-on-surface">Matcha Latte Dingin</p>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">Less Sugar, Oat Milk</p>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface">Rp 38.000</span>
+</div>
+<!-- Item 2 -->
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="font-body-md text-body-md font-medium text-on-surface">2x</span>
+<div>
+<p class="font-body-md text-body-md text-on-surface">Kue Pandan Klepon</p>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface">Rp 50.000</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-surface-variant/50 space-y-2">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Subtotal</span>
+<span class="font-body-md text-body-md">Rp 88.000</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Pajak (PB1 10%)</span>
+<span class="font-body-md text-body-md">Rp 8.800</span>
+</div>
+<div class="flex justify-between items-center pt-2">
+<span class="font-h2 text-h2 text-on-surface">Total</span>
+<span class="font-display-price-mobile text-display-price-mobile text-primary">Rp 96.800</span>
+</div>
+</div>
+</div>
+<!-- Payment Methods -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-3 uppercase">Metode Pembayaran</h3>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-primary bg-primary-container/20 text-primary h-20">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-body-md text-body-md font-medium text-sm">Tunai</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant bg-surface-bright text-on-surface-variant h-20 active:bg-surface-container-low">
+<span class="material-symbols-outlined mb-1">qr_code_scanner</span>
+<span class="font-body-md text-body-md font-medium text-sm">QRIS</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant bg-surface-bright text-on-surface-variant h-20 active:bg-surface-container-low">
+<span class="material-symbols-outlined mb-1">credit_card</span>
+<span class="font-body-md text-body-md font-medium text-sm">Kartu</span>
+</button>
+</div>
+</div>
+<!-- Cash Input Section (Active if Tunai is selected) -->
+<div class="bg-surface-container-low p-4 rounded-xl space-y-4 border border-outline-variant/30">
+<div>
+<label class="block font-body-md text-body-md text-on-surface-variant mb-1">Uang Diterima</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 font-h1 text-h1 text-on-surface">Rp</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-12 pr-4 py-3 font-h1 text-h1 text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary h-touch-target-min" type="text" value="100.000"/>
+</div>
+</div>
+<!-- Quick Cash Buttons -->
+<div class="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-full font-body-md text-body-md text-on-surface whitespace-nowrap active:bg-surface-container">Pas (96.800)</button>
+<button class="px-4 py-2 bg-primary text-on-primary rounded-full font-body-md text-body-md whitespace-nowrap shadow-sm">100.000</button>
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-full font-body-md text-body-md text-on-surface whitespace-nowrap active:bg-surface-container">150.000</button>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-outline-variant/50">
+<span class="font-body-md text-body-md text-on-surface-variant">Kembalian</span>
+<span class="font-h1 text-h1 text-secondary-container font-bold">Rp 3.200</span>
+</div>
+</div>
+</div>
+<!-- Sticky Footer Action -->
+<div class="p-container-padding bg-surface-container-lowest border-t border-surface-variant/50 pb-safe">
+<button class="w-full bg-secondary-container text-on-secondary-container font-h2 text-h2 py-4 rounded-xl shadow-sm active:scale-[0.98] transition-transform duration-150 flex items-center justify-center gap-2">
+<span>Proses Pembayaran</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</body></html>

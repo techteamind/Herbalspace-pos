@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html lang="id" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Herbaspace - Daftar Pelanggan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#002112",
+                    "secondary-container": "#fdb244",
+                    "surface-container-low": "#f1f5ef",
+                    "primary-fixed-dim": "#82d8aa",
+                    "surface-tint": "#056c47",
+                    "surface": "#f6faf5",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#835400",
+                    "secondary-fixed-dim": "#ffb956",
+                    "on-secondary-fixed-variant": "#633f00",
+                    "surface-container-highest": "#dfe4de",
+                    "surface-container": "#ebefe9",
+                    "on-tertiary-fixed-variant": "#782e33",
+                    "on-primary-fixed-variant": "#005234",
+                    "primary-fixed": "#9ef5c4",
+                    "on-secondary-container": "#6e4600",
+                    "surface-container-high": "#e5e9e4",
+                    "on-secondary": "#ffffff",
+                    "tertiary-container": "#a65256",
+                    "on-background": "#181d19",
+                    "inverse-on-surface": "#eef2ec",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#ffddb5",
+                    "outline-variant": "#bec9c0",
+                    "on-tertiary-container": "#ffe9e8",
+                    "tertiary-fixed": "#ffdad9",
+                    "surface-bright": "#f6faf5",
+                    "inverse-surface": "#2d322e",
+                    "error-container": "#ffdad6",
+                    "primary-container": "#1f7a53",
+                    "on-surface": "#181d19",
+                    "tertiary": "#883b3f",
+                    "primary": "#00603e",
+                    "surface-dim": "#d7dbd6",
+                    "surface-variant": "#dfe4de",
+                    "tertiary-fixed-dim": "#ffb3b4",
+                    "on-primary-container": "#aeffd1",
+                    "error": "#ba1a1a",
+                    "background": "#f6faf5",
+                    "inverse-primary": "#82d8aa",
+                    "on-secondary-fixed": "#2a1800",
+                    "on-tertiary": "#ffffff",
+                    "on-surface-variant": "#3f4942",
+                    "on-error": "#ffffff",
+                    "outline": "#6f7a72",
+                    "on-tertiary-fixed": "#3e030c",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base-unit": "4px",
+                    "touch-target-min": "44px",
+                    "container-padding": "16px",
+                    "gutter": "12px",
+                    "section-gap": "24px"
+            },
+            "fontFamily": {
+                    "h2": ["Inter"],
+                    "display-price": ["Inter"],
+                    "h1": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-price-mobile": ["Inter"]
+            },
+            "fontSize": {
+                    "h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                    "display-price": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                    "h1": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                    "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                    "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                    "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                    "display-price-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen pb-safe">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 sticky z-50 h-20">
+<div class="flex justify-between items-center w-full h-full px-container-padding">
+<button class="text-on-surface-variant hover:bg-surface-container-low active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-h1 text-h1 font-bold text-primary dark:text-primary-fixed-dim">Herbaspace</h1>
+<button class="text-on-surface-variant hover:bg-surface-container-low active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="px-container-padding py-4 md:hidden pb-32">
+<!-- Header & Action -->
+<div class="flex justify-between items-center mb-section-gap">
+<h2 class="font-h2 text-h2 text-on-surface">Pelanggan</h2>
+<button class="bg-primary text-on-primary font-body-md text-body-md px-4 py-2 rounded-lg flex items-center gap-2 h-touch-target-min active:opacity-80 transition-opacity shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+                Tambah
+            </button>
+</div>
+<!-- Search Bar -->
+<div class="mb-section-gap relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-12 pr-4 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm" placeholder="Cari nama atau nomor HP..." type="text"/>
+</div>
+<!-- Customer List -->
+<div class="flex flex-col gap-3">
+<!-- Customer Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high flex items-center justify-between active:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-h2 text-h2 uppercase">
+                        BD
+                    </div>
+<div>
+<p class="font-h2 text-h2 text-on-surface mb-0.5 text-base">Budi Darmawan</p>
+<p class="font-body-md text-body-md text-on-surface-variant">0812-3456-7890</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1">TOTAL BELANJA</p>
+<p class="font-body-lg text-body-lg font-semibold text-primary">Rp 1.250.000</p>
+</div>
+</div>
+<!-- Customer Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high flex items-center justify-between active:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<img alt="Siti Rahma" class="w-12 h-12 rounded-full object-cover" data-alt="A professional headshot of a young Southeast Asian woman with natural makeup, wearing a casual yet neat linen shirt, smiling warmly against a clean, soft-focus background. The lighting is bright and natural, reflecting a modern cafe lifestyle aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvNlfFMY3OezuuHisMwOLgK9S-edj1o1ob9bi7sFhvimHEcsaKPLU8DL91vD93tAuIZvUvuISZUm2jV_8-DcIIZub-A1zZbAcnMCFZCs2pCbgDBF6zLjdMaaqtE7QG3mVWTP6OwJT8LCnLiJbL3h_2e3a1CTNq9ZdZF-LX0dLqXOfXdRGCYGzZB0ZdTKU_FgOVkgUiHpdCQMiOM17GT99yrdcPnt2Cs_R4DGwsoMxjj5-IYMgzgmhjcnZmMsy6GDQ2qf9khbRM4hFF"/>
+<div>
+<p class="font-h2 text-h2 text-on-surface mb-0.5 text-base">Siti Rahma</p>
+<p class="font-body-md text-body-md text-on-surface-variant">0856-7890-1234</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1">TOTAL BELANJA</p>
+<p class="font-body-lg text-body-lg font-semibold text-primary">Rp 850.000</p>
+</div>
+</div>
+<!-- Customer Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high flex items-center justify-between active:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-h2 text-h2 uppercase">
+                        AW
+                    </div>
+<div>
+<p class="font-h2 text-h2 text-on-surface mb-0.5 text-base">Andi Wijaya</p>
+<p class="font-body-md text-body-md text-on-surface-variant">0811-2233-4455</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1">TOTAL BELANJA</p>
+<p class="font-body-lg text-body-lg font-semibold text-primary">Rp 2.100.000</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container dark:bg-surface-container-low docked full-width bottom-0 rounded-t-xl fixed left-0 w-full z-50 flex justify-around items-center px-gutter py-2 pb-safe shadow-sm">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined mb-1">point_of_sale</span>
+<span class="font-label-caps text-label-caps">Kasir</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-xl px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">groups</span>
+<span class="font-label-caps text-label-caps">Pelanggan</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span class="font-label-caps text-label-caps">Laporan</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined mb-1">menu</span>
+<span class="font-label-caps text-label-caps">Lainnya</span>
+</button>
+</nav>
+</body></html>

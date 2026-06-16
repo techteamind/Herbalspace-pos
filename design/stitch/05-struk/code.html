@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pembayaran Berhasil - Herbaspace POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom jagged edge for receipt */
+        .receipt-bottom {
+            background-image: radial-gradient(circle at 10px 0, transparent 10px, #ffffff 11px);
+            background-size: 20px 20px;
+            background-repeat: repeat-x;
+            height: 10px;
+            width: 100%;
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            transform: rotate(180deg);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#002112",
+                      "secondary-container": "#fdb244",
+                      "surface-container-low": "#f1f5ef",
+                      "primary-fixed-dim": "#82d8aa",
+                      "surface-tint": "#056c47",
+                      "surface": "#f6faf5",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary": "#835400",
+                      "secondary-fixed-dim": "#ffb956",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "surface-container-highest": "#dfe4de",
+                      "surface-container": "#ebefe9",
+                      "on-tertiary-fixed-variant": "#782e33",
+                      "on-primary-fixed-variant": "#005234",
+                      "primary-fixed": "#9ef5c4",
+                      "on-secondary-container": "#6e4600",
+                      "surface-container-high": "#e5e9e4",
+                      "on-secondary": "#ffffff",
+                      "tertiary-container": "#a65256",
+                      "on-background": "#181d19",
+                      "inverse-on-surface": "#eef2ec",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed": "#ffddb5",
+                      "outline-variant": "#bec9c0",
+                      "on-tertiary-container": "#ffe9e8",
+                      "tertiary-fixed": "#ffdad9",
+                      "surface-bright": "#f6faf5",
+                      "inverse-surface": "#2d322e",
+                      "error-container": "#ffdad6",
+                      "primary-container": "#1f7a53",
+                      "on-surface": "#181d19",
+                      "tertiary": "#883b3f",
+                      "primary": "#00603e",
+                      "surface-dim": "#d7dbd6",
+                      "surface-variant": "#dfe4de",
+                      "tertiary-fixed-dim": "#ffb3b4",
+                      "on-primary-container": "#aeffd1",
+                      "error": "#ba1a1a",
+                      "background": "#f6faf5",
+                      "inverse-primary": "#82d8aa",
+                      "on-secondary-fixed": "#2a1800",
+                      "on-tertiary": "#ffffff",
+                      "on-surface-variant": "#3f4942",
+                      "on-error": "#ffffff",
+                      "outline": "#6f7a72",
+                      "on-tertiary-fixed": "#3e030c",
+                      "on-error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base-unit": "4px",
+                      "touch-target-min": "44px",
+                      "container-padding": "16px",
+                      "gutter": "12px",
+                      "section-gap": "24px"
+              },
+              "fontFamily": {
+                      "h2": ["Inter"],
+                      "display-price": ["Inter"],
+                      "h1": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "display-price-mobile": ["Inter"]
+              },
+              "fontSize": {
+                      "h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                      "display-price": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                      "h1": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                      "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                      "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                      "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                      "display-price-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col items-center justify-center p-container-padding">
+<!-- Success Header -->
+<div class="flex flex-col items-center mb-8 text-center animate-fade-in-up">
+<div class="w-20 h-20 bg-primary-fixed rounded-full flex items-center justify-center mb-4 shadow-sm">
+<span class="material-symbols-outlined text-[48px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h1 class="font-display-price-mobile text-display-price-mobile text-primary">Pembayaran Berhasil</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Transaksi telah disimpan ke sistem.</p>
+</div>
+<!-- Receipt Card -->
+<div class="w-full max-w-sm bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container-high relative mb-8">
+<div class="p-6">
+<!-- Receipt Header -->
+<div class="text-center mb-6">
+<h2 class="font-h1 text-h1 text-on-surface tracking-tight">Herbaspace</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Jl. Senopati No. 45, Jakarta</p>
+<div class="flex justify-between items-center mt-4 text-on-surface-variant font-body-md text-body-md">
+<span>24 Okt 2023, 14:30</span>
+<span class="font-medium">#TRX-88291A</span>
+</div>
+</div>
+<hr class="border-t border-dashed border-outline-variant mb-6"/>
+<!-- Itemized List -->
+<div class="space-y-4 mb-6">
+<div class="flex justify-between items-start font-body-md text-body-md">
+<div class="flex-1">
+<span class="font-medium text-on-surface">1x Matcha Oat Latte</span>
+<p class="text-on-surface-variant text-[12px] mt-0.5">Less Sugar, Iced</p>
+</div>
+<span class="text-on-surface">35.000</span>
+</div>
+<div class="flex justify-between items-start font-body-md text-body-md">
+<div class="flex-1">
+<span class="font-medium text-on-surface">2x Avocado Toast</span>
+<p class="text-on-surface-variant text-[12px] mt-0.5">Extra Egg</p>
+</div>
+<span class="text-on-surface">110.000</span>
+</div>
+</div>
+<hr class="border-t border-dashed border-outline-variant mb-6"/>
+<!-- Summary -->
+<div class="space-y-2 mb-6 font-body-md text-body-md text-on-surface-variant">
+<div class="flex justify-between">
+<span>Subtotal</span>
+<span>145.000</span>
+</div>
+<div class="flex justify-between">
+<span>Pajak (PB1 10%)</span>
+<span>14.500</span>
+</div>
+</div>
+<hr class="border-t-2 border-outline-variant mb-4"/>
+<!-- Total -->
+<div class="flex justify-between items-center mb-6">
+<span class="font-h2 text-h2 text-on-surface">Total</span>
+<span class="font-h2 text-h2 text-primary">Rp 159.500</span>
+</div>
+<!-- Payment Details -->
+<div class="space-y-2 font-body-md text-body-md text-on-surface-variant bg-surface-container p-4 rounded-lg">
+<div class="flex justify-between">
+<span>Metode</span>
+<span class="font-medium text-on-surface">Tunai</span>
+</div>
+<div class="flex justify-between">
+<span>Tunai</span>
+<span>200.000</span>
+</div>
+<div class="flex justify-between font-medium text-secondary-container">
+<span>Kembalian</span>
+<span>Rp 40.500</span>
+</div>
+</div>
+</div>
+<!-- Decorative bottom edge -->
+<div class="receipt-bottom"></div>
+</div>
+<!-- Actions -->
+<div class="w-full max-w-sm flex flex-col gap-4 mt-2">
+<button class="w-full h-touch-target-min flex items-center justify-center gap-2 rounded-xl border border-outline text-on-surface font-h2 text-h2 hover:bg-surface-container-low transition-colors active:opacity-80">
+<span class="material-symbols-outlined">receipt_long</span>
+            Cetak Struk
+        </button>
+<button class="w-full h-touch-target-min flex items-center justify-center gap-2 rounded-xl bg-primary text-on-primary font-h2 text-h2 hover:bg-primary-container hover:text-on-primary-container transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined">add_circle</span>
+            Transaksi Baru
+        </button>
+</div>
+</body></html>

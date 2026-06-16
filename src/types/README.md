@@ -1,0 +1,1 @@
+# Tipe global & hasil generate

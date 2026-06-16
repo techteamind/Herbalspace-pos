@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pengeluaran - Herbaspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#002112",
+                      "secondary-container": "#fdb244",
+                      "surface-container-low": "#f1f5ef",
+                      "primary-fixed-dim": "#82d8aa",
+                      "surface-tint": "#056c47",
+                      "surface": "#f6faf5",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary": "#835400",
+                      "secondary-fixed-dim": "#ffb956",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "surface-container-highest": "#dfe4de",
+                      "surface-container": "#ebefe9",
+                      "on-tertiary-fixed-variant": "#782e33",
+                      "on-primary-fixed-variant": "#005234",
+                      "primary-fixed": "#9ef5c4",
+                      "on-secondary-container": "#6e4600",
+                      "surface-container-high": "#e5e9e4",
+                      "on-secondary": "#ffffff",
+                      "tertiary-container": "#a65256",
+                      "on-background": "#181d19",
+                      "inverse-on-surface": "#eef2ec",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed": "#ffddb5",
+                      "outline-variant": "#bec9c0",
+                      "on-tertiary-container": "#ffe9e8",
+                      "tertiary-fixed": "#ffdad9",
+                      "surface-bright": "#f6faf5",
+                      "inverse-surface": "#2d322e",
+                      "error-container": "#ffdad6",
+                      "primary-container": "#1f7a53",
+                      "on-surface": "#181d19",
+                      "tertiary": "#883b3f",
+                      "primary": "#00603e",
+                      "surface-dim": "#d7dbd6",
+                      "surface-variant": "#dfe4de",
+                      "tertiary-fixed-dim": "#ffb3b4",
+                      "on-primary-container": "#aeffd1",
+                      "error": "#ba1a1a",
+                      "background": "#f6faf5",
+                      "inverse-primary": "#82d8aa",
+                      "on-secondary-fixed": "#2a1800",
+                      "on-tertiary": "#ffffff",
+                      "on-surface-variant": "#3f4942",
+                      "on-error": "#ffffff",
+                      "outline": "#6f7a72",
+                      "on-tertiary-fixed": "#3e030c",
+                      "on-error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base-unit": "4px",
+                      "touch-target-min": "44px",
+                      "container-padding": "16px",
+                      "gutter": "12px",
+                      "section-gap": "24px"
+              },
+              "fontFamily": {
+                      "h2": [
+                              "Inter"
+                      ],
+                      "display-price": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-price-mobile": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-price": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-price-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "34px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-[80px]">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 z-40 sticky border-b border-outline-variant">
+<div class="flex justify-between items-center w-full px-container-padding h-20">
+<button class="text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-highest active:opacity-80 transition-opacity p-2 -ml-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-h1 text-h1 font-bold text-on-surface">Herbaspace</h1>
+<button class="text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-highest active:opacity-80 transition-opacity p-2 -mr-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</div>
+</header>
+<main class="px-container-padding py-section-gap space-y-6 max-w-md mx-auto">
+<div class="flex items-center justify-between mb-2">
+<h2 class="font-h2 text-h2 text-on-surface">Pengeluaran</h2>
+</div>
+<!-- Month Selector -->
+<div class="flex items-center justify-between bg-surface-container-lowest rounded-xl p-2 shadow-sm">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<span class="font-h2 text-h2 text-on-surface">Oktober 2023</span>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Total Spent Card -->
+<div class="bg-error-container rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center">
+<span class="font-body-md text-on-error-container opacity-80 mb-1">Total Pengeluaran Bulan Ini</span>
+<span class="font-display-price-mobile text-display-price-mobile text-on-error-container">Rp 12.450.000</span>
+</div>
+<!-- Expense List -->
+<div class="space-y-4">
+<h2 class="font-h2 text-h2 text-on-surface mb-2">Daftar Pengeluaran</h2>
+<!-- Row 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="store">store</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg font-semibold text-on-surface">Sewa</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Sewa Ruko November</p>
+<p class="font-label-caps text-label-caps text-outline mt-1">10 Okt 2023</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-body-lg text-body-lg font-semibold text-error">- Rp 5.000.000</p>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg font-semibold text-on-surface">Gaji</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Gaji Karyawan Shift 1</p>
+<p class="font-label-caps text-label-caps text-outline mt-1">05 Okt 2023</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-body-lg text-body-lg font-semibold text-error">- Rp 3.500.000</p>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="kitchen">kitchen</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg font-semibold text-on-surface">Bahan</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Suplier Kopi &amp; Susu</p>
+<p class="font-label-caps text-label-caps text-outline mt-1">02 Okt 2023</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-body-lg text-body-lg font-semibold text-error">- Rp 2.100.000</p>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg font-semibold text-on-surface">Listrik</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Tagihan Listrik PLN</p>
+<p class="font-label-caps text-label-caps text-outline mt-1">01 Okt 2023</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-body-lg text-body-lg font-semibold text-error">- Rp 1.850.000</p>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB Add Expense -->
+<button class="fixed bottom-[96px] right-container-padding w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:bg-surface-tint active:scale-95 transition-transform duration-150 z-40" onclick="document.getElementById('addExpenseSheet').classList.remove('translate-y-full'); document.getElementById('sheetOverlay').classList.remove('hidden');">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container dark:bg-surface-container-low docked full-width bottom-0 rounded-t-xl shadow-sm fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-2 pb-safe md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps mt-1">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+<span class="font-label-caps text-label-caps mt-1">Kasir</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-caps text-label-caps mt-1">Produk</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-xl px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="analytics" data-weight="fill" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-caps text-label-caps mt-1">Laporan</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="font-label-caps text-label-caps mt-1">Lainnya</span>
+</button>
+</nav>
+<!-- Bottom Sheet Overlay -->
+<div class="fixed inset-0 bg-on-background/20 hidden z-50 backdrop-blur-sm transition-opacity" id="sheetOverlay" onclick="document.getElementById('addExpenseSheet').classList.add('translate-y-full'); document.getElementById('sheetOverlay').classList.add('hidden');"></div>
+<!-- Bottom Sheet Add Expense -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest rounded-t-[24px] z-50 transform translate-y-full transition-transform duration-300 ease-in-out pb-safe max-h-[90vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.1)]" id="addExpenseSheet">
+<div class="p-container-padding pt-4">
+<div class="w-12 h-1.5 bg-outline-variant rounded-full mx-auto mb-6"></div>
+<h2 class="font-h1 text-h1 text-on-surface mb-6">Tambah Pengeluaran</h2>
+<form class="space-y-4">
+<div>
+<label class="block font-body-md text-body-md text-on-surface-variant mb-1">Kategori</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none appearance-none">
+<option value="bahan">Bahan Baku</option>
+<option value="gaji">Gaji Karyawan</option>
+<option value="sewa">Sewa Tempat</option>
+<option value="listrik">Listrik &amp; Air</option>
+<option value="lainnya">Lainnya</option>
+</select>
+</div>
+<div>
+<label class="block font-body-md text-body-md text-on-surface-variant mb-1">Jumlah (Rp)</label>
+<input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="0" type="number"/>
+</div>
+<div>
+<label class="block font-body-md text-body-md text-on-surface-variant mb-1">Tanggal</label>
+<input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none" type="date"/>
+</div>
+<div>
+<label class="block font-body-md text-body-md text-on-surface-variant mb-1">Catatan</label>
+<textarea class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none resize-none" placeholder="Detail pengeluaran..." rows="3"></textarea>
+</div>
+<div class="pt-4">
+<button class="w-full bg-primary text-on-primary font-body-lg text-body-lg font-semibold rounded-xl h-[48px] flex items-center justify-center active:scale-95 transition-transform" onclick="document.getElementById('addExpenseSheet').classList.add('translate-y-full'); document.getElementById('sheetOverlay').classList.add('hidden');" type="button">
+                        Simpan Pengeluaran
+                    </button>
+</div>
+</form>
+</div>
+</div>
+</body></html>

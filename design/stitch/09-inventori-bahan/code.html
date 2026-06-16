@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html lang="id" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Inventori Bahan Baku - Herbaspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#002112",
+                        "secondary-container": "#fdb244",
+                        "surface-container-low": "#f1f5ef",
+                        "primary-fixed-dim": "#82d8aa",
+                        "surface-tint": "#056c47",
+                        "surface": "#f6faf5",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#835400",
+                        "secondary-fixed-dim": "#ffb956",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-container-highest": "#dfe4de",
+                        "surface-container": "#ebefe9",
+                        "on-tertiary-fixed-variant": "#782e33",
+                        "on-primary-fixed-variant": "#005234",
+                        "primary-fixed": "#9ef5c4",
+                        "on-secondary-container": "#6e4600",
+                        "surface-container-high": "#e5e9e4",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#a65256",
+                        "on-background": "#181d19",
+                        "inverse-on-surface": "#eef2ec",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb5",
+                        "outline-variant": "#bec9c0",
+                        "on-tertiary-container": "#ffe9e8",
+                        "tertiary-fixed": "#ffdad9",
+                        "surface-bright": "#f6faf5",
+                        "inverse-surface": "#2d322e",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#1f7a53",
+                        "on-surface": "#181d19",
+                        "tertiary": "#883b3f",
+                        "primary": "#00603e",
+                        "surface-dim": "#d7dbd6",
+                        "surface-variant": "#dfe4de",
+                        "tertiary-fixed-dim": "#ffb3b4",
+                        "on-primary-container": "#aeffd1",
+                        "error": "#ba1a1a",
+                        "background": "#f6faf5",
+                        "inverse-primary": "#82d8aa",
+                        "on-secondary-fixed": "#2a1800",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#3f4942",
+                        "on-error": "#ffffff",
+                        "outline": "#6f7a72",
+                        "on-tertiary-fixed": "#3e030c",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base-unit": "4px",
+                        "touch-target-min": "44px",
+                        "container-padding": "16px",
+                        "gutter": "12px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "h2": ["Inter"],
+                        "display-price": ["Inter"],
+                        "h1": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-price-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-price": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h1": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-price-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .icon-filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 sticky z-40">
+<div class="flex justify-between items-center w-full px-container-padding h-20 py-4">
+<button aria-label="Menu" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-highest active:opacity-80 transition-opacity p-2 -ml-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="flex-1 flex justify-center items-center">
+<h1 class="font-h1 text-h1 font-bold text-primary dark:text-primary-fixed-dim truncate">Herbaspace</h1>
+</div>
+<button aria-label="Search" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-highest active:opacity-80 transition-opacity p-2 -mr-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col pb-24">
+<!-- Search & Actions -->
+<div class="px-container-padding py-4 space-y-4 bg-surface">
+<div class="flex gap-gutter">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-touch-target-min pl-10 pr-4 rounded-xl border border-outline-variant bg-surface-container-lowest focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-on-surface placeholder-on-surface-variant transition-colors" placeholder="Cari bahan baku..." type="text"/>
+</div>
+<button class="bg-primary text-on-primary h-touch-target-min px-4 rounded-xl flex items-center justify-center gap-2 font-body-md font-semibold hover:bg-on-primary-fixed-variant active:scale-95 transition-all shadow-sm shrink-0">
+<span class="material-symbols-outlined icon-filled text-[20px]" data-icon="add">add</span>
+<span class="">Tambah</span>
+</button>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+<button class="h-8 px-4 rounded-full bg-primary-container text-on-primary-container font-label-caps whitespace-nowrap flex items-center shadow-sm">Semua</button>
+<button class="h-8 px-4 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant font-label-caps whitespace-nowrap flex items-center hover:bg-surface-container-high transition-colors">Stok Menipis</button>
+<button class="h-8 px-4 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant font-label-caps whitespace-nowrap flex items-center hover:bg-surface-container-high transition-colors">Habis</button>
+</div>
+</div>
+<!-- Inventory List -->
+<div class="px-container-padding py-2 space-y-3">
+<!-- Item 1: Normal Stock -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-outline-variant transition-colors active:scale-[0.98] cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-body-lg font-semibold text-on-surface">Biji Kopi Arabica (House Blend)</h3>
+<p class="font-body-md text-on-surface-variant mt-1">Harga Terakhir: Rp 240.000 / kg</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex justify-between items-end mt-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase tracking-wider mb-1">Stok Saat Ini</span>
+<div class="flex items-baseline gap-1">
+<span class="font-h2 text-primary">4.500</span>
+<span class="font-body-md text-on-surface-variant">gr</span>
+</div>
+</div>
+<div class="bg-surface-container-low px-2 py-1 rounded text-primary font-label-caps flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                        Aman
+                    </div>
+</div>
+</div>
+<!-- Item 2: Low Stock -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-outline-variant transition-colors active:scale-[0.98] cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="flex justify-between items-start mb-2 pl-2">
+<div>
+<h3 class="font-body-lg font-semibold text-on-surface">Susu Segar (Full Cream)</h3>
+<p class="font-body-md text-on-surface-variant mt-1">Harga Terakhir: Rp 18.000 / L</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex justify-between items-end mt-4 pl-2">
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase tracking-wider mb-1">Stok Saat Ini</span>
+<div class="flex items-baseline gap-1">
+<span class="font-h2 text-on-secondary-fixed-variant">1.200</span>
+<span class="font-body-md text-on-surface-variant">ml</span>
+</div>
+</div>
+<div class="bg-secondary-fixed px-2 py-1 rounded text-on-secondary-fixed-variant font-label-caps flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="warning">warning</span>
+                        Menipis
+                    </div>
+</div>
+</div>
+<!-- Item 3: Out of Stock -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-outline-variant transition-colors active:scale-[0.98] cursor-pointer relative overflow-hidden opacity-90">
+<div class="absolute top-0 left-0 w-1 h-full bg-error"></div>
+<div class="flex justify-between items-start mb-2 pl-2">
+<div>
+<h3 class="font-body-lg font-semibold text-on-surface">Sirup Vanilla (Premium)</h3>
+<p class="font-body-md text-on-surface-variant mt-1">Harga Terakhir: Rp 120.000 / botol</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex justify-between items-end mt-4 pl-2">
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase tracking-wider mb-1">Stok Saat Ini</span>
+<div class="flex items-baseline gap-1">
+<span class="font-h2 text-error">0</span>
+<span class="font-body-md text-on-surface-variant">ml</span>
+</div>
+</div>
+<div class="bg-error-container px-2 py-1 rounded text-on-error-container font-label-caps flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="error">error</span>
+                        Habis
+                    </div>
+</div>
+</div>
+<!-- Item 4: Normal Stock -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-outline-variant transition-colors active:scale-[0.98] cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="font-body-lg font-semibold text-on-surface">Gula Aren Cair</h3>
+<p class="font-body-md text-on-surface-variant mt-1">Harga Terakhir: Rp 45.000 / L</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="flex justify-between items-end mt-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase tracking-wider mb-1">Stok Saat Ini</span>
+<div class="flex items-baseline gap-1">
+<span class="font-h2 text-primary">2.500</span>
+<span class="font-body-md text-on-surface-variant">ml</span>
+</div>
+</div>
+<div class="bg-surface-container-low px-2 py-1 rounded text-primary font-label-caps flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                        Aman
+                    </div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container dark:bg-surface-container-low docked full-width bottom-0 rounded-t-xl fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-2 pb-safe shadow-sm md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+<span class="font-label-caps text-label-caps mt-1">Kasir</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-xl px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined icon-filled" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-caps text-label-caps mt-1">Produk</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps mt-1">Laporan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest active:scale-95 transition-transform duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="font-label-caps text-label-caps mt-1">Lainnya</span>
+</a>
+</nav>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+    </style>
+</body></html>
