@@ -1,20 +1,47 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "./app-layout";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import LoginPage from "@/pages/auth/login";
 import { DashboardPage } from "@/features/dashboard";
 import { PosPage } from "@/features/pos";
+import { ProductsPage } from "@/features/products";
+import { RecipeEditorPage } from "@/features/recipes";
+import { InventoryPage } from "@/features/inventory";
+import { StockMovementsPage } from "@/features/stock-movements";
+import { CustomersPage } from "@/features/customers";
+import { CustomerDetailPage } from "@/features/customers/detail";
+import { ExpensesPage } from "@/features/expenses";
+import { ReportsPage } from "@/features/reports";
+import { SettingsPage } from "@/features/settings";
+import { MorePage } from "@/features/more";
 
-/**
- * Router utama. Modul lain ditambahkan bertahap (Tahap D) mengikuti
- * struktur feature-based di src/features/*.
- */
 export const router = createBrowserRouter([
+  // Auth routes (public)
+  { path: "/auth/login", element: <LoginPage /> },
+  { path: "/login", element: <Navigate to="/auth/login" replace /> },
+
+  // Protected routes
   {
     path: "/",
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "dashboard", element: <DashboardPage /> },
       { path: "kasir", element: <PosPage /> },
+      { path: "produk", element: <ProductsPage /> },
+      { path: "produk/:id/resep", element: <RecipeEditorPage /> },
+      { path: "inventori", element: <InventoryPage /> },
+      { path: "stock-movement", element: <StockMovementsPage /> },
+      { path: "pelanggan", element: <CustomersPage /> },
+      { path: "pelanggan/:id", element: <CustomerDetailPage /> },
+      { path: "pengeluaran", element: <ExpensesPage /> },
+      { path: "laporan", element: <ReportsPage /> },
+      { path: "pengaturan", element: <SettingsPage /> },
+      { path: "lainnya", element: <MorePage /> },
     ],
   },
 ]);

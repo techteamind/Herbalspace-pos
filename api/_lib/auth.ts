@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { jwtVerify } from "jose";
+import { jwtVerify, createRemoteJWKSet, type JWTPayload } from "jose";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
-import { profiles } from "../../db/schema";
+import { profiles, tenants, settings } from "../../db/schema";
 
 export interface AuthContext {
   userId: string;
@@ -10,31 +10,101 @@ export interface AuthContext {
   role: "owner" | "manager" | "cashier";
 }
 
-const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET ?? "");
+const hsSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET ?? "");
+const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "")
+  .trim()
+  .replace(/\/$/, "");
+
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+function getJwks(): ReturnType<typeof createRemoteJWKSet> | null {
+  if (!jwks && supabaseUrl) {
+    jwks = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`));
+  }
+  return jwks;
+}
 
 /**
- * Verifikasi Supabase access token (Bearer) lalu muat profil user
- * untuk mendapatkan tenantId & role. Mengembalikan null jika tidak valid.
+ * Verifikasi access token Supabase. Project lama memakai HS256 (JWT secret),
+ * project baru memakai kunci asimetris (JWKS). Keduanya didukung.
+ */
+async function verifyToken(token: string): Promise<JWTPayload | null> {
+  if (process.env.SUPABASE_JWT_SECRET) {
+    try {
+      const { payload } = await jwtVerify(token, hsSecret);
+      return payload;
+    } catch {
+      // lanjut coba JWKS
+    }
+  }
+  const set = getJwks();
+  if (set) {
+    try {
+      const { payload } = await jwtVerify(token, set);
+      return payload;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Verifikasi token lalu muat profil (tenantId & role). Jika user sudah
+ * terautentikasi namun belum punya profil, profil + tenant + settings dibuat
+ * otomatis (owner) agar aplikasi langsung bisa dipakai. Mengembalikan null
+ * jika token tidak valid.
  */
 export async function authenticate(req: VercelRequest): Promise<AuthContext | null> {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return null;
-
-  try {
-    const token = header.slice(7);
-    const { payload } = await jwtVerify(token, secret);
-    const userId = payload.sub;
-    if (!userId) return null;
-
-    const profile = await db.query.profiles.findFirst({
-      where: eq(profiles.id, userId),
-    });
-    if (!profile || !profile.isActive) return null;
-
-    return { userId, tenantId: profile.tenantId, role: profile.role };
-  } catch {
+  const setReason = (r: string): null => {
+    (req as unknown as { __authReason?: string }).__authReason = r;
     return null;
+  };
+
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return setReason("no_bearer");
+
+  const token = header.slice(7);
+  const payload = await verifyToken(token);
+  if (!payload?.sub) return setReason("verify_failed");
+
+  const userId = payload.sub;
+  const email = typeof payload.email === "string" ? payload.email : "";
+
+  let profile = await db.query.profiles.findFirst({ where: eq(profiles.id, userId) });
+
+  if (!profile) {
+    const name = email ? email.split("@")[0] : "Cafe Saya";
+    const [tenant] = await db
+      .insert(tenants)
+      .values({ name: `Cafe ${name}` })
+      .returning();
+    if (!tenant) return null;
+
+    const inserted = await db
+      .insert(profiles)
+      .values({
+        id: userId,
+        tenantId: tenant.id,
+        fullName: email || "Owner",
+        email: email || `${userId}@local`,
+        role: "owner",
+        isActive: true,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (inserted[0]) {
+      await db.insert(settings).values({ tenantId: tenant.id }).onConflictDoNothing();
+      profile = inserted[0];
+    } else {
+      // Request lain sudah membuat profil (race) — ambil ulang.
+      profile = await db.query.profiles.findFirst({ where: eq(profiles.id, userId) });
+    }
   }
+
+  if (!profile) return setReason("no_profile");
+  if (!profile.isActive) return setReason("inactive");
+  return { userId, tenantId: profile.tenantId, role: profile.role };
 }
 
 /** Helper untuk mengembalikan 401. */

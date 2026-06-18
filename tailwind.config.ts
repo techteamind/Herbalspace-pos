@@ -1,8 +1,8 @@
 import type { Config } from "tailwindcss";
 
 /**
- * Design tokens diambil dari output Stitch (design/stitch/DESIGN-TOKENS.md).
- * Sumber kebenaran warna & tipografi UI Herbaspace POS.
+ * Design tokens dari output Stitch (design/stitch/DESIGN-TOKENS.md).
+ * Superset penuh agar kelas pada mockup ter-render akurat di React.
  */
 export default {
   darkMode: ["class"],
@@ -13,6 +13,7 @@ export default {
         background: "#f6faf5",
         surface: "#f6faf5",
         "surface-dim": "#d7dbd6",
+        "surface-bright": "#f6faf5",
         "surface-container-lowest": "#ffffff",
         "surface-container-low": "#f1f5ef",
         "surface-container": "#ebefe9",
@@ -21,6 +22,8 @@ export default {
         "on-surface": "#181d19",
         "on-surface-variant": "#3f4942",
         "on-background": "#181d19",
+        "inverse-surface": "#2d322e",
+        "inverse-on-surface": "#eef2ec",
         outline: "#6f7a72",
         "outline-variant": "#bec9c0",
         primary: "#00603e",
@@ -29,11 +32,13 @@ export default {
         "on-primary-container": "#aeffd1",
         "primary-fixed": "#9ef5c4",
         "primary-fixed-dim": "#82d8aa",
+        "on-primary-fixed-variant": "#005234",
         secondary: "#835400",
         "secondary-container": "#fdb244",
         "on-secondary": "#ffffff",
         "on-secondary-container": "#6e4600",
         "secondary-fixed": "#ffddb5",
+        "secondary-fixed-dim": "#ffb956",
         "on-secondary-fixed-variant": "#633f00",
         tertiary: "#883b3f",
         "tertiary-container": "#a65256",
@@ -42,9 +47,30 @@ export default {
         "error-container": "#ffdad6",
         "on-error-container": "#93000a",
       },
-      fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },
-      borderRadius: { lg: "1rem", md: "0.75rem", sm: "0.5rem" },
-      spacing: { "touch": "44px", "container": "16px", "gutter": "12px", "section": "24px" },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        h1: ["Inter"], h2: ["Inter"], "body-lg": ["Inter"], "body-md": ["Inter"],
+        "label-caps": ["Inter"], "display-price": ["Inter"], "display-price-mobile": ["Inter"],
+      },
+      fontSize: {
+        h1: ["24px", { lineHeight: "32px", fontWeight: "600" }],
+        h2: ["20px", { lineHeight: "28px", fontWeight: "600" }],
+        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+        "display-price": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "display-price-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+      },
+      spacing: {
+        "base-unit": "4px",
+        "touch-target-min": "44px",
+        "container-padding": "16px",
+        container: "16px",
+        gutter: "12px",
+        section: "24px",
+        "section-gap": "24px",
+      },
+      borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", full: "9999px" },
       boxShadow: { card: "0px 4px 12px rgba(24,29,25,0.05)" },
     },
   },
