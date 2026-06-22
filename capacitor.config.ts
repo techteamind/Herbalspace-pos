@@ -14,14 +14,20 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: {
       launchAutoHide: true,
+      launchShowDuration: 2000,
       androidScaleType: "CENTER_CROP",
       splashFullScreen: true,
       splashImmersive: true,
       backgroundColor: "#fafaf7",
+      showSpinner: false,
     },
     StatusBar: {
-      style: "LIGHT",
-      backgroundColor: "#fafaf7",
+      style: "DARK",
+      backgroundColor: "#1f7a53",
+    },
+    Keyboard: {
+      resize: "body",
+      resizeOnFullScreen: true,
     },
   },
 };
