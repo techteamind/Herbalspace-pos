@@ -36,7 +36,7 @@ export default function LoginPage(): JSX.Element {
   const busy = loading || submitting;
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto bg-gradient-to-b from-primary-fixed/30 to-background">
+    <div className="min-h-screen flex flex-col justify-center px-6 max-w-3xl mx-auto bg-gradient-to-b from-primary-fixed/30 to-background">
       <div className="flex flex-col items-center gap-2 mb-8">
         <div className="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center">
           <Icon name="eco" filled className="text-primary text-[28px]" />

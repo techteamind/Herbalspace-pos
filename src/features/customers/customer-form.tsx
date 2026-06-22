@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FormSheet, Field, inputCls, Icon } from "@/components/shared";
+import { FormSheet, Field, inputCls, Icon, ConfirmDialog } from "@/components/shared";
 import { useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from "@/hooks/use-customers";
 import type { Customer } from "@/types";
 
@@ -14,6 +14,7 @@ export function CustomerForm({ initial, onClose, onDeleted }: { initial?: Custom
   const [email, setEmail] = useState(initial?.email ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const busy = create.isPending || update.isPending || del.isPending;
   const err = create.error || update.error || del.error;
 
@@ -23,14 +24,14 @@ export function CustomerForm({ initial, onClose, onDeleted }: { initial?: Custom
     onClose();
   }
   async function remove(): Promise<void> {
-    if (!initial || !confirm(`Hapus pelanggan "${initial.name}"?`)) return;
+    if (!initial) return;
     await del.mutateAsync(initial.id);
     (onDeleted ?? onClose)();
   }
 
   return (
     <FormSheet title={editing ? "Edit Pelanggan" : "Tambah Pelanggan"} onClose={onClose}>
-      <Field label="Nama"><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Budi Santoso" /></Field>
+      <Field label="Nama" required><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Budi Santoso" /></Field>
       <Field label="Telepon"><input className={inputCls} inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0812-3456-7890" /></Field>
       <Field label="Email (opsional)"><input className={inputCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nama@email.com" /></Field>
       <Field label="Catatan (opsional)"><input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Pelanggan langganan" /></Field>
@@ -40,10 +41,12 @@ export function CustomerForm({ initial, onClose, onDeleted }: { initial?: Custom
         {busy ? "Menyimpan..." : "Simpan Pelanggan"}
       </button>
       {editing && (
-        <button onClick={remove} disabled={busy} className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2">
+        <button onClick={() => setShowDeleteConfirm(true)} disabled={busy} className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2">
           <Icon name="delete" />Hapus Pelanggan
         </button>
       )}
+      <ConfirmDialog open={showDeleteConfirm} title={`Hapus pelanggan "${initial?.name}"?`} message="Data pelanggan dan riwayat poin akan dihapus permanen."
+        onConfirm={remove} onCancel={() => setShowDeleteConfirm(false)} />
     </FormSheet>
   );
 }

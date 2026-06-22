@@ -12,7 +12,7 @@ export function CustomersPage(): JSX.Element {
 
   return (
     <>
-      <PageHeader title="Pelanggan" rightIcon="search" />
+      <PageHeader title="Pelanggan" />
       <div className="px-container-padding py-2 flex gap-gutter">
         <div className="relative flex-1">
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
@@ -30,7 +30,7 @@ export function CustomersPage(): JSX.Element {
           <EmptyState icon="group" title="Belum ada pelanggan" subtitle="Tambah pelanggan untuk melacak riwayat transaksi." />
         )}
         {(data ?? []).map((c) => (
-          <div key={c.id} role="button" onClick={() => navigate(`/pelanggan/${c.id}`)} className="bg-surface-container-lowest p-3 rounded-xl shadow-card flex items-center gap-3 cursor-pointer active:scale-[0.99] transition-transform">
+          <div key={c.id} role="button" onClick={() => navigate(`/pelanggan/${c.id}`)} className="bg-surface-container-lowest p-3 rounded-xl shadow-elevation-1 flex items-center gap-3 cursor-pointer active:scale-[0.99] transition-transform">
             <div className="w-11 h-11 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-body-lg text-body-lg font-semibold shrink-0">{c.name.charAt(0).toUpperCase()}</div>
             <div className="flex-1 min-w-0">
               <h3 className="font-body-md text-body-md font-semibold text-on-surface truncate">{c.name}</h3>

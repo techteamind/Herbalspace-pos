@@ -29,6 +29,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# typescript build artifacts
+*.tsbuildinfo
+drizzle.config.js
+drizzle.config.d.ts
+vite.config.js
+vite.config.d.ts
+
 # capacitor native
 /android
 /ios
+.env*

@@ -13,8 +13,11 @@ export default createHandler({
       res.json(rows);
       return;
     }
+    const expWhere = auth.outletId
+      ? and(eq(expenses.tenantId, auth.tenantId), eq(expenses.outletId, auth.outletId))
+      : eq(expenses.tenantId, auth.tenantId);
     const rows = await db.query.expenses.findMany({
-      where: eq(expenses.tenantId, auth.tenantId),
+      where: expWhere,
       orderBy: desc(expenses.spentAt),
       limit: 100,
       with: { category: true, createdByProfile: true },
@@ -33,6 +36,7 @@ export default createHandler({
     const { categoryId, description, amount, spentAt } = req.body;
     const [row] = await db.insert(expenses).values({
       tenantId: auth.tenantId,
+      outletId: auth.outletId,
       categoryId: categoryId || null,
       description,
       amount: String(amount),

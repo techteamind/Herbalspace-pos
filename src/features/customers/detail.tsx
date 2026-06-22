@@ -31,14 +31,18 @@ export function CustomerDetailPage(): JSX.Element {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-primary-container text-on-primary rounded-xl p-4 shadow-card">
-              <p className="font-label-caps text-label-caps text-primary-fixed uppercase">Total Belanja</p>
-              <p className="font-body-lg text-body-lg font-bold mt-1">{formatRupiah(data.totalSpend)}</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-primary-container text-on-primary rounded-xl p-3 shadow-card">
+              <p className="font-label-caps text-label-caps text-primary-fixed uppercase">Belanja</p>
+              <p className="font-body-md text-body-md font-bold mt-1">{formatRupiah(data.totalSpend)}</p>
             </div>
-            <div className="bg-surface-container-lowest rounded-xl p-4 shadow-card border border-outline-variant/40">
+            <div className="bg-surface-container-lowest rounded-xl p-3 shadow-card border border-outline-variant/40">
               <p className="font-label-caps text-label-caps text-on-surface-variant uppercase">Transaksi</p>
-              <p className="font-body-lg text-body-lg font-bold text-on-surface mt-1">{paid.length}</p>
+              <p className="font-body-md text-body-md font-bold text-on-surface mt-1">{paid.length}</p>
+            </div>
+            <div className="bg-secondary-container rounded-xl p-3 shadow-card">
+              <p className="font-label-caps text-label-caps text-on-secondary-container uppercase">Poin</p>
+              <p className="font-body-md text-body-md font-bold text-on-secondary-container mt-1">{data.points ?? 0}</p>
             </div>
           </div>
 

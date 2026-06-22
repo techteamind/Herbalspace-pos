@@ -8,6 +8,8 @@ export interface AuthContext {
   userId: string;
   tenantId: string;
   role: "owner" | "manager" | "cashier";
+  profileName: string;
+  outletId: string | null;
 }
 
 const hsSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET ?? "");
@@ -104,7 +106,16 @@ export async function authenticate(req: VercelRequest): Promise<AuthContext | nu
 
   if (!profile) return setReason("no_profile");
   if (!profile.isActive) return setReason("inactive");
-  return { userId, tenantId: profile.tenantId, role: profile.role };
+
+  let outletId = profile.outletId ?? null;
+  if (profile.role === "owner") {
+    const headerOutlet = req.headers["x-outlet-id"];
+    if (typeof headerOutlet === "string" && headerOutlet) {
+      outletId = headerOutlet;
+    }
+  }
+
+  return { userId, tenantId: profile.tenantId, role: profile.role, profileName: profile.fullName, outletId };
 }
 
 /** Helper untuk mengembalikan 401. */

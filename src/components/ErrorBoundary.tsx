@@ -30,7 +30,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-        <div className="max-w-md w-full bg-surface-container-lowest rounded-2xl shadow-card p-6 space-y-3">
+        <div className="max-w-3xl w-full bg-surface-container-lowest rounded-2xl shadow-card p-6 space-y-3">
           <h1 className="font-h2 text-h2 text-error">Terjadi kesalahan</h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
             Aplikasi gagal dimuat. Detail teknis di bawah ini.

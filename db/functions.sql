@@ -22,7 +22,8 @@ CREATE OR REPLACE FUNCTION create_sale(
   p_discount    numeric,
   p_tax_percent numeric,
   p_items       jsonb,
-  p_payments    jsonb
+  p_payments    jsonb,
+  p_outlet_id   uuid DEFAULT NULL
 )
 RETURNS TABLE (transaction_id uuid, number text, total numeric, cogs_total numeric)
 LANGUAGE plpgsql
@@ -52,9 +53,9 @@ BEGIN
   v_number := 'TRX-' || to_char(CURRENT_DATE, 'YYYYMMDD') || '-' || lpad(v_seq::text, 4, '0');
 
   -- header sementara (total diisi setelah loop)
-  INSERT INTO transactions (id, tenant_id, number, customer_id, cashier_id, status,
+  INSERT INTO transactions (id, tenant_id, outlet_id, number, customer_id, cashier_id, status,
                             subtotal, discount, tax_amount, total, cogs_total)
-  VALUES (v_tx_id, p_tenant_id, v_number, p_customer_id, p_cashier_id, 'paid',
+  VALUES (v_tx_id, p_tenant_id, p_outlet_id, v_number, p_customer_id, p_cashier_id, 'paid',
           0, COALESCE(p_discount,0), 0, 0, 0);
 
   -- proses tiap item
@@ -92,11 +93,11 @@ BEGIN
         RETURNING current_stock INTO v_new_balance;
 
       INSERT INTO stock_movements (tenant_id, ingredient_id, type, qty_change,
-                                   balance_after, unit_cost, reference_type, reference_id,
+                                   balance_after, unit_cost, ref_type, reference_id,
                                    created_by)
       VALUES (p_tenant_id, r_recipe.ingredient_id, 'sale',
               -(r_recipe.quantity * v_qty), v_new_balance, r_recipe.last_cost,
-              'transaction', v_tx_id, p_cashier_id);
+              'transaction'::reference_type, v_tx_id, p_cashier_id);
     END LOOP;
   END LOOP;
 

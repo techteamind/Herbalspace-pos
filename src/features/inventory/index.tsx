@@ -4,6 +4,7 @@ import { formatRupiah } from "@/lib/utils";
 import { useIngredients } from "@/hooks/use-ingredients";
 import type { IngredientWithUnit } from "@/types";
 import { IngredientForm } from "./ingredient-form";
+import { StockAdjustForm } from "./stock-adjust-form";
 
 type Status = "ok" | "low" | "out";
 const FILTERS = ["Semua", "Stok Menipis", "Habis"];
@@ -23,22 +24,26 @@ function StatusBadge({ status }: { status: Status }): JSX.Element {
 
 export function InventoryPage(): JSX.Element {
   const [filter, setFilter] = useState("Semua");
+  const [search, setSearch] = useState("");
   const { data, isLoading, isError, error } = useIngredients();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<IngredientWithUnit | null>(null);
+  const [showAdjust, setShowAdjust] = useState(false);
 
   const items = (data ?? []).filter((d) => {
     const s = statusOf(d);
-    return filter === "Semua" ? true : filter === "Stok Menipis" ? s === "low" : s === "out";
+    const statusMatch = filter === "Semua" ? true : filter === "Stok Menipis" ? s === "low" : s === "out";
+    const searchMatch = !search || d.name.toLowerCase().includes(search.toLowerCase());
+    return statusMatch && searchMatch;
   });
 
   return (
     <>
-      <PageHeader title="Inventori" rightIcon="search" />
+      <PageHeader title="Inventori" />
       <div className="px-container-padding py-2 flex gap-gutter">
         <div className="relative flex-1">
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-          <input className="w-full h-touch-target-min pl-10 pr-4 rounded-xl border border-outline-variant bg-surface-container-lowest focus:outline-none focus:border-primary font-body-md text-body-md" placeholder="Cari bahan baku..." />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-touch-target-min pl-10 pr-4 rounded-xl border border-outline-variant bg-surface-container-lowest focus:outline-none focus:border-primary font-body-md text-body-md" placeholder="Cari bahan baku..." />
         </div>
         <button onClick={() => setShowForm(true)} className="bg-primary text-on-primary h-touch-target-min px-4 rounded-xl flex items-center gap-1 font-body-md text-body-md font-semibold active:scale-95 transition-transform shadow-card shrink-0">
           <Icon name="add" filled className="text-[20px]" />Tambah
@@ -85,8 +90,13 @@ export function InventoryPage(): JSX.Element {
           );
         })}
       </div>
+      <button onClick={() => setShowAdjust(true)} aria-label="Penyesuaian Stok"
+        className="fixed bottom-28 right-4 z-40 bg-secondary-container text-on-secondary-container h-12 px-4 rounded-full flex items-center gap-2 shadow-card active:scale-95 transition-transform font-body-md text-body-md font-semibold" style={{ right: "calc(50% - 11rem)" }}>
+        <Icon name="tune" filled />Penyesuaian
+      </button>
       {showForm && <IngredientForm onClose={() => setShowForm(false)} />}
       {editing && <IngredientForm initial={editing} onClose={() => setEditing(null)} />}
+      {showAdjust && <StockAdjustForm onClose={() => setShowAdjust(false)} />}
     </>
   );
 }

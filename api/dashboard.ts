@@ -11,6 +11,8 @@ export default createHandler({
     const yesterdayStart = new Date(todayStart);
     yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
+    const outletFilter = auth.outletId ? sql` AND t.outlet_id = ${auth.outletId}::uuid` : sql``;
+
     if (section === "stats") {
       const [todayRows] = await db.execute(sql`
         SELECT
@@ -21,6 +23,7 @@ export default createHandler({
         WHERE t.tenant_id = ${auth.tenantId}::uuid
           AND t.status = 'paid'
           AND t.created_at >= ${todayStart.toISOString()}::timestamptz
+          ${outletFilter}
       `);
       const [yesterdayRows] = await db.execute(sql`
         SELECT
@@ -32,6 +35,7 @@ export default createHandler({
           AND t.status = 'paid'
           AND t.created_at >= ${yesterdayStart.toISOString()}::timestamptz
           AND t.created_at < ${todayStart.toISOString()}::timestamptz
+          ${outletFilter}
       `);
       const today = todayRows as Record<string, unknown>;
       const yesterday = yesterdayRows as Record<string, unknown>;
@@ -45,16 +49,42 @@ export default createHandler({
         yesterdayRevenue: Number(yesterday.revenue ?? 0),
         yesterdayTransactions: Number(yesterday.trx_count ?? 0),
         yesterdayProductsSold: Number(yesterday.products_sold ?? 0),
+        profileName: auth.profileName,
       });
       return;
     }
 
+    if (section === "weekly-revenue") {
+      const days: { date: string; revenue: number; trxCount: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const start = new Date(todayStart);
+        start.setDate(start.getDate() - i);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+        const [row] = await db.execute(sql`
+          SELECT COALESCE(SUM(total::numeric), 0) AS revenue, COUNT(*)::int AS trx_count
+          FROM transactions t
+          WHERE t.tenant_id = ${auth.tenantId}::uuid AND t.status = 'paid'
+            AND t.created_at >= ${start.toISOString()}::timestamptz
+            AND t.created_at < ${end.toISOString()}::timestamptz
+            ${outletFilter}
+        `);
+        const r = row as Record<string, unknown>;
+        days.push({
+          date: start.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" }),
+          revenue: Number(r.revenue ?? 0),
+          trxCount: Number(r.trx_count ?? 0),
+        });
+      }
+      res.json(days);
+      return;
+    }
+
     if (section === "recent-transactions") {
+      const conds = [eq(transactions.tenantId, auth.tenantId), eq(transactions.status, "paid")];
+      if (auth.outletId) conds.push(eq(transactions.outletId, auth.outletId));
       const rows = await db.query.transactions.findMany({
-        where: and(
-          eq(transactions.tenantId, auth.tenantId),
-          eq(transactions.status, "paid"),
-        ),
+        where: and(...conds),
         orderBy: desc(transactions.createdAt),
         limit: 10,
         with: { items: true, payments: true, customer: true, cashier: true },
@@ -66,17 +96,18 @@ export default createHandler({
     if (section === "top-products") {
       const rows = await db.execute(sql`
         SELECT
-          ti.product_id,
-          ti.product_name,
-          SUM(ti.quantity)::int AS total_sold,
-          SUM(ti.line_total::numeric) AS total_revenue
+          ti.product_id AS "productId",
+          ti.product_name AS "productName",
+          SUM(ti.quantity)::int AS "totalSold",
+          SUM(ti.line_total::numeric) AS "totalRevenue"
         FROM transaction_items ti
         JOIN transactions t ON t.id = ti.transaction_id
         WHERE t.tenant_id = ${auth.tenantId}::uuid
           AND t.status = 'paid'
           AND t.created_at >= ${todayStart.toISOString()}::timestamptz
+          ${outletFilter}
         GROUP BY ti.product_id, ti.product_name
-        ORDER BY total_sold DESC
+        ORDER BY "totalSold" DESC
         LIMIT 10
       `);
       res.json(rows);

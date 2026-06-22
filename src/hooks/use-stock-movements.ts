@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 
 export interface StockMovementRow {
@@ -11,6 +11,19 @@ export interface StockMovementRow {
   note: string | null;
   referenceId: string | null;
   createdAt: string;
+}
+
+export function useCreateStockAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { ingredientId: string; type: "adjustment" | "waste" | "purchase" | "return"; qtyChange: number; note?: string }) =>
+      apiFetch("stock-movements", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+      qc.invalidateQueries({ queryKey: ["ingredients"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
 }
 
 export function useStockMovements(type?: string) {

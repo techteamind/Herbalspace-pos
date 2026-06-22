@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { authenticate, unauthorized } from "./_lib/auth";
+import { logAudit } from "./_lib/audit";
 
 interface SaleItem {
   product_id: string;
@@ -50,10 +51,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         ${discount ?? 0}::numeric,
         ${taxPercent ?? 0}::numeric,
         ${JSON.stringify(items)}::jsonb,
-        ${JSON.stringify(payments ?? [])}::jsonb
+        ${JSON.stringify(payments ?? [])}::jsonb,
+        ${auth.outletId ?? null}::uuid
       );
     `);
-    res.status(201).json(result[0]);
+    const sale = result[0] as { total: string };
+    if (customerId) {
+      const earnedPoints = Math.floor(Number(sale.total) / 10000);
+      if (earnedPoints > 0) {
+        await db.execute(sql`
+          UPDATE customers SET points = points + ${earnedPoints},
+            total_spent = total_spent + ${Number(sale.total)}
+          WHERE id = ${customerId}::uuid
+        `);
+      } else {
+        await db.execute(sql`
+          UPDATE customers SET total_spent = total_spent + ${Number(sale.total)}
+          WHERE id = ${customerId}::uuid
+        `);
+      }
+    }
+    const saleRow = result[0] as Record<string, unknown>;
+    await logAudit(auth, "create", "transaction", saleRow.id as string, { total: sale.total, items: items.length });
+    res.status(201).json(saleRow);
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Gagal membuat transaksi" });
   }

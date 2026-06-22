@@ -1,5 +1,9 @@
 import { formatRupiah } from "./utils";
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export interface ReportData {
   period: string;
   summary: { omzet: number; hpp: number; labaKotor: number; pengeluaran: number; labaBersih: number };
@@ -64,7 +68,7 @@ ${d.topProducts.length > 0 ? `
 <h2>Produk Teratas</h2>
 <table>
   <tr><th>Produk</th><th class="num">Pendapatan</th></tr>
-  ${d.topProducts.map((p, i) => `<tr><td>${i + 1}. ${p.name}</td><td class="num">${formatRupiah(p.value)}</td></tr>`).join("")}
+  ${d.topProducts.map((p, i) => `<tr><td>${i + 1}. ${escHtml(p.name)}</td><td class="num">${formatRupiah(p.value)}</td></tr>`).join("")}
 </table>` : ""}
 </body></html>`;
 

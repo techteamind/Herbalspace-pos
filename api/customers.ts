@@ -15,7 +15,7 @@ export default createHandler({
         where: and(eq(transactions.customerId, id), eq(transactions.tenantId, auth.tenantId)),
         orderBy: desc(transactions.createdAt),
         limit: 50,
-        with: { items: true },
+        with: { items: true, payments: true, customer: true, cashier: true },
       });
       const totalSpend = history.filter((t) => t.status === "paid").reduce((s, t) => s + Number(t.total), 0);
       res.json({ ...customer, transactions: history, totalSpend });
@@ -25,7 +25,8 @@ export default createHandler({
     const search = req.query.q as string | undefined;
     let where = eq(customers.tenantId, auth.tenantId);
     if (search) {
-      where = and(where, or(ilike(customers.name, `%${search}%`), ilike(customers.phone, `%${search}%`)))!;
+      const escaped = search.replace(/[%_\\]/g, "\\$&");
+      where = and(where, or(ilike(customers.name, `%${escaped}%`), ilike(customers.phone, `%${escaped}%`)))!;
     }
     const rows = await db.query.customers.findMany({ where, orderBy: desc(customers.createdAt), limit: 50 });
     res.json(rows);

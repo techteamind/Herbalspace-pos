@@ -92,7 +92,7 @@ export function RecipeEditorPage(): JSX.Element {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full max-w-md mx-auto pb-safe bg-background" style={{ left: "50%", transform: "translateX(-50%)" }}>
+      <div className="fixed bottom-0 left-0 w-full max-w-3xl mx-auto pb-safe bg-background" style={{ left: "50%", transform: "translateX(-50%)" }}>
         <div className="mx-container-padding mb-2 bg-surface-container-lowest rounded-xl p-4 shadow-card border border-outline-variant/40 flex justify-between items-center">
           <div>
             <p className="font-label-caps text-label-caps text-on-surface-variant uppercase">HPP per porsi</p>

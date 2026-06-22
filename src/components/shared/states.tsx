@@ -1,10 +1,32 @@
 import { Icon } from "./icon";
 
-export function ListSkeleton({ rows = 3 }: { rows?: number }): JSX.Element {
+export function ListSkeleton({ rows = 3, variant = "list" }: { rows?: number; variant?: "list" | "grid" }): JSX.Element {
+  if (variant === "grid") {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="rounded-xl overflow-hidden bg-surface-container-lowest" style={{ animationDelay: `${i * 80}ms` }}>
+            <div className="aspect-square shimmer" />
+            <div className="p-3 space-y-2">
+              <div className="h-3.5 w-3/4 rounded shimmer" />
+              <div className="h-4 w-1/2 rounded shimmer" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="space-y-2">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-[68px] bg-surface-container-low rounded-xl animate-pulse" />
+        <div key={i} className="h-[68px] bg-surface-container-lowest rounded-xl flex items-center gap-3 px-3" style={{ animationDelay: `${i * 80}ms` }}>
+          <div className="w-10 h-10 rounded-lg shimmer shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3.5 w-2/3 rounded shimmer" />
+            <div className="h-3 w-1/3 rounded shimmer" />
+          </div>
+          <div className="h-4 w-16 rounded shimmer" />
+        </div>
       ))}
     </div>
   );

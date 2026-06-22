@@ -35,3 +35,20 @@ export function useDeleteProduct() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });
 }
+
+export interface PriceHistoryEntry {
+  id: string;
+  productId: string;
+  oldPrice: string;
+  newPrice: string;
+  changedBy: string | null;
+  changedAt: string;
+}
+
+export function usePriceHistory(productId: string | undefined) {
+  return useQuery<PriceHistoryEntry[]>({
+    queryKey: ["price-history", productId],
+    queryFn: () => apiFetch(`price-history?productId=${productId}`),
+    enabled: !!productId,
+  });
+}

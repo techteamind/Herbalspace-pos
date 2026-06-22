@@ -14,11 +14,20 @@ import { ExpensesPage } from "@/features/expenses";
 import { ReportsPage } from "@/features/reports";
 import { SettingsPage } from "@/features/settings";
 import { MorePage } from "@/features/more";
+import { TransactionsPage } from "@/features/transactions";
+import { ShiftsPage } from "@/features/shifts";
+import { PromosPage } from "@/features/promos";
+import { OutletsPage } from "@/features/outlets";
+import { SharedReceiptPage } from "@/features/receipt/shared-receipt";
+import { AuditLogPage } from "@/features/audit-log";
+import { EmployeesPage } from "@/features/employees";
+import { ModifiersPage } from "@/features/modifiers";
 
 export const router = createBrowserRouter([
-  // Auth routes (public)
+  // Public routes
   { path: "/auth/login", element: <LoginPage /> },
   { path: "/login", element: <Navigate to="/auth/login" replace /> },
+  { path: "/receipt/:token", element: <SharedReceiptPage /> },
 
   // Protected routes
   {
@@ -38,9 +47,16 @@ export const router = createBrowserRouter([
       { path: "stock-movement", element: <StockMovementsPage /> },
       { path: "pelanggan", element: <CustomersPage /> },
       { path: "pelanggan/:id", element: <CustomerDetailPage /> },
+      { path: "riwayat-transaksi", element: <TransactionsPage /> },
       { path: "pengeluaran", element: <ExpensesPage /> },
       { path: "laporan", element: <ReportsPage /> },
       { path: "pengaturan", element: <SettingsPage /> },
+      { path: "shift", element: <ShiftsPage /> },
+      { path: "promo", element: <PromosPage /> },
+      { path: "outlet", element: <OutletsPage /> },
+      { path: "audit-log", element: <AuditLogPage /> },
+      { path: "karyawan", element: <EmployeesPage /> },
+      { path: "modifier", element: <ModifiersPage /> },
       { path: "lainnya", element: <MorePage /> },
     ],
   },

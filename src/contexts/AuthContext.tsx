@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import type { AuthContextValue, AuthUser } from "@/types/auth";
+import type { AuthContextValue, AuthUser, UserRole } from "@/types/auth";
+import { apiFetch, getActiveOutletId, setActiveOutletId } from "@/lib/api-client";
 
 const AuthContextProvider = createContext<AuthContextValue | undefined>(undefined);
 
@@ -18,6 +19,15 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const [outletId, setOutletIdState] = useState<string | null>(getActiveOutletId());
+  const [assignedOutletId, setAssignedOutletId] = useState<string | null>(null);
+
+  const setOutletId = useCallback((id: string | null) => {
+    setActiveOutletId(id);
+    setOutletIdState(id);
+  }, []);
 
   useEffect(() => {
     supabase.auth
@@ -36,6 +46,18 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!session) { setRole(null); setProfileName(null); setAssignedOutletId(null); return; }
+    apiFetch("me").then((data: any) => {
+      setRole(data.role);
+      setProfileName(data.profileName);
+      setAssignedOutletId(data.outletId ?? null);
+      if (data.outletId && data.role !== "owner") {
+        setOutletId(data.outletId);
+      }
+    }).catch(() => {});
+  }, [session, setOutletId]);
 
   const login = async (email: string, password: string): Promise<void> => {
     setError(null);
@@ -59,7 +81,11 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       throw err;
     }
     setSession(null);
+    setOutletId(null);
   };
+
+  const needsOutletSelection = !!session && role === "owner" && !outletId && !assignedOutletId;
+  const effectiveOutletId = outletId === "__all__" ? null : outletId;
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -69,8 +95,13 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       login,
       logout,
       isAuthenticated: !!session,
+      role,
+      profileName,
+      outletId: effectiveOutletId,
+      setOutletId,
+      needsOutletSelection,
     }),
-    [session, loading, error],
+    [session, loading, error, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection],
   );
 
   return (

@@ -4,6 +4,43 @@ import { stockMovements, ingredients, units } from "../db/schema";
 import { createHandler } from "./_lib/handler";
 
 export default createHandler({
+  async POST(req, res, auth) {
+    const { ingredientId, type, qtyChange, note } = req.body as {
+      ingredientId: string;
+      type: "adjustment" | "waste" | "purchase" | "return";
+      qtyChange: number;
+      note?: string;
+    };
+    if (!ingredientId || !type || qtyChange === undefined) {
+      res.status(400).json({ error: "ingredientId, type, dan qtyChange wajib" });
+      return;
+    }
+
+    const ingredient = await db.query.ingredients.findFirst({
+      where: and(eq(ingredients.id, ingredientId), eq(ingredients.tenantId, auth.tenantId)),
+    });
+    if (!ingredient) { res.status(404).json({ error: "Bahan tidak ditemukan" }); return; }
+
+    const newBalance = Number(ingredient.currentStock) + qtyChange;
+
+    await db.update(ingredients)
+      .set({ currentStock: String(newBalance), updatedAt: new Date() })
+      .where(eq(ingredients.id, ingredientId));
+
+    const [row] = await db.insert(stockMovements).values({
+      tenantId: auth.tenantId,
+      ingredientId,
+      type,
+      qtyChange: String(qtyChange),
+      balanceAfter: String(newBalance),
+      unitCost: ingredient.lastCost,
+      note: note || null,
+      createdBy: auth.userId,
+    }).returning();
+
+    res.status(201).json(row);
+  },
+
   async GET(req, res, auth) {
     const { from, to, type, limit: limitStr } = req.query;
     const limit = Math.min(Number(limitStr) || 100, 300);

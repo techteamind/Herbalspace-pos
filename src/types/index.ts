@@ -16,6 +16,12 @@ export type Payment = InferSelectModel<typeof schema.payments>;
 export type ExpenseCategory = InferSelectModel<typeof schema.expenseCategories>;
 export type Expense = InferSelectModel<typeof schema.expenses>;
 export type Settings = InferSelectModel<typeof schema.settings>;
+export type VariantGroup = InferSelectModel<typeof schema.variantGroups>;
+export type VariantOption = InferSelectModel<typeof schema.variantOptions>;
+export type ProductVariant = InferSelectModel<typeof schema.productVariants>;
+export type ModifierGroup = InferSelectModel<typeof schema.modifierGroups>;
+export type ModifierOption = InferSelectModel<typeof schema.modifierOptions>;
+export type ProductModifier = InferSelectModel<typeof schema.productModifiers>;
 
 export type TransactionWithItems = Transaction & {
   items: TransactionItem[];
@@ -24,8 +30,23 @@ export type TransactionWithItems = Transaction & {
   cashier: Pick<Profile, "id" | "fullName"> | null;
 };
 
+export type VariantGroupWithOptions = VariantGroup & {
+  options: VariantOption[];
+};
+
+export type ModifierGroupWithOptions = ModifierGroup & {
+  options: ModifierOption[];
+};
+
+export type ProductModifierWithGroup = ProductModifier & {
+  modifierGroup: ModifierGroupWithOptions;
+};
+
 export type ProductWithCategory = Product & {
   category: Category | null;
+  variantGroups?: VariantGroupWithOptions[];
+  variants?: ProductVariant[];
+  modifiers?: ProductModifierWithGroup[];
 };
 
 export type IngredientWithUnit = Ingredient & {
@@ -40,19 +61,20 @@ export interface DashboardStats {
   yesterdayRevenue: number;
   yesterdayTransactions: number;
   yesterdayProductsSold: number;
+  profileName: string;
 }
 
 export interface TopProduct {
   productId: string;
   productName: string;
   totalSold: number;
-  totalRevenue: number;
+  totalRevenue: string | number;
 }
 
 export interface LowStockItem {
   id: string;
   name: string;
-  currentStock: number;
-  minStock: number;
+  currentStock: string | number;
+  minStock: string | number;
   unitCode: string;
 }

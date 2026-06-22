@@ -21,6 +21,13 @@ export default createHandler({
     res.status(201).json(row);
   },
 
+  async DELETE(req, res, auth) {
+    const id = String(req.query.id ?? "");
+    if (!id) { res.status(400).json({ error: "id wajib" }); return; }
+    await db.delete(categories).where(and(eq(categories.id, id), eq(categories.tenantId, auth.tenantId)));
+    res.status(204).end();
+  },
+
   async PUT(req, res, auth) {
     const { id, ...data } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }

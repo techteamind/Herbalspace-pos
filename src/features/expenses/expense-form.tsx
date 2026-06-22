@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { FormSheet, Field, inputCls, Icon } from "@/components/shared";
+import { FormSheet, Field, inputCls, Icon, ConfirmDialog, useToast } from "@/components/shared";
 import { useCreateExpense, useUpdateExpense, useDeleteExpense, useExpenseCategories, useCreateExpenseCategory } from "@/hooks/use-expenses";
+import { haptic, hapticError } from "@/lib/haptic";
 import type { Expense } from "@/types";
 
 export function ExpenseForm({ initial, onClose }: { initial?: Expense; onClose: () => void }): JSX.Element {
+  const toast = useToast();
   const create = useCreateExpense();
   const update = useUpdateExpense();
   const del = useDeleteExpense();
@@ -17,6 +19,7 @@ export function ExpenseForm({ initial, onClose }: { initial?: Expense; onClose: 
   const [amount, setAmount] = useState(initial ? String(Number(initial.amount)) : "");
   const [spentAt, setSpentAt] = useState(initial ? new Date(initial.spentAt).toISOString().slice(0, 10) : today);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const busy = create.isPending || update.isPending || del.isPending;
   const err = create.error || update.error || del.error;
 
@@ -30,11 +33,15 @@ export function ExpenseForm({ initial, onClose }: { initial?: Expense; onClose: 
     const payload = { categoryId: categoryId || undefined, description, amount: Number(amount) || 0, spentAt: new Date(spentAt).toISOString() };
     if (editing) await update.mutateAsync({ id: initial.id, ...payload });
     else await create.mutateAsync(payload);
+    haptic();
+    toast(editing ? "Pengeluaran diperbarui" : "Pengeluaran ditambahkan");
     onClose();
   }
   async function remove(): Promise<void> {
-    if (!initial || !confirm("Hapus pengeluaran ini?")) return;
+    if (!initial) return;
     await del.mutateAsync(initial.id);
+    hapticError();
+    toast("Pengeluaran dihapus", "error");
     onClose();
   }
 
@@ -50,7 +57,7 @@ export function ExpenseForm({ initial, onClose }: { initial?: Expense; onClose: 
             className="h-touch-target-min w-12 shrink-0 rounded-lg border border-outline-variant text-primary flex items-center justify-center"><Icon name="add" /></button>
         </div>
       </Field>
-      <Field label="Deskripsi"><input className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Sewa tempat Juni" /></Field>
+      <Field label="Deskripsi" required><input className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Sewa tempat Juni" /></Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Jumlah"><input className={inputCls} inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))} placeholder="0" /></Field>
         <Field label="Tanggal"><input className={inputCls} type="date" value={spentAt} onChange={(e) => setSpentAt(e.target.value)} /></Field>
@@ -61,10 +68,12 @@ export function ExpenseForm({ initial, onClose }: { initial?: Expense; onClose: 
         {busy ? "Menyimpan..." : "Simpan Pengeluaran"}
       </button>
       {editing && (
-        <button onClick={remove} disabled={busy} className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2">
+        <button onClick={() => setShowDeleteConfirm(true)} disabled={busy} className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2">
           <Icon name="delete" />Hapus
         </button>
       )}
+      <ConfirmDialog open={showDeleteConfirm} title="Hapus pengeluaran ini?" message="Data pengeluaran yang dihapus tidak dapat dikembalikan."
+        onConfirm={remove} onCancel={() => setShowDeleteConfirm(false)} />
     </FormSheet>
   );
 }

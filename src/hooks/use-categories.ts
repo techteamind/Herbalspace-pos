@@ -18,6 +18,14 @@ export function useCreateCategory() {
   });
 }
 
+export function useDeleteCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`categories?id=${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+  });
+}
+
 export function useUpdateCategory() {
   const qc = useQueryClient();
   return useMutation({

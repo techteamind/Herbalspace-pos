@@ -1,14 +1,17 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useState, useEffect } from "react";
 import { PageHeader, Icon, FormSheet, Field, inputCls } from "@/components/shared";
 import { supabase } from "@/lib/supabase";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch } from "@/lib/api-client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-type Sheet = null | "profile" | "tax" | "payment" | "receipt";
+type Sheet = null | "profile" | "account" | "tax" | "payment" | "receipt";
 
 function Section({ title, children }: { title: string; children: ReactNode }): JSX.Element {
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider px-1">{title}</h3>
+      <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider px-1">{title}</h3>
       <div className="bg-surface-container-lowest rounded-xl shadow-card divide-y divide-outline-variant/30">{children}</div>
     </div>
   );
@@ -17,8 +20,8 @@ function Row({ icon, label, value, onClick }: { icon: string; label: string; val
   return (
     <button onClick={onClick} className="flex items-center gap-3 px-4 h-14 w-full text-left active:bg-surface-container transition-colors">
       <Icon name={icon} className="text-on-surface-variant" />
-      <span className="flex-1 text-sm text-on-surface">{label}</span>
-      {value && <span className="text-sm text-on-surface-variant max-w-[50%] truncate text-right">{value}</span>}
+      <span className="flex-1 font-body-md text-body-md text-on-surface">{label}</span>
+      {value && <span className="font-body-md text-body-md text-on-surface-variant max-w-[50%] truncate text-right">{value}</span>}
       <Icon name="chevron_right" className="text-on-surface-variant opacity-50" />
     </button>
   );
@@ -32,9 +35,17 @@ const PAY_OPTIONS = [
 ] as const;
 
 export function SettingsPage(): JSX.Element {
+  const { profileName, user } = useAuth();
+  const qc = useQueryClient();
   const { data: s } = useSettings();
   const update = useUpdateSettings();
   const [sheet, setSheet] = useState<Sheet>(null);
+
+  const [fullName, setFullName] = useState("");
+  const updateProfile = useMutation({
+    mutationFn: (data: { fullName: string }) => apiFetch("me", { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["me"] }); window.location.reload(); },
+  });
 
   const [cafeName, setCafeName] = useState("");
   const [address, setAddress] = useState("");
@@ -47,7 +58,9 @@ export function SettingsPage(): JSX.Element {
 
   function openSheet(which: Sheet) {
     if (!s) return;
-    if (which === "profile") {
+    if (which === "account") {
+      setFullName(profileName ?? "");
+    } else if (which === "profile") {
       setCafeName(s.cafeName);
       setAddress(s.address ?? "");
       setPhone(s.phone ?? "");
@@ -94,7 +107,15 @@ export function SettingsPage(): JSX.Element {
   return (
     <>
       <PageHeader title="Pengaturan" />
-      <div className="px-container space-y-5 pb-8">
+      <div className="px-container-padding space-y-5 pb-8">
+        <Section title="Akun Saya">
+          <Row icon="person" label="Nama" value={profileName ?? "—"} onClick={() => openSheet("account")} />
+          <div className="flex items-center gap-3 px-4 h-14 w-full text-left">
+            <Icon name="mail" className="text-on-surface-variant" />
+            <span className="flex-1 font-body-md text-body-md text-on-surface">Email</span>
+            <span className="font-body-md text-body-md text-on-surface-variant truncate max-w-[50%] text-right">{user?.email ?? "—"}</span>
+          </div>
+        </Section>
         <Section title="Profil Toko">
           <Row icon="storefront" label="Nama & Alamat" value={s?.cafeName ?? "Herbaspace"} onClick={() => openSheet("profile")} />
           <Row icon="call" label="Telepon" value={s?.phone ?? "—"} onClick={() => openSheet("profile")} />
@@ -109,14 +130,29 @@ export function SettingsPage(): JSX.Element {
         <Section title="Struk">
           <Row icon="receipt_long" label="Header & Footer" onClick={() => openSheet("receipt")} />
         </Section>
+        <Section title="Tampilan">
+          <DarkModeToggle />
+        </Section>
 
         <button
           onClick={() => supabase.auth.signOut()}
-          className="w-full h-12 rounded-xl border border-error/40 text-error text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <Icon name="logout" />Keluar
         </button>
       </div>
+
+      {sheet === "account" && (
+        <FormSheet title="Edit Profil" onClose={() => setSheet(null)}>
+          <Field label="Nama Lengkap" required>
+            <input className={inputCls} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nama kamu" autoFocus />
+          </Field>
+          <button onClick={() => updateProfile.mutate({ fullName: fullName.trim() })} disabled={updateProfile.isPending || !fullName.trim()}
+            className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
+            {updateProfile.isPending ? "Menyimpan..." : "Simpan"}
+          </button>
+        </FormSheet>
+      )}
 
       {sheet === "profile" && (
         <FormSheet title="Profil Toko" onClose={() => setSheet(null)}>
@@ -130,7 +166,7 @@ export function SettingsPage(): JSX.Element {
             <input className={inputCls} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </Field>
           <button onClick={saveProfile} disabled={update.isPending || !cafeName.trim()}
-            className="w-full h-touch bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
+            className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
             {update.isPending ? "Menyimpan..." : "Simpan"}
           </button>
         </FormSheet>
@@ -145,7 +181,7 @@ export function SettingsPage(): JSX.Element {
             <input className={inputCls} type="number" min="0" max="100" step="0.1" value={serviceCharge} onChange={(e) => setServiceCharge(e.target.value)} />
           </Field>
           <button onClick={saveTax} disabled={update.isPending}
-            className="w-full h-touch bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
+            className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
             {update.isPending ? "Menyimpan..." : "Simpan"}
           </button>
         </FormSheet>
@@ -162,13 +198,13 @@ export function SettingsPage(): JSX.Element {
                   onChange={() => togglePayMethod(opt.key)}
                   className="w-5 h-5 accent-primary"
                 />
-                <span className="text-sm text-on-surface">{opt.label}</span>
+                <span className="font-body-md text-body-md text-on-surface">{opt.label}</span>
               </label>
             ))}
           </div>
-          <p className="text-xs text-on-surface-variant">Minimal 1 metode harus aktif.</p>
+          <p className="font-label-caps text-label-caps text-on-surface-variant">Minimal 1 metode harus aktif.</p>
           <button onClick={savePayment} disabled={update.isPending || payMethods.length === 0}
-            className="w-full h-touch bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
+            className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
             {update.isPending ? "Menyimpan..." : "Simpan"}
           </button>
         </FormSheet>
@@ -185,11 +221,36 @@ export function SettingsPage(): JSX.Element {
               placeholder="Barang yang sudah dibeli tidak dapat dikembalikan." />
           </Field>
           <button onClick={saveReceipt} disabled={update.isPending}
-            className="w-full h-touch bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
+            className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
             {update.isPending ? "Menyimpan..." : "Simpan"}
           </button>
         </FormSheet>
       )}
     </>
+  );
+}
+
+function DarkModeToggle(): JSX.Element {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (dark) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      if (meta) meta.setAttribute("content", "#101510");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      if (meta) meta.setAttribute("content", "#1f7a53");
+    }
+  }, [dark]);
+
+  return (
+    <button onClick={() => setDark(!dark)} className="flex items-center gap-3 px-4 h-14 w-full text-left active:bg-surface-container transition-colors">
+      <Icon name={dark ? "dark_mode" : "light_mode"} className="text-on-surface-variant" />
+      <span className="flex-1 font-body-md text-body-md text-on-surface">Mode Gelap</span>
+      <Icon name={dark ? "toggle_on" : "toggle_off"} className={dark ? "text-primary text-[28px]" : "text-on-surface-variant text-[28px]"} />
+    </button>
   );
 }

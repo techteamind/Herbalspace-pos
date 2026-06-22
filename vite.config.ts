@@ -1,5 +1,6 @@
 import { defineConfig, type PluginOption, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -100,12 +101,34 @@ function localApi(): PluginOption {
 }
 
 export default defineConfig({
-  plugins: [react(), localApi()],
+  plugins: [
+    react(),
+    localApi(),
+    VitePWA({
+      registerType: "autoUpdate",
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: "CacheFirst",
+            options: { cacheName: "google-fonts", expiration: { maxEntries: 10, maxAgeSeconds: 365 * 24 * 60 * 60 } },
+          },
+          {
+            urlPattern: /\/api\//,
+            handler: "NetworkFirst",
+            options: { cacheName: "api-cache", expiration: { maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 } },
+          },
+        ],
+      },
+      manifest: false,
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@db": path.resolve(__dirname, "./db"),
     },
   },
-  server: { port: 5173 },
+  server: { port: Number(process.env.PORT) || 5173 },
 });

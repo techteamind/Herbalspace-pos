@@ -29,7 +29,7 @@ export function StockMovementsPage(): JSX.Element {
 
   return (
     <>
-      <PageHeader title="Pergerakan Stok" rightIcon="search" />
+      <PageHeader title="Pergerakan Stok" />
       <div className="px-container-padding py-2">
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {FILTERS.map((f) => (
