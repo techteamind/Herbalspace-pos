@@ -9,7 +9,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse):
     version: "2026-06-22-catchall",
     commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
     time: new Date().toISOString(),
-    postgresUrl: process.env.POSTGRES_URL ? process.env.POSTGRES_URL.replace(/:[^@]+@/, ":***@") : "NOT SET",
+    supabaseDbUrl: process.env.SUPABASE_DB_URL ? "SET" : "NOT SET",
+    postgresUrl: (process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL || "NOT SET").replace(/:[^@]+@/, ":***@"),
   };
 
   if (_req.query.db === "1") {
