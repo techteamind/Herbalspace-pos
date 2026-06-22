@@ -8,7 +8,7 @@ let _db: PostgresJsDatabase<typeof schema> | null = null;
 
 function getDb(): PostgresJsDatabase<typeof schema> {
   if (_db) return _db;
-  const connectionString = process.env.POSTGRES_URL;
+  const connectionString = process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
   if (!connectionString) throw new Error("POSTGRES_URL belum di-set");
   // `prepare: false` direkomendasikan untuk koneksi pooled Vercel Postgres.
   const client = postgres(connectionString, { prepare: false });
