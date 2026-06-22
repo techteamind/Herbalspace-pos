@@ -44,6 +44,7 @@ export const profiles = pgTable("profiles", {
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
@@ -73,6 +74,7 @@ export const products = pgTable("products", {
 export const units = pgTable("units", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   code: text("code").notNull(),
   name: text("name").notNull(),
 }, (t) => ({
@@ -83,6 +85,7 @@ export const units = pgTable("units", {
 export const ingredients = pgTable("ingredients", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   unitId: uuid("unit_id").notNull().references(() => units.id),
   name: text("name").notNull(),
   currentStock: numeric("current_stock", { precision: 14, scale: 3 }).notNull().default("0"),
@@ -127,6 +130,7 @@ export const stockMovements = pgTable("stock_movements", {
 export const customers = pgTable("customers", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   phone: text("phone"),
   email: text("email"),
@@ -193,6 +197,7 @@ export const payments = pgTable("payments", {
 export const expenseCategories = pgTable("expense_categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
 }, (t) => ({ byTenant: index("expense_categories_tenant_idx").on(t.tenantId) }));
 
@@ -245,6 +250,7 @@ export const promoType = pgEnum("promo_type", ["discount_percent", "discount_amo
 export const promos = pgTable("promos", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   type: promoType("type").notNull(),
   value: numeric("value", { precision: 14, scale: 2 }).notNull(),
@@ -287,6 +293,7 @@ export const shifts = pgTable("shifts", {
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   userId: uuid("user_id").references(() => profiles.id),
   userName: text("user_name"),
   action: text("action").notNull(),
@@ -339,6 +346,7 @@ export const productVariants = pgTable("product_variants", {
 export const modifierGroups = pgTable("modifier_groups", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  outletId: uuid("outlet_id").references(() => outlets.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   isRequired: boolean("is_required").notNull().default(false),
   maxSelect: integer("max_select").notNull().default(5),

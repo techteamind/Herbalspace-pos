@@ -7,8 +7,10 @@ export default createHandler({
   async GET(req, res, auth) {
     const section = req.query.section as string | undefined;
     if (section === "categories") {
+      const catConditions = [eq(expenseCategories.tenantId, auth.tenantId)];
+      if (auth.outletId) catConditions.push(eq(expenseCategories.outletId, auth.outletId));
       const rows = await db.query.expenseCategories.findMany({
-        where: eq(expenseCategories.tenantId, auth.tenantId),
+        where: and(...catConditions),
       });
       res.json(rows);
       return;
@@ -29,7 +31,7 @@ export default createHandler({
     const { section } = req.query;
     if (section === "categories") {
       const { name } = req.body;
-      const [row] = await db.insert(expenseCategories).values({ tenantId: auth.tenantId, name }).returning();
+      const [row] = await db.insert(expenseCategories).values({ tenantId: auth.tenantId, outletId: auth.outletId ?? undefined, name }).returning();
       res.status(201).json(row);
       return;
     }

@@ -5,8 +5,10 @@ import { createHandler } from "../_lib/handler.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
+    const conditions = [eq(modifierGroups.tenantId, auth.tenantId)];
+    if (auth.outletId) conditions.push(eq(modifierGroups.outletId, auth.outletId));
     const groups = await db.query.modifierGroups.findMany({
-      where: eq(modifierGroups.tenantId, auth.tenantId),
+      where: and(...conditions),
       with: { options: true },
       orderBy: (t, { asc }) => [asc(t.sortOrder)],
     });
@@ -24,6 +26,7 @@ export default createHandler({
 
     const [group] = await db.insert(modifierGroups).values({
       tenantId: auth.tenantId,
+      outletId: auth.outletId ?? undefined,
       name,
       isRequired: isRequired ?? false,
       maxSelect: maxSelect ?? 5,

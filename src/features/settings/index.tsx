@@ -44,7 +44,7 @@ export function SettingsPage(): JSX.Element {
   const [fullName, setFullName] = useState("");
   const updateProfile = useMutation({
     mutationFn: (data: { fullName: string }) => apiFetch("me", { method: "PUT", body: JSON.stringify(data) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["me"] }); window.location.reload(); },
+    onSuccess: () => { qc.invalidateQueries(); },
   });
 
   const [cafeName, setCafeName] = useState("");

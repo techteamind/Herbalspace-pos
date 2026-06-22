@@ -34,5 +34,6 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     const message = await res.text().catch(() => res.statusText);
     throw new Error(message || `Request gagal (${res.status})`);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }

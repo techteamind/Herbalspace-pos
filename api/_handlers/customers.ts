@@ -23,19 +23,20 @@ export default createHandler({
     }
 
     const search = req.query.q as string | undefined;
-    let where = eq(customers.tenantId, auth.tenantId);
+    const conditions = [eq(customers.tenantId, auth.tenantId)];
+    if (auth.outletId) conditions.push(eq(customers.outletId, auth.outletId));
     if (search) {
       const escaped = search.replace(/[%_\\]/g, "\\$&");
-      where = and(where, or(ilike(customers.name, `%${escaped}%`), ilike(customers.phone, `%${escaped}%`)))!;
+      conditions.push(or(ilike(customers.name, `%${escaped}%`), ilike(customers.phone, `%${escaped}%`))!);
     }
-    const rows = await db.query.customers.findMany({ where, orderBy: desc(customers.createdAt), limit: 50 });
+    const rows = await db.query.customers.findMany({ where: and(...conditions), orderBy: desc(customers.createdAt), limit: 50 });
     res.json(rows);
   },
 
   async POST(req, res, auth) {
     const { name, phone, email, note } = req.body;
     const [row] = await db.insert(customers).values({
-      tenantId: auth.tenantId, name, phone: phone || null, email: email || null, note: note || null,
+      tenantId: auth.tenantId, outletId: auth.outletId ?? undefined, name, phone: phone || null, email: email || null, note: note || null,
     }).returning();
     res.status(201).json(row);
   },

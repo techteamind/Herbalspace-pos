@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader, Icon } from "@/components/shared";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOutlets } from "@/hooks/use-outlets";
+import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/types/auth";
 
 interface MenuItem { to: string; icon: string; label: string; minRole?: UserRole }
@@ -46,13 +50,37 @@ const SECTIONS: MenuSection[] = [
 const ROLE_LEVEL: Record<UserRole, number> = { cashier: 0, manager: 1, owner: 2 };
 
 export function MorePage(): JSX.Element {
-  const { role } = useAuth();
+  const { role, outletId, setOutletId, profileName, user } = useAuth();
+  const { data: outlets } = useOutlets();
+  const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const userLevel = ROLE_LEVEL[role ?? "cashier"];
+  const canSwitch = role === "owner";
+  const qc = useQueryClient();
+  const [showOutletSwitch, setShowOutletSwitch] = useState(false);
 
   return (
     <>
       <PageHeader title="Lainnya" />
       <div className="px-container-padding space-y-6 pb-28">
+        {/* User info card */}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-card p-4 flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+            <Icon name="person" className="text-on-primary-container text-[22px]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-semibold text-on-surface truncate">{profileName ?? "User"}</p>
+            <p className="text-[12px] text-on-surface-variant truncate">{user?.email ?? ""}</p>
+          </div>
+          {canSwitch && (
+            <button onClick={() => setShowOutletSwitch(true)}
+              className="flex items-center gap-1 px-3 h-8 rounded-full bg-primary-container text-primary text-[12px] font-semibold active:scale-95 transition-transform shrink-0">
+              <Icon name="store" className="text-[14px]" />
+              <span className="max-w-[80px] truncate">{activeOutlet?.name ?? "Semua"}</span>
+              <Icon name="swap_horiz" className="text-[14px]" />
+            </button>
+          )}
+        </div>
+
         {SECTIONS.map((section) => {
           const items = section.items.filter((m) => !m.minRole || userLevel >= ROLE_LEVEL[m.minRole]);
           if (items.length === 0) return null;
@@ -76,7 +104,50 @@ export function MorePage(): JSX.Element {
             </div>
           );
         })}
+
+        {/* Logout button */}
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        >
+          <Icon name="logout" />Keluar
+        </button>
       </div>
+
+      {/* Outlet switcher bottom sheet */}
+      {showOutletSwitch && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30" onClick={() => setShowOutletSwitch(false)}>
+          <div className="w-full max-w-3xl bg-surface-container-lowest rounded-t-3xl p-5 pb-safe space-y-3 max-h-[70vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-1 rounded-full bg-outline-variant/50" />
+              <div className="flex justify-between items-center w-full">
+                <h2 className="text-[17px] font-semibold text-on-surface">Ganti Outlet</h2>
+                <button onClick={() => setShowOutletSwitch(false)} className="text-on-surface-variant p-1"><Icon name="close" /></button>
+              </div>
+            </div>
+            <button onClick={() => { setOutletId("__all__"); setShowOutletSwitch(false); qc.invalidateQueries(); }}
+              className={`w-full p-4 rounded-2xl flex items-center gap-3 text-left active:scale-[0.98] transition-transform ${!outletId ? "bg-primary-container" : "bg-surface-container-low"}`}>
+              <Icon name="store" className={!outletId ? "text-on-primary-container" : "text-on-surface-variant"} />
+              <div className="flex-1">
+                <h3 className={`text-[14px] font-semibold ${!outletId ? "text-on-primary-container" : "text-on-surface"}`}>Semua Outlet</h3>
+              </div>
+              {!outletId && <Icon name="check_circle" filled className="text-primary" />}
+            </button>
+            {(outlets ?? []).filter((o) => o.isActive).map((o) => (
+              <button key={o.id} onClick={() => { setOutletId(o.id); setShowOutletSwitch(false); qc.invalidateQueries(); }}
+                className={`w-full p-4 rounded-2xl flex items-center gap-3 text-left active:scale-[0.98] transition-transform ${o.id === outletId ? "bg-primary-container" : "bg-surface-container-low"}`}>
+                <Icon name="store" className={o.id === outletId ? "text-on-primary-container" : "text-on-surface-variant"} />
+                <div className="flex-1">
+                  <h3 className={`text-[14px] font-semibold ${o.id === outletId ? "text-on-primary-container" : "text-on-surface"}`}>{o.name}</h3>
+                  {o.address && <p className="text-[11px] text-on-surface-variant mt-0.5">{o.address}</p>}
+                </div>
+                {o.id === outletId && <Icon name="check_circle" filled className="text-primary" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }

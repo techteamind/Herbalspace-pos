@@ -5,8 +5,10 @@ import { createHandler } from "../_lib/handler.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
+    const conditions = [eq(ingredients.tenantId, auth.tenantId), eq(ingredients.isActive, true)];
+    if (auth.outletId) conditions.push(eq(ingredients.outletId, auth.outletId));
     const rows = await db.query.ingredients.findMany({
-      where: and(eq(ingredients.tenantId, auth.tenantId), eq(ingredients.isActive, true)),
+      where: and(...conditions),
       orderBy: desc(ingredients.createdAt),
       with: { unit: true },
     });
@@ -17,6 +19,7 @@ export default createHandler({
     const { name, unitId, currentStock, minStock, lastCost } = req.body;
     const [row] = await db.insert(ingredients).values({
       tenantId: auth.tenantId,
+      outletId: auth.outletId ?? undefined,
       name,
       unitId,
       currentStock: String(currentStock ?? 0),

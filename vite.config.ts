@@ -133,5 +133,16 @@ export default defineConfig({
       "@db": path.resolve(__dirname, "./db"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          query: ["@tanstack/react-query"],
+          supabase: ["@supabase/supabase-js"],
+        },
+      },
+    },
+  },
   server: { port: Number(process.env.PORT) || 5173 },
 });

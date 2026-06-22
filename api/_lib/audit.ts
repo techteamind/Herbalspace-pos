@@ -11,6 +11,7 @@ export async function logAudit(
 ): Promise<void> {
   await db.insert(auditLogs).values({
     tenantId: auth.tenantId,
+    outletId: auth.outletId ?? undefined,
     userId: auth.userId,
     userName: auth.profileName,
     action,

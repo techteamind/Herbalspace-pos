@@ -5,8 +5,10 @@ import { createHandler } from "../_lib/handler.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
+    const conditions = [eq(categories.tenantId, auth.tenantId)];
+    if (auth.outletId) conditions.push(eq(categories.outletId, auth.outletId));
     const rows = await db.select().from(categories)
-      .where(eq(categories.tenantId, auth.tenantId))
+      .where(and(...conditions))
       .orderBy(asc(categories.sortOrder), asc(categories.name));
     res.json(rows);
   },
@@ -15,6 +17,7 @@ export default createHandler({
     const { name, sortOrder } = req.body;
     const [row] = await db.insert(categories).values({
       tenantId: auth.tenantId,
+      outletId: auth.outletId ?? undefined,
       name,
       sortOrder: sortOrder ?? 0,
     }).returning();

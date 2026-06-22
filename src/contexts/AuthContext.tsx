@@ -111,10 +111,21 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   );
 }
 
+const defaultAuthValue: AuthContextValue = {
+  user: null,
+  loading: true,
+  error: null,
+  login: async () => {},
+  logout: async () => {},
+  isAuthenticated: false,
+  role: null,
+  profileName: null,
+  outletId: null,
+  setOutletId: () => {},
+  needsOutletSelection: false,
+};
+
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContextProvider);
-  if (context === undefined) {
-    throw new Error("useAuth harus dipakai di dalam AuthProvider");
-  }
-  return context;
+  return context ?? defaultAuthValue;
 }

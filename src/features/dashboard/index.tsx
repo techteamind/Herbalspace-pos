@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader, StatCard, Icon, PullRefreshIndicator } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
 import { useDashboardStats, useTopProducts, useLowStock, useWeeklyRevenue } from "@/hooks/use-dashboard";
 import { useOutlets } from "@/hooks/use-outlets";
 import { usePullRefresh } from "@/hooks/use-pull-refresh";
+import { apiFetch } from "@/lib/api-client";
 import type { LowStockItem } from "@/types";
 
 function pctChange(today: number, yesterday: number): string {
@@ -18,6 +20,12 @@ export function DashboardPage(): JSX.Element {
   const { data: outlets } = useOutlets();
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const canSwitch = role === "owner";
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    qc.prefetchQuery({ queryKey: ["products"], queryFn: () => apiFetch("products"), staleTime: 60_000 });
+    qc.prefetchQuery({ queryKey: ["categories"], queryFn: () => apiFetch("categories"), staleTime: 60_000 });
+  }, [qc]);
   const [showOutletSwitch, setShowOutletSwitch] = useState(false);
   const { data: stats, isLoading, refetch: refetchStats } = useDashboardStats();
   const { data: top, refetch: refetchTop } = useTopProducts();
@@ -145,7 +153,7 @@ export function DashboardPage(): JSX.Element {
                 <button onClick={() => setShowOutletSwitch(false)} className="text-on-surface-variant p-1"><Icon name="close" /></button>
               </div>
             </div>
-            <button onClick={() => { setOutletId("__all__"); setShowOutletSwitch(false); window.location.reload(); }}
+            <button onClick={() => { setOutletId("__all__"); setShowOutletSwitch(false); qc.invalidateQueries(); }}
               className={`w-full p-4 rounded-2xl flex items-center gap-3 text-left active:scale-[0.98] transition-transform ${!outletId ? "bg-primary-container" : "bg-surface-container-low"}`}>
               <Icon name="store" className={!outletId ? "text-on-primary-container" : "text-on-surface-variant"} />
               <div className="flex-1">
@@ -154,7 +162,7 @@ export function DashboardPage(): JSX.Element {
               {!outletId && <Icon name="check_circle" filled className="text-primary" />}
             </button>
             {(outlets ?? []).filter((o) => o.isActive).map((o) => (
-              <button key={o.id} onClick={() => { setOutletId(o.id); setShowOutletSwitch(false); window.location.reload(); }}
+              <button key={o.id} onClick={() => { setOutletId(o.id); setShowOutletSwitch(false); qc.invalidateQueries(); }}
                 className={`w-full p-4 rounded-2xl flex items-center gap-3 text-left active:scale-[0.98] transition-transform ${o.id === outletId ? "bg-primary-container" : "bg-surface-container-low"}`}>
                 <Icon name="store" className={o.id === outletId ? "text-on-primary-container" : "text-on-surface-variant"} />
                 <div className="flex-1">

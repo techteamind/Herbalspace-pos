@@ -55,25 +55,38 @@ export default createHandler({
     }
 
     if (section === "weekly-revenue") {
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - 6);
+      const weekEnd = new Date(todayStart);
+      weekEnd.setDate(weekEnd.getDate() + 1);
+
+      const rows = await db.execute(sql`
+        SELECT
+          (t.created_at AT TIME ZONE 'Asia/Jakarta')::date AS day,
+          COALESCE(SUM(total::numeric), 0) AS revenue,
+          COUNT(*)::int AS trx_count
+        FROM transactions t
+        WHERE t.tenant_id = ${auth.tenantId}::uuid AND t.status = 'paid'
+          AND t.created_at >= ${weekStart.toISOString()}::timestamptz
+          AND t.created_at < ${weekEnd.toISOString()}::timestamptz
+          ${outletFilter}
+        GROUP BY day
+        ORDER BY day
+      `);
+
+      const byDay = new Map((rows as unknown as { day: string; revenue: string; trx_count: number }[])
+        .map(r => [r.day, { revenue: Number(r.revenue), trxCount: r.trx_count }]));
+
       const days: { date: string; revenue: number; trxCount: number }[] = [];
       for (let i = 6; i >= 0; i--) {
-        const start = new Date(todayStart);
-        start.setDate(start.getDate() - i);
-        const end = new Date(start);
-        end.setDate(end.getDate() + 1);
-        const [row] = await db.execute(sql`
-          SELECT COALESCE(SUM(total::numeric), 0) AS revenue, COUNT(*)::int AS trx_count
-          FROM transactions t
-          WHERE t.tenant_id = ${auth.tenantId}::uuid AND t.status = 'paid'
-            AND t.created_at >= ${start.toISOString()}::timestamptz
-            AND t.created_at < ${end.toISOString()}::timestamptz
-            ${outletFilter}
-        `);
-        const r = row as Record<string, unknown>;
+        const d = new Date(todayStart);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const hit = byDay.get(key);
         days.push({
-          date: start.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" }),
-          revenue: Number(r.revenue ?? 0),
-          trxCount: Number(r.trx_count ?? 0),
+          date: d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" }),
+          revenue: hit?.revenue ?? 0,
+          trxCount: hit?.trxCount ?? 0,
         });
       }
       res.json(days);
@@ -130,6 +143,7 @@ export default createHandler({
             eq(ingredients.tenantId, auth.tenantId),
             eq(ingredients.isActive, true),
             sql`${ingredients.currentStock}::numeric <= ${ingredients.minStock}::numeric`,
+            ...(auth.outletId ? [eq(ingredients.outletId, auth.outletId)] : []),
           ),
         );
       res.json(rows);

@@ -6,8 +6,10 @@ import { logAudit } from "../_lib/audit.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
+    const conditions = [eq(promos.tenantId, auth.tenantId)];
+    if (auth.outletId) conditions.push(eq(promos.outletId, auth.outletId));
     const rows = await db.select().from(promos)
-      .where(eq(promos.tenantId, auth.tenantId))
+      .where(and(...conditions))
       .orderBy(desc(promos.createdAt));
     res.json(rows);
   },
@@ -16,6 +18,7 @@ export default createHandler({
     const { name, type, value, minPurchase, buyQty, getQty, productId, startAt, endAt, startHour, endHour, daysOfWeek } = req.body;
     const [row] = await db.insert(promos).values({
       tenantId: auth.tenantId,
+      outletId: auth.outletId ?? undefined,
       name, type, value: String(value),
       minPurchase: String(minPurchase ?? 0),
       buyQty: buyQty ?? null, getQty: getQty ?? null,
