@@ -27,7 +27,9 @@ function localApi(): PluginOption {
         const name = reqUrl.pathname.replace(/^\/api\//, "").split("/")[0];
         if (!name) return next();
 
-        const modPath = path.resolve(__dirname, `api/${name}.ts`);
+        const handlerPath = path.resolve(__dirname, `api/_handlers/${name}.ts`);
+        const legacyPath = path.resolve(__dirname, `api/${name}.ts`);
+        const modPath = fs.existsSync(handlerPath) ? handlerPath : legacyPath;
         if (!fs.existsSync(modPath)) return next();
 
         // Query params
@@ -76,7 +78,8 @@ function localApi(): PluginOption {
         };
 
         try {
-          const mod = await server.ssrLoadModule(`/api/${name}.ts`);
+          const ssrPath = fs.existsSync(handlerPath) ? `/api/_handlers/${name}.ts` : `/api/${name}.ts`;
+          const mod = await server.ssrLoadModule(ssrPath);
           const handler = mod.default as
             | ((q: unknown, s: unknown) => unknown | Promise<unknown>)
             | undefined;
