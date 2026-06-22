@@ -1,8 +1,8 @@
 import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
-import { db } from "../db";
-import { transactions, stockMovements, ingredients, recipeItems } from "../db/schema";
-import { createHandler } from "./_lib/handler";
-import { logAudit } from "./_lib/audit";
+import { db } from "../../db";
+import { transactions, stockMovements, ingredients, recipeItems } from "../../db/schema";
+import { createHandler } from "../_lib/handler";
+import { logAudit } from "../_lib/audit";
 
 export default createHandler({
   async GET(req, res, auth) {

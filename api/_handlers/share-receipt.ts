@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
-import { db } from "../db";
-import { sharedReceipts, transactions, settings } from "../db/schema";
-import { createHandler } from "./_lib/handler";
+import { db } from "../../db";
+import { sharedReceipts, transactions, settings } from "../../db/schema";
+import { createHandler } from "../_lib/handler";
 import { randomBytes } from "crypto";
 
 export default createHandler({

@@ -1,8 +1,8 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { createClient } from "@supabase/supabase-js";
-import { db } from "../db";
-import { profiles } from "../db/schema";
-import { createHandler } from "./_lib/handler";
+import { db } from "../../db";
+import { profiles } from "../../db/schema";
+import { createHandler } from "../_lib/handler";
 
 function getAdminClient() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
