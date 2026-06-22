@@ -54,7 +54,31 @@ const routes: Record<string, Handler> = {
   variants,
 };
 
+const ALLOWED_ORIGINS = [
+  "https://herbalspace-pos.vercel.app",
+  "https://localhost",
+  "capacitor://localhost",
+  "http://localhost",
+];
+
+function setCors(req: VercelRequest, res: VercelResponse): void {
+  const origin = req.headers.origin ?? "";
+  if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith(".vercel.app")) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Outlet-Id");
+  res.setHeader("Access-Control-Max-Age", "86400");
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  setCors(req, res);
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+
   const raw = req.query["...slug"] ?? req.query.slug;
   const parts = Array.isArray(raw) ? raw : raw ? [raw] : [];
   const name = parts[0];
