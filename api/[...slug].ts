@@ -65,5 +65,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  await route(req, res);
+  try {
+    await route(req, res);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error(`[catch-all] ${name} error:`, message, stack);
+    if (!res.headersSent) {
+      res.status(500).json({ error: message });
+    }
+  }
 }
