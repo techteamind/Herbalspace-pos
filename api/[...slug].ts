@@ -1,30 +1,55 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const handlers: Record<string, () => Promise<{ default: (req: VercelRequest, res: VercelResponse) => void | Promise<void> }>> = {
-  "audit-logs": () => import("./_handlers/audit-logs"),
-  categories: () => import("./_handlers/categories"),
-  customers: () => import("./_handlers/customers"),
-  dashboard: () => import("./_handlers/dashboard"),
-  employees: () => import("./_handlers/employees"),
-  expenses: () => import("./_handlers/expenses"),
-  health: () => import("./_handlers/health"),
-  ingredients: () => import("./_handlers/ingredients"),
-  me: () => import("./_handlers/me"),
-  modifiers: () => import("./_handlers/modifiers"),
-  outlets: () => import("./_handlers/outlets"),
-  "price-history": () => import("./_handlers/price-history"),
-  "product-modifiers": () => import("./_handlers/product-modifiers"),
-  products: () => import("./_handlers/products"),
-  promos: () => import("./_handlers/promos"),
-  recipes: () => import("./_handlers/recipes"),
-  sales: () => import("./_handlers/sales"),
-  settings: () => import("./_handlers/settings"),
-  "share-receipt": () => import("./_handlers/share-receipt"),
-  shifts: () => import("./_handlers/shifts"),
-  "stock-movements": () => import("./_handlers/stock-movements"),
-  transactions: () => import("./_handlers/transactions"),
-  units: () => import("./_handlers/units"),
-  variants: () => import("./_handlers/variants"),
+import auditLogs from "./_handlers/audit-logs";
+import categories from "./_handlers/categories";
+import customers from "./_handlers/customers";
+import dashboard from "./_handlers/dashboard";
+import employees from "./_handlers/employees";
+import expenses from "./_handlers/expenses";
+import health from "./_handlers/health";
+import ingredients from "./_handlers/ingredients";
+import me from "./_handlers/me";
+import modifiers from "./_handlers/modifiers";
+import outlets from "./_handlers/outlets";
+import priceHistory from "./_handlers/price-history";
+import productModifiers from "./_handlers/product-modifiers";
+import products from "./_handlers/products";
+import promos from "./_handlers/promos";
+import recipes from "./_handlers/recipes";
+import sales from "./_handlers/sales";
+import settings from "./_handlers/settings";
+import shareReceipt from "./_handlers/share-receipt";
+import shifts from "./_handlers/shifts";
+import stockMovements from "./_handlers/stock-movements";
+import transactions from "./_handlers/transactions";
+import units from "./_handlers/units";
+import variants from "./_handlers/variants";
+
+const handlers: Record<string, (req: VercelRequest, res: VercelResponse) => void | Promise<void>> = {
+  "audit-logs": auditLogs,
+  categories,
+  customers,
+  dashboard,
+  employees,
+  expenses,
+  health,
+  ingredients,
+  me,
+  modifiers,
+  outlets,
+  "price-history": priceHistory,
+  "product-modifiers": productModifiers,
+  products,
+  promos,
+  recipes,
+  sales,
+  settings,
+  "share-receipt": shareReceipt,
+  shifts,
+  "stock-movements": stockMovements,
+  transactions,
+  units,
+  variants,
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -36,6 +61,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const mod = await handlers[name]();
-  await mod.default(req, res);
+  await handlers[name](req, res);
 }
