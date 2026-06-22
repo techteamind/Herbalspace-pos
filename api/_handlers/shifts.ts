@@ -1,8 +1,8 @@
 import { eq, and, desc, gte, sql, isNull } from "drizzle-orm";
-import { db } from "../../db";
-import { shifts, transactions, payments } from "../../db/schema";
-import { createHandler } from "../_lib/handler";
-import { logAudit } from "../_lib/audit";
+import { db } from "../../db/index.js";
+import { shifts, transactions, payments } from "../../db/schema.js";
+import { createHandler } from "../_lib/handler.js";
+import { logAudit } from "../_lib/audit.js";
 
 export default createHandler({
   async GET(req, res, auth) {

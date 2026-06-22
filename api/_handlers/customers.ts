@@ -1,7 +1,7 @@
 import { eq, and, desc, ilike, or } from "drizzle-orm";
-import { db } from "../../db";
-import { customers, transactions } from "../../db/schema";
-import { createHandler } from "../_lib/handler";
+import { db } from "../../db/index.js";
+import { customers, transactions } from "../../db/schema.js";
+import { createHandler } from "../_lib/handler.js";
 
 export default createHandler({
   async GET(req, res, auth) {

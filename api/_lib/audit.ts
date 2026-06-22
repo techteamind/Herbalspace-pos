@@ -1,5 +1,5 @@
-import { db } from "../../db";
-import { auditLogs } from "../../db/schema";
+import { db } from "../../db/index.js";
+import { auditLogs } from "../../db/schema.js";
 import type { AuthContext } from "./auth";
 
 export async function logAudit(

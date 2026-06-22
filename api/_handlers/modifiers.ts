@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
-import { db } from "../../db";
-import { modifierGroups, modifierOptions } from "../../db/schema";
-import { createHandler } from "../_lib/handler";
+import { db } from "../../db/index.js";
+import { modifierGroups, modifierOptions } from "../../db/schema.js";
+import { createHandler } from "../_lib/handler.js";
 
 export default createHandler({
   async GET(_req, res, auth) {

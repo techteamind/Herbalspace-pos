@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
-import { db } from "../../db";
-import { recipeItems, products } from "../../db/schema";
-import { createHandler } from "../_lib/handler";
+import { db } from "../../db/index.js";
+import { recipeItems, products } from "../../db/schema.js";
+import { createHandler } from "../_lib/handler.js";
 
 export default createHandler({
   // GET /api/recipes?productId= -> daftar bahan resep + info bahan

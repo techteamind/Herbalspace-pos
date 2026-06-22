@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { sql } from "drizzle-orm";
-import { db } from "../../db";
-import { authenticate, unauthorized } from "../_lib/auth";
-import { logAudit } from "../_lib/audit";
+import { db } from "../../db/index.js";
+import { authenticate, unauthorized } from "../_lib/auth.js";
+import { logAudit } from "../_lib/audit.js";
 
 interface SaleItem {
   product_id: string;

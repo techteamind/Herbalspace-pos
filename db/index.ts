@@ -1,6 +1,6 @@
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "./schema";
+import * as schema from "./schema.js";
 
 // Inisialisasi koneksi secara lazy agar import modul ini tidak melempar
 // error saat cold-start (mis. di Vercel) sebelum env benar-benar dipakai.

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import { db } from "../../db";
-import { profiles } from "../../db/schema";
-import { createHandler } from "../_lib/handler";
+import { db } from "../../db/index.js";
+import { profiles } from "../../db/schema.js";
+import { createHandler } from "../_lib/handler.js";
 
 export default createHandler({
   async GET(_req, res, auth) {

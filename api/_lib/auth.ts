@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { jwtVerify, createRemoteJWKSet, type JWTPayload } from "jose";
 import { eq } from "drizzle-orm";
-import { db } from "../../db";
-import { profiles, tenants, settings } from "../../db/schema";
+import { db } from "../../db/index.js";
+import { profiles, tenants, settings } from "../../db/schema.js";
 
 export interface AuthContext {
   userId: string;

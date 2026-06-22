@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { authenticate, unauthorized, type AuthContext } from "./auth";
+import { authenticate, unauthorized, type AuthContext } from "./auth.js";
 
 type MethodHandlers = {
   [method: string]: (req: VercelRequest, res: VercelResponse, auth: AuthContext) => Promise<void>;
