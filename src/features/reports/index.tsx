@@ -149,10 +149,10 @@ export function ReportsPage(): JSX.Element {
             </Section>
 
             {/* Net profit */}
-            <div className="bg-primary-container text-on-primary rounded-xl p-4 shadow-card">
-              <p className="font-label-caps text-label-caps text-primary-fixed uppercase">Laba Bersih</p>
+            <div className={`rounded-xl p-4 shadow-card ${labaBersih >= 0 ? "bg-primary-container text-on-primary-container" : "bg-error-container text-on-error-container"}`}>
+              <p className={`font-label-caps text-label-caps uppercase ${labaBersih >= 0 ? "text-primary" : "text-error"}`}>Laba Bersih</p>
               <p className="font-display-price-mobile text-display-price-mobile mt-1">{formatRupiah(labaBersih)}</p>
-              <p className="font-body-md text-body-md text-primary-fixed mt-1 opacity-80">
+              <p className="font-body-md text-body-md mt-1 opacity-80">
                 Margin: {omzet > 0 ? `${Math.round(labaBersih / omzet * 100)}%` : "—"}
               </p>
             </div>

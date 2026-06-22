@@ -44,18 +44,18 @@ export function SharedReceiptPage(): JSX.Element {
   }, [token]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-pulse text-gray-400">Memuat struk...</div>
+    <div className="min-h-screen flex items-center justify-center bg-surface-container-low">
+      <div className="animate-pulse text-on-surface-variant">Memuat struk...</div>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-6 text-center">
-      <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
-        <span className="material-symbols-outlined text-red-500 text-[32px]">error</span>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-surface-container-low px-6 text-center">
+      <div className="w-16 h-16 rounded-full bg-error-container flex items-center justify-center mb-4">
+        <span className="material-symbols-outlined text-error text-[32px]">error</span>
       </div>
-      <h1 className="text-xl font-bold text-gray-900 mb-2">Tidak Tersedia</h1>
-      <p className="text-gray-500">{error}</p>
+      <h1 className="text-xl font-bold text-on-surface mb-2">Tidak Tersedia</h1>
+      <p className="text-on-surface-variant">{error}</p>
     </div>
   );
 
@@ -68,50 +68,50 @@ export function SharedReceiptPage(): JSX.Element {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center py-6 px-4">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="min-h-screen bg-surface-container-low flex justify-center py-6 px-4">
+      <div className="w-full max-w-sm bg-surface-container-lowest rounded-xl shadow-lg overflow-hidden">
         {/* Header */}
-        <div className="bg-green-800 text-white px-5 py-4 text-center">
+        <div className="bg-primary text-on-primary px-5 py-4 text-center">
           <h1 className="text-lg font-bold">{data.storeName}</h1>
-          {data.storeAddress && <p className="text-green-200 text-sm mt-0.5">{data.storeAddress}</p>}
-          {data.storePhone && <p className="text-green-200 text-sm">{data.storePhone}</p>}
-          {data.receiptHeader && <p className="text-green-100 text-xs mt-1">{data.receiptHeader}</p>}
+          {data.storeAddress && <p className="text-on-primary/70 text-sm mt-0.5">{data.storeAddress}</p>}
+          {data.storePhone && <p className="text-on-primary/70 text-sm">{data.storePhone}</p>}
+          {data.receiptHeader && <p className="text-on-primary/60 text-xs mt-1">{data.receiptHeader}</p>}
         </div>
 
         <div className="px-5 py-4 space-y-4">
           {/* Meta */}
-          <div className="flex justify-between text-sm text-gray-500">
+          <div className="flex justify-between text-sm text-on-surface-variant">
             <span>{tx.number}</span>
             <span>{date}</span>
           </div>
-          {tx.customer && <p className="text-sm text-gray-600">Pelanggan: {tx.customer.name}</p>}
+          {tx.customer && <p className="text-sm text-on-surface-variant">Pelanggan: {tx.customer.name}</p>}
 
           {/* Items */}
           <div className="space-y-2">
             {tx.items.map((it, i) => (
               <div key={i} className="flex justify-between text-sm">
                 <div>
-                  <span className="text-gray-900">{it.productName}</span>
-                  <span className="text-gray-400 ml-1">{it.quantity}x {formatRupiah(it.unitPrice)}</span>
+                  <span className="text-on-surface">{it.productName}</span>
+                  <span className="text-on-surface-variant/60 ml-1">{it.quantity}x {formatRupiah(it.unitPrice)}</span>
                 </div>
-                <span className="text-gray-900 font-medium">{formatRupiah(it.lineTotal)}</span>
+                <span className="text-on-surface font-medium">{formatRupiah(it.lineTotal)}</span>
               </div>
             ))}
           </div>
 
           {/* Totals */}
-          <div className="border-t pt-3 space-y-1 text-sm">
+          <div className="border-t border-outline-variant/30 pt-3 space-y-1 text-sm">
             <Row label="Subtotal" value={formatRupiah(tx.subtotal)} />
-            {discount > 0 && <Row label="Diskon" value={`-${formatRupiah(discount)}`} className="text-red-500" />}
+            {discount > 0 && <Row label="Diskon" value={`-${formatRupiah(discount)}`} className="text-error" />}
             {Number(tx.taxAmount) > 0 && <Row label="Pajak" value={formatRupiah(tx.taxAmount)} />}
-            <div className="flex justify-between items-center pt-2 border-t text-base font-bold text-gray-900">
+            <div className="flex justify-between items-center pt-2 border-t border-outline-variant/30 text-base font-bold text-on-surface">
               <span>Total</span>
-              <span className="text-green-700">{formatRupiah(tx.total)}</span>
+              <span className="text-primary">{formatRupiah(tx.total)}</span>
             </div>
           </div>
 
           {/* Payment */}
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-on-surface-variant">
             {tx.payments.map((p, i) => (
               <div key={i} className="flex justify-between">
                 <span>{METHOD_LABEL[p.method] ?? p.method}</span>
@@ -126,11 +126,11 @@ export function SharedReceiptPage(): JSX.Element {
             )}
           </div>
 
-          {tx.cashier && <p className="text-xs text-gray-400 text-center">Kasir: {tx.cashier.fullName}</p>}
+          {tx.cashier && <p className="text-xs text-on-surface-variant/60 text-center">Kasir: {tx.cashier.fullName}</p>}
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-5 py-3 text-center text-xs text-gray-400 border-t">
+        <div className="bg-surface-container-low px-5 py-3 text-center text-xs text-on-surface-variant/60 border-t border-outline-variant/30">
           {data.receiptFooter ? <p>{data.receiptFooter}</p> : <p>Terima kasih atas kunjungan Anda!</p>}
         </div>
       </div>
@@ -141,8 +141,8 @@ export function SharedReceiptPage(): JSX.Element {
 function Row({ label, value, className }: { label: string; value: string; className?: string }): JSX.Element {
   return (
     <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
-      <span className={className ?? "text-gray-900"}>{value}</span>
+      <span className="text-on-surface-variant">{label}</span>
+      <span className={className ?? "text-on-surface"}>{value}</span>
     </div>
   );
 }
