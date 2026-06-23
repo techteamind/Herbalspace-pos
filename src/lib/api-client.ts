@@ -1,9 +1,6 @@
 import { supabase } from "./supabase";
+import { enqueueRequest } from "./offline-db";
 
-/**
- * Wrapper fetch untuk memanggil serverless API (/api/*).
- * Otomatis melampirkan Supabase access token sebagai Bearer.
- */
 export function getActiveOutletId(): string | null {
   return localStorage.getItem("activeOutletId");
 }
@@ -15,19 +12,33 @@ export function setActiveOutletId(id: string | null): void {
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
+const OFFLINE_QUEUABLE = ["POST", "PUT", "DELETE"];
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   const outletId = getActiveOutletId();
+  const method = (init.method ?? "GET").toUpperCase();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(outletId && outletId !== "__all__" ? { "X-Outlet-Id": outletId } : {}),
+  };
+
+  if (!navigator.onLine && OFFLINE_QUEUABLE.includes(method)) {
+    await enqueueRequest({
+      path,
+      method,
+      body: typeof init.body === "string" ? init.body : null,
+      headers: {},
+    });
+    return { _queued: true } as T;
+  }
 
   const res = await fetch(`${API_BASE}/api/${path.replace(/^\//, "")}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(outletId && outletId !== "__all__" ? { "X-Outlet-Id": outletId } : {}),
-      ...init.headers,
-    },
+    headers: { ...headers, ...init.headers },
   });
 
   if (!res.ok) {

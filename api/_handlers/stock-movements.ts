@@ -2,9 +2,11 @@ import { eq, and, desc, gte, lt } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { stockMovements, ingredients, units } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   async POST(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { ingredientId, type, qtyChange, note } = req.body as {
       ingredientId: string;
       type: "adjustment" | "waste" | "purchase" | "return";
@@ -13,6 +15,10 @@ export default createHandler({
     };
     if (!ingredientId || !type || qtyChange === undefined) {
       res.status(400).json({ error: "ingredientId, type, dan qtyChange wajib" });
+      return;
+    }
+    if (typeof qtyChange !== "number" || isNaN(qtyChange)) {
+      res.status(400).json({ error: "qtyChange harus berupa angka" });
       return;
     }
 
@@ -25,7 +31,7 @@ export default createHandler({
 
     await db.update(ingredients)
       .set({ currentStock: String(newBalance), updatedAt: new Date() })
-      .where(eq(ingredients.id, ingredientId));
+      .where(and(eq(ingredients.id, ingredientId), eq(ingredients.tenantId, auth.tenantId)));
 
     const [row] = await db.insert(stockMovements).values({
       tenantId: auth.tenantId,

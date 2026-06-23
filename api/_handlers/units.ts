@@ -2,6 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { units } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
@@ -14,7 +15,9 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { code, name } = req.body;
+    if (!code || !name) { res.status(400).json({ error: "code dan name wajib" }); return; }
     const [row] = await db.insert(units).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId ?? undefined,

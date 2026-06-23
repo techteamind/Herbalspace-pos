@@ -65,7 +65,11 @@ const ALLOWED_ORIGINS = [
 
 function setCors(req: VercelRequest, res: VercelResponse): void {
   const origin = req.headers.origin ?? "";
-  if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith(".vercel.app")) {
+  const isAllowed =
+    ALLOWED_ORIGINS.includes(origin) ||
+    origin.startsWith("http://localhost:") ||
+    origin.startsWith("https://herbaspace-pos-") && origin.endsWith(".vercel.app");
+  if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -98,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const stack = err instanceof Error ? err.stack : undefined;
     console.error(`[catch-all] ${name} error:`, message, stack);
     if (!res.headersSent) {
-      res.status(500).json({ error: message });
+      res.status(500).json({ error: process.env.NODE_ENV === "production" ? "Internal server error" : message });
     }
   }
 }

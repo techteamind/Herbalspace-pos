@@ -123,3 +123,13 @@ export async function authenticate(req: VercelRequest): Promise<AuthContext | nu
 export function unauthorized(res: VercelResponse): void {
   res.status(401).json({ error: "Tidak terautentikasi" });
 }
+
+const ROLE_LEVEL: Record<string, number> = { cashier: 0, manager: 1, owner: 2 };
+
+export function requireRole(auth: AuthContext, minRole: "manager" | "owner", res: VercelResponse): boolean {
+  if ((ROLE_LEVEL[auth.role] ?? 0) < (ROLE_LEVEL[minRole] ?? 0)) {
+    res.status(403).json({ error: "Akses ditolak — membutuhkan role " + minRole });
+    return false;
+  }
+  return true;
+}

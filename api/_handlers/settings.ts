@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { settings } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
@@ -17,6 +18,7 @@ export default createHandler({
   },
 
   async PUT(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const data = req.body;
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (data.cafeName !== undefined) updates.cafeName = data.cafeName;

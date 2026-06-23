@@ -38,18 +38,18 @@ export default createHandler({
 
       await db.transaction(async (tx) => {
         await tx.update(transactions).set({ status: "void" })
-          .where(eq(transactions.id, id));
+          .where(and(eq(transactions.id, id), eq(transactions.tenantId, auth.tenantId)));
 
         for (const item of txn.items) {
           if (!item.productId) continue;
           const recipes = await tx.select().from(recipeItems)
-            .where(eq(recipeItems.productId, item.productId));
+            .where(and(eq(recipeItems.productId, item.productId), eq(recipeItems.tenantId, auth.tenantId)));
 
           for (const recipe of recipes) {
             const restoreQty = Number(recipe.quantity) * item.quantity;
             const [updated] = await tx.update(ingredients)
               .set({ currentStock: sql`${ingredients.currentStock} + ${restoreQty}` })
-              .where(eq(ingredients.id, recipe.ingredientId))
+              .where(and(eq(ingredients.id, recipe.ingredientId), eq(ingredients.tenantId, auth.tenantId)))
               .returning({ currentStock: ingredients.currentStock });
 
             await tx.insert(stockMovements).values({

@@ -25,7 +25,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel = "Hapus", ca
   const isLoading = loading || busy;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-6" onClick={onCancel}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-6" onClick={onCancel} role="dialog" aria-modal="true" aria-label={title}>
       <div className="w-full max-w-sm bg-surface-container-lowest rounded-xl p-5 shadow-elevation-3 space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${destructive ? "bg-error-container" : "bg-primary-container"}`}>

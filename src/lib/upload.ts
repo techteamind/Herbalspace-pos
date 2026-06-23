@@ -26,7 +26,9 @@ export function compressImage(file: File, maxSize = 800): Promise<File> {
   return new Promise((resolve) => {
     if (file.size < 200_000) { resolve(file); return; }
     const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
       const canvas = document.createElement("canvas");
       let { width, height } = img;
       if (width > maxSize || height > maxSize) {
@@ -41,6 +43,10 @@ export function compressImage(file: File, maxSize = 800): Promise<File> {
         resolve(new File([blob!], file.name, { type: "image/jpeg" }));
       }, "image/jpeg", 0.8);
     };
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
   });
 }

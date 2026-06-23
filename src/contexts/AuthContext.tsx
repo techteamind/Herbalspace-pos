@@ -49,7 +49,9 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   useEffect(() => {
     if (!session) { setRole(null); setProfileName(null); setAssignedOutletId(null); return; }
+    let cancelled = false;
     apiFetch("me").then((data: any) => {
+      if (cancelled) return;
       setRole(data.role);
       setProfileName(data.profileName);
       setAssignedOutletId(data.outletId ?? null);
@@ -57,9 +59,10 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         setOutletId(data.outletId);
       }
     }).catch(() => {});
+    return () => { cancelled = true; };
   }, [session, setOutletId]);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = useCallback(async (email: string, password: string): Promise<void> => {
     setError(null);
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
@@ -70,9 +73,9 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       setError(err);
       throw err;
     }
-  };
+  }, []);
 
-  const logout = async (): Promise<void> => {
+  const logout = useCallback(async (): Promise<void> => {
     setError(null);
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
@@ -82,7 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     }
     setSession(null);
     setOutletId(null);
-  };
+  }, [setOutletId]);
 
   const needsOutletSelection = !!session && role === "owner" && !outletId && !assignedOutletId;
   const effectiveOutletId = outletId === "__all__" ? null : outletId;
@@ -101,7 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       setOutletId,
       needsOutletSelection,
     }),
-    [session, loading, error, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection],
+    [session, loading, error, login, logout, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection],
   );
 
   return (

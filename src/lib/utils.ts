@@ -10,3 +10,7 @@ export function formatRupiah(value: number | string): string {
   const n = typeof value === "string" ? Number(value) : value;
   return "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n));
 }
+
+export function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}

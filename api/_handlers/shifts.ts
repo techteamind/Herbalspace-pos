@@ -99,7 +99,7 @@ export default createHandler({
         totalSales,
         totalTransactions: txnCount,
         note: note || null,
-      }).where(eq(shifts.id, id)).returning();
+      }).where(and(eq(shifts.id, id), eq(shifts.tenantId, auth.tenantId))).returning();
 
       await logAudit(auth, "close", "shift", id, { closingCash: String(closingCash ?? 0), totalSales, txnCount });
       res.json(updated);

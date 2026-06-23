@@ -6,6 +6,9 @@ export function FormSheet({ title, onClose, children }: { title: string; onClose
   return (
     <motion.div
       className="fixed inset-0 z-[60] flex items-end justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
       initial={{ backgroundColor: "rgba(0,0,0,0)" }}
       animate={{ backgroundColor: "rgba(0,0,0,0.3)" }}
       exit={{ backgroundColor: "rgba(0,0,0,0)" }}

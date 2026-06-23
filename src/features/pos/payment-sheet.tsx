@@ -103,51 +103,58 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
   const change = Math.max(0, receivedNum - total);
   const insufficient = method === "cash" && receivedNum < total;
 
+  const processingRef = useRef(false);
   async function process(): Promise<void> {
-    haptic();
-    let customerId = matchedCustomer?.id ?? null;
-    const finalName = custName.trim();
-    const finalPhone = custPhone.trim();
+    if (processingRef.current) return;
+    processingRef.current = true;
+    try {
+      haptic();
+      let customerId = matchedCustomer?.id ?? null;
+      const finalName = custName.trim();
+      const finalPhone = custPhone.trim();
 
-    if (!customerId && finalPhone && finalName) {
-      const newCust = await createCustomer.mutateAsync({ name: finalName, phone: finalPhone }) as Customer;
-      customerId = newCust.id;
+      if (!customerId && finalPhone && finalName) {
+        const newCust = await createCustomer.mutateAsync({ name: finalName, phone: finalPhone }) as Customer;
+        customerId = newCust.id;
+      }
+
+      const result = await createSale.mutateAsync({
+        customerId,
+        taxPercent,
+        discount,
+        items: lines.map((l) => {
+          const modTotal = (l.modifiers ?? []).reduce((m, mod) => m + mod.price, 0);
+          const modLabel = l.modifiers?.length ? ` [${l.modifiers.map((m) => m.name).join(", ")}]` : "";
+          return {
+            product_id: l.product.id,
+            product_name: (l.variantLabel ? `${l.product.name} (${l.variantLabel})` : l.product.name) + modLabel,
+            quantity: l.qty,
+            unit_price: (l.variantPrice ?? Number(l.product.price)) + modTotal,
+            note: l.note || undefined,
+          };
+        }),
+        payments: [{
+          method,
+          amount: total,
+          ...(method === "cash" ? { amount_received: receivedNum, change_amount: change } : {}),
+        }],
+      }) as { transaction_id: string; number: string; total: string };
+      onSuccess({
+        transactionId: result.transaction_id,
+        number: result.number,
+        subtotal, discount, tax, total, method,
+        ...(method === "cash" ? { received: receivedNum, change } : {}),
+        customerName: finalName || undefined,
+        customerPhone: finalPhone || undefined,
+        lines: lines.map((l) => {
+          const modTotal = (l.modifiers ?? []).reduce((m, mod) => m + mod.price, 0);
+          const modLabel = l.modifiers?.length ? ` [${l.modifiers.map((m) => m.name).join(", ")}]` : "";
+          return { name: (l.variantLabel ? `${l.product.name} (${l.variantLabel})` : l.product.name) + modLabel, qty: l.qty, price: (l.variantPrice ?? Number(l.product.price)) + modTotal, note: l.note };
+        }),
+      });
+    } finally {
+      processingRef.current = false;
     }
-
-    const result = await createSale.mutateAsync({
-      customerId,
-      taxPercent,
-      discount,
-      items: lines.map((l) => {
-        const modTotal = (l.modifiers ?? []).reduce((m, mod) => m + mod.price, 0);
-        const modLabel = l.modifiers?.length ? ` [${l.modifiers.map((m) => m.name).join(", ")}]` : "";
-        return {
-          product_id: l.product.id,
-          product_name: (l.variantLabel ? `${l.product.name} (${l.variantLabel})` : l.product.name) + modLabel,
-          quantity: l.qty,
-          unit_price: (l.variantPrice ?? Number(l.product.price)) + modTotal,
-          note: l.note || undefined,
-        };
-      }),
-      payments: [{
-        method,
-        amount: total,
-        ...(method === "cash" ? { amount_received: receivedNum, change_amount: change } : {}),
-      }],
-    }) as { transaction_id: string; number: string; total: string };
-    onSuccess({
-      transactionId: result.transaction_id,
-      number: result.number,
-      subtotal, discount, tax, total, method,
-      ...(method === "cash" ? { received: receivedNum, change } : {}),
-      customerName: finalName || undefined,
-      customerPhone: finalPhone || undefined,
-      lines: lines.map((l) => {
-        const modTotal = (l.modifiers ?? []).reduce((m, mod) => m + mod.price, 0);
-        const modLabel = l.modifiers?.length ? ` [${l.modifiers.map((m) => m.name).join(", ")}]` : "";
-        return { name: (l.variantLabel ? `${l.product.name} (${l.variantLabel})` : l.product.name) + modLabel, qty: l.qty, price: (l.variantPrice ?? Number(l.product.price)) + modTotal, note: l.note };
-      }),
-    });
   }
 
   const busy = createSale.isPending || createCustomer.isPending;

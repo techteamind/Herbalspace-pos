@@ -1,4 +1,4 @@
-import { formatRupiah } from "./utils";
+import { formatRupiah, escapeHtml } from "./utils";
 
 export interface ReceiptLine { name: string; qty: number; price: number; note?: string; }
 export interface Receipt {
@@ -66,8 +66,4 @@ export function printReceipt(r: Receipt): void {
   <script>window.onload=function(){window.print();}</script>
 </body></html>`);
   w.document.close();
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }

@@ -68,6 +68,7 @@ export const products = pgTable("products", {
 }, (t) => ({
   byTenant: index("products_tenant_idx").on(t.tenantId),
   byCategory: index("products_category_idx").on(t.categoryId),
+  byOutlet: index("products_outlet_idx").on(t.outletId),
 }));
 
 /* ------------------------- Inventory ----------------------------- */
@@ -220,6 +221,7 @@ export const expenses = pgTable("expenses", {
 }, (t) => ({
   byTenant: index("expenses_tenant_idx").on(t.tenantId),
   bySpentAt: index("expenses_spent_at_idx").on(t.spentAt),
+  byOutlet: index("expenses_outlet_idx").on(t.outletId),
 }));
 
 /* ----------------------- Shared Receipts ------------------------- */

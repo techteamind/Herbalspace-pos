@@ -62,12 +62,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         await db.execute(sql`
           UPDATE customers SET points = points + ${earnedPoints},
             total_spent = total_spent + ${Number(sale.total)}
-          WHERE id = ${customerId}::uuid
+          WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
         `);
       } else {
         await db.execute(sql`
           UPDATE customers SET total_spent = total_spent + ${Number(sale.total)}
-          WHERE id = ${customerId}::uuid
+          WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
         `);
       }
     }

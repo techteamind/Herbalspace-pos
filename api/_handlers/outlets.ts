@@ -2,6 +2,7 @@ import { eq, and, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { outlets } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
@@ -12,6 +13,7 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
+    if (!requireRole(auth, "owner", res)) return;
     const { name, address, phone, receiptHeader, receiptFooter } = req.body;
     const [row] = await db.insert(outlets).values({
       tenantId: auth.tenantId,
@@ -22,6 +24,7 @@ export default createHandler({
   },
 
   async PUT(req, res, auth) {
+    if (!requireRole(auth, "owner", res)) return;
     const { id, ...data } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
     const updates: Record<string, unknown> = {};
@@ -40,6 +43,7 @@ export default createHandler({
   },
 
   async DELETE(req, res, auth) {
+    if (!requireRole(auth, "owner", res)) return;
     const id = String(req.query.id ?? "");
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
     await db.delete(outlets).where(and(eq(outlets.id, id), eq(outlets.tenantId, auth.tenantId)));

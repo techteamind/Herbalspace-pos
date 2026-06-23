@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Icon } from "./icon";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptic";
+import { useLowStock } from "@/hooks/use-dashboard";
 
 const tabs = [
   { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
@@ -15,6 +16,8 @@ const tabs = [
 export function BottomNav(): JSX.Element {
   const { pathname } = useLocation();
   const activeIdx = tabs.findIndex((t) => pathname.startsWith(t.to));
+  const { data: lowStock } = useLowStock();
+  const lowCount = (lowStock ?? []).length;
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-3xl z-50">
@@ -36,6 +39,11 @@ export function BottomNav(): JSX.Element {
               )}
               <span className="relative z-10">
                 <Icon name={t.icon} filled={isActive} className="text-[22px]" />
+                {t.to === "/dashboard" && lowCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-error text-on-error text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {lowCount > 9 ? "9+" : lowCount}
+                  </span>
+                )}
               </span>
               <span className={cn(
                 "relative z-10 text-[10px] font-medium mt-0.5 tracking-wide",

@@ -2,6 +2,7 @@ import { eq, and, asc, or, isNull } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { products, priceHistory } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 import { logAudit } from "../_lib/audit.js";
 
 export default createHandler({
@@ -18,7 +19,10 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { name, price, costPrice, categoryId, sku, imageUrl } = req.body;
+    if (!name || typeof name !== "string") { res.status(400).json({ error: "name wajib" }); return; }
+    if (price === undefined || isNaN(Number(price))) { res.status(400).json({ error: "price wajib dan harus angka" }); return; }
     const [row] = await db.insert(products).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId,
@@ -33,6 +37,7 @@ export default createHandler({
   },
 
   async PUT(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { id, ...data } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -72,6 +77,7 @@ export default createHandler({
   },
 
   async DELETE(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const id = String(req.query.id ?? "");
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
     await db.delete(products).where(and(eq(products.id, id), eq(products.tenantId, auth.tenantId)));

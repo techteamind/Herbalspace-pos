@@ -1,8 +1,4 @@
-import { formatRupiah } from "./utils";
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+import { formatRupiah, escapeHtml as escHtml } from "./utils";
 
 export interface ReportData {
   period: string;

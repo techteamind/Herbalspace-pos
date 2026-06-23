@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader, StatCard, Icon, PullRefreshIndicator } from "@/components/shared";
@@ -40,15 +40,26 @@ export function DashboardPage(): JSX.Element {
 
   const lowCount = (low ?? []).length;
 
+  const lastNotifiedCount = useRef(-1);
   useEffect(() => {
+    if (lowCount === lastNotifiedCount.current) return;
+    lastNotifiedCount.current = lowCount;
     if (lowCount > 0 && "Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
     if (lowCount > 0 && "Notification" in window && Notification.permission === "granted") {
       const outOfStock = (low ?? []).filter((i) => Number(i.currentStock) <= 0);
+      const lowItems = (low ?? []).filter((i) => Number(i.currentStock) > 0);
       if (outOfStock.length > 0) {
-        new Notification("Stok Habis!", {
+        new Notification("⚠️ Stok Habis!", {
           body: `${outOfStock.map((i) => i.name).join(", ")} sudah habis.`,
+          icon: "/leaf.svg",
+          tag: "out-of-stock",
+        });
+      }
+      if (lowItems.length > 0) {
+        new Notification("Stok Menipis", {
+          body: `${lowItems.length} bahan baku di bawah minimum: ${lowItems.slice(0, 3).map((i) => i.name).join(", ")}${lowItems.length > 3 ? ` +${lowItems.length - 3} lainnya` : ""}`,
           icon: "/leaf.svg",
           tag: "low-stock",
         });

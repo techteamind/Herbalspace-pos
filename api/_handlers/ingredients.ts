@@ -2,6 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { ingredients } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
@@ -16,7 +17,10 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { name, unitId, currentStock, minStock, lastCost } = req.body;
+    if (!name || typeof name !== "string") { res.status(400).json({ error: "name wajib" }); return; }
+    if (!unitId) { res.status(400).json({ error: "unitId wajib" }); return; }
     const [row] = await db.insert(ingredients).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId ?? undefined,
@@ -30,6 +34,7 @@ export default createHandler({
   },
 
   async PUT(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { id, ...data } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
     const updates: Record<string, unknown> = { updatedAt: new Date() };

@@ -2,6 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { expenses, expenseCategories } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -28,6 +29,7 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { section } = req.query;
     if (section === "categories") {
       const { name } = req.body;
@@ -49,6 +51,7 @@ export default createHandler({
   },
 
   async PUT(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { id, categoryId, description, amount, spentAt } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -63,6 +66,7 @@ export default createHandler({
   },
 
   async DELETE(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const id = String(req.query.id ?? "");
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
     await db.delete(expenses).where(and(eq(expenses.id, id), eq(expenses.tenantId, auth.tenantId)));

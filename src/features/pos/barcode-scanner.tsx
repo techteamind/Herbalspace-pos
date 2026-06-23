@@ -11,6 +11,8 @@ export function BarcodeScanner({ onScan, onClose }: Props): JSX.Element {
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(true);
   const streamRef = useRef<MediaStream | null>(null);
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +46,7 @@ export function BarcodeScanner({ onScan, onClose }: Props): JSX.Element {
             if (barcodes.length > 0 && !cancelled) {
               setScanning(false);
               if (intervalId) clearInterval(intervalId);
-              onScan(barcodes[0].rawValue);
+              onScanRef.current(barcodes[0].rawValue);
             }
           } catch { /* ignore detection errors */ }
         }, 300);
@@ -60,7 +62,7 @@ export function BarcodeScanner({ onScan, onClose }: Props): JSX.Element {
       if (intervalId) clearInterval(intervalId);
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [scanning, onScan]);
+  }, [scanning]);
 
   return (
     <div className="fixed inset-0 z-[60] bg-black flex flex-col">
