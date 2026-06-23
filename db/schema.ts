@@ -94,7 +94,10 @@ export const ingredients = pgTable("ingredients", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({ byTenant: index("ingredients_tenant_idx").on(t.tenantId) }));
+}, (t) => ({
+  byTenant: index("ingredients_tenant_idx").on(t.tenantId),
+  byOutlet: index("ingredients_outlet_idx").on(t.outletId),
+}));
 
 export const recipeItems = pgTable("recipe_items", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -163,6 +166,8 @@ export const transactions = pgTable("transactions", {
 }, (t) => ({
   byTenant: index("transactions_tenant_idx").on(t.tenantId),
   byCreatedAt: index("transactions_created_at_idx").on(t.createdAt),
+  byTenantStatusDate: index("transactions_tenant_status_date_idx").on(t.tenantId, t.status, t.createdAt),
+  byOutlet: index("transactions_outlet_idx").on(t.outletId),
   numberUnq: uniqueIndex("transactions_number_unq").on(t.tenantId, t.number),
 }));
 
