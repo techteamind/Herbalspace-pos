@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-type Sheet = null | "profile" | "account" | "tax" | "payment" | "receipt";
+type Sheet = null | "profile" | "account" | "password" | "tax" | "payment" | "receipt";
 
 function Section({ title, children }: { title: string; children: ReactNode }): JSX.Element {
   return (
@@ -47,6 +47,17 @@ export function SettingsPage(): JSX.Element {
     onSuccess: () => { qc.invalidateQueries(); },
   });
 
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwError, setPwError] = useState("");
+  const changePassword = useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+      apiFetch("change-password", { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => { setSheet(null); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setPwError(""); },
+    onError: (err: Error) => setPwError(err.message),
+  });
+
   const [cafeName, setCafeName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -60,6 +71,8 @@ export function SettingsPage(): JSX.Element {
     if (!s) return;
     if (which === "account") {
       setFullName(profileName ?? "");
+    } else if (which === "password") {
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setPwError("");
     } else if (which === "profile") {
       setCafeName(s.cafeName);
       setAddress(s.address ?? "");
@@ -115,6 +128,7 @@ export function SettingsPage(): JSX.Element {
             <span className="flex-1 font-body-md text-body-md text-on-surface">Email</span>
             <span className="font-body-md text-body-md text-on-surface-variant truncate max-w-[50%] text-right">{user?.email ?? "—"}</span>
           </div>
+          <Row icon="lock" label="Ganti Password" onClick={() => openSheet("password")} />
         </Section>
         <Section title="Profil Toko">
           <Row icon="storefront" label="Nama & Alamat" value={s?.cafeName ?? "Herbaspace"} onClick={() => openSheet("profile")} />
@@ -150,6 +164,32 @@ export function SettingsPage(): JSX.Element {
           <button onClick={() => updateProfile.mutate({ fullName: fullName.trim() })} disabled={updateProfile.isPending || !fullName.trim()}
             className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
             {updateProfile.isPending ? "Menyimpan..." : "Simpan"}
+          </button>
+        </FormSheet>
+      )}
+
+      {sheet === "password" && (
+        <FormSheet title="Ganti Password" onClose={() => setSheet(null)}>
+          <Field label="Password Lama" required>
+            <input className={inputCls} type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Masukkan password lama" autoFocus />
+          </Field>
+          <Field label="Password Baru" required>
+            <input className={inputCls} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Minimal 6 karakter" />
+          </Field>
+          <Field label="Konfirmasi Password Baru" required>
+            <input className={inputCls} type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Ketik ulang password baru" />
+          </Field>
+          {pwError && <p className="text-error text-sm">{pwError}</p>}
+          <button
+            onClick={() => {
+              if (newPassword.length < 6) { setPwError("Password baru minimal 6 karakter"); return; }
+              if (newPassword !== confirmPassword) { setPwError("Konfirmasi password tidak cocok"); return; }
+              setPwError("");
+              changePassword.mutate({ currentPassword, newPassword });
+            }}
+            disabled={changePassword.isPending || !currentPassword || !newPassword || !confirmPassword}
+            className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
+            {changePassword.isPending ? "Menyimpan..." : "Ganti Password"}
           </button>
         </FormSheet>
       )}

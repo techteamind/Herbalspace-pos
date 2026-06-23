@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { PageHeader, Icon, FormSheet, Field, inputCls, ListSkeleton, EmptyState, ErrorState } from "@/components/shared";
 import { useEmployees, useCreateEmployee, useUpdateEmployee, type Employee } from "@/hooks/use-employees";
 import { useOutlets } from "@/hooks/use-outlets";
+import { apiFetch } from "@/lib/api-client";
 
 const ROLE_LABEL: Record<string, string> = { owner: "Owner", manager: "Manager", cashier: "Kasir" };
 const ROLE_COLOR: Record<string, string> = {
@@ -126,6 +128,16 @@ function EmployeeEditSheet({ employee, onClose }: { employee: Employee; onClose:
   const [role, setRole] = useState(employee.role);
   const [outletId, setOutletId] = useState(employee.outletId ?? "");
   const [isActive, setIsActive] = useState(employee.isActive);
+  const [showResetPw, setShowResetPw] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [pwErr, setPwErr] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const resetPw = useMutation({
+    mutationFn: (data: { targetUserId: string; newPassword: string }) =>
+      apiFetch("change-password", { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => { setPwSuccess(true); setNewPw(""); setPwErr(""); },
+    onError: (err: Error) => setPwErr(err.message),
+  });
 
   async function submit() {
     await update.mutateAsync({
@@ -177,6 +189,34 @@ function EmployeeEditSheet({ employee, onClose }: { employee: Employee; onClose:
         className="w-full bg-primary text-on-primary rounded-xl h-14 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
         {update.isPending ? "Menyimpan..." : "Simpan"}
       </button>
+
+      {!isOwner && (
+        <div className="border-t border-outline-variant/30 pt-4 space-y-3">
+          {!showResetPw ? (
+            <button onClick={() => { setShowResetPw(true); setPwSuccess(false); }}
+              className="w-full h-12 rounded-xl border border-outline-variant text-on-surface font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+              <Icon name="lock_reset" /> Reset Password
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="font-body-md text-body-md text-on-surface-variant">Set password baru untuk {employee.fullName}:</p>
+              <input className={inputCls} type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Password baru (min. 6 karakter)" autoFocus />
+              {pwErr && <p className="text-error text-sm">{pwErr}</p>}
+              {pwSuccess && <p className="text-primary text-sm">Password berhasil direset!</p>}
+              <button
+                onClick={() => {
+                  if (newPw.length < 6) { setPwErr("Password minimal 6 karakter"); return; }
+                  setPwErr(""); setPwSuccess(false);
+                  resetPw.mutate({ targetUserId: employee.id, newPassword: newPw });
+                }}
+                disabled={resetPw.isPending || newPw.length < 6}
+                className="w-full h-12 rounded-xl bg-error text-on-error font-body-md text-body-md font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
+                {resetPw.isPending ? "Mereset..." : "Reset Password"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </FormSheet>
   );
 }

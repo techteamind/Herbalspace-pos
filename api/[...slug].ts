@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 import auditLogs from "./_handlers/audit-logs.js";
+import changePassword from "./_handlers/change-password.js";
 import categories from "./_handlers/categories.js";
 import customers from "./_handlers/customers.js";
 import dashboard from "./_handlers/dashboard.js";
@@ -29,6 +30,7 @@ type Handler = (req: VercelRequest, res: VercelResponse) => void | Promise<void>
 
 const routes: Record<string, Handler> = {
   "audit-logs": auditLogs,
+  "change-password": changePassword,
   categories,
   customers,
   dashboard,

@@ -6,6 +6,7 @@ import { profiles, tenants, settings } from "../../db/schema.js";
 
 export interface AuthContext {
   userId: string;
+  email: string;
   tenantId: string;
   role: "owner" | "manager" | "cashier";
   profileName: string;
@@ -115,7 +116,7 @@ export async function authenticate(req: VercelRequest): Promise<AuthContext | nu
     }
   }
 
-  return { userId, tenantId: profile.tenantId, role: profile.role, profileName: profile.fullName, outletId };
+  return { userId, email: profile.email, tenantId: profile.tenantId, role: profile.role, profileName: profile.fullName, outletId };
 }
 
 /** Helper untuk mengembalikan 401. */
