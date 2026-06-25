@@ -100,9 +100,14 @@ export function PosPage(): JSX.Element {
 
   function handleBarcodeScan(code: string): void {
     setShowScanner(false);
-    const match = active.find((p) => p.sku?.toLowerCase() === code.toLowerCase());
-    if (match) handleProductTap(match);
-    else setSearch(code);
+    const lc = code.toLowerCase();
+    const match = active.find((p) => p.sku?.toLowerCase() === lc);
+    if (match) { handleProductTap(match); return; }
+    for (const p of active) {
+      const v = p.variants?.find((v) => v.sku?.toLowerCase() === lc);
+      if (v) { addItem(p, v); return; }
+    }
+    setSearch(code);
   }
   const changeNote = useCallback((id: string, note: string) => setCart((c) => {
     const existing = c[id];
