@@ -76,10 +76,10 @@ export async function authenticate(req: VercelRequest): Promise<AuthContext | nu
   let profile = await db.query.profiles.findFirst({ where: eq(profiles.id, userId) });
 
   if (!profile) {
-    const name = email ? email.split("@")[0] : "Cafe Saya";
+    const name = email ? email.split("@")[0] : "Toko Saya";
     const [tenant] = await db
       .insert(tenants)
-      .values({ name: `Cafe ${name}` })
+      .values({ name: `Toko ${name}` })
       .returning();
     if (!tenant) return null;
 

@@ -172,7 +172,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       </div>
 
-      <Field label="Nama Produk" required><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Kopi Susu Gula Aren" /></Field>
+      <Field label="Nama Produk" required><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Parfum Solivagant 30ml" /></Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Harga Jual" required><input className={inputCls} inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))} placeholder="25000" /></Field>
         <Field label="Kategori">
@@ -182,7 +182,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
           </select>
         </Field>
       </div>
-      <Field label="SKU (opsional)"><input className={inputCls} value={sku} onChange={(e) => setSku(e.target.value)} placeholder="KSG-001" /></Field>
+      <Field label="SKU (opsional)"><input className={inputCls} value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SLV-030" /></Field>
 
       <VariantEditor
         basePrice={Number(price) || 0}

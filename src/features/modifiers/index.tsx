@@ -110,7 +110,7 @@ function ModifierForm({ initial, onClose }: { initial: ModifierGroupWithOptions 
   return (
     <FormSheet title={editing ? "Edit Modifier" : "Tambah Modifier"} onClose={onClose}>
       <Field label="Nama Grup" required>
-        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="cth: Extra, Topping, Level Gula" />
+        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="cth: Ukuran, Tipe, Aroma" />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">

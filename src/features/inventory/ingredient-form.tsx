@@ -26,7 +26,7 @@ export function IngredientForm({ initial, onClose }: { initial?: IngredientWithU
 
   return (
     <FormSheet title={editing ? "Edit Bahan Baku" : "Tambah Bahan Baku"} onClose={onClose}>
-      <Field label="Nama Bahan"><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Susu Segar" /></Field>
+      <Field label="Nama Bahan"><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Bibit Parfum" /></Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Satuan">
           <select className={inputCls} value={unitId} onChange={(e) => setUnitId(e.target.value)}>

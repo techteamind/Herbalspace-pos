@@ -101,7 +101,7 @@ export function DashboardPage(): JSX.Element {
             <div className="grid grid-cols-3 gap-3">
               <StatCard label="TRANSAKSI" icon="receipt_long" value={String(stats?.todayTransactions ?? 0)} sub="struk hari ini" />
               <StatCard label="RATA2" icon="trending_up" value={`Rp ${formatCompact(stats?.avgPerTransaction ?? 0)}`} sub="/transaksi" />
-              <StatCard label="TERJUAL" icon="local_cafe" value={String(stats?.todayProductsSold ?? 0)} sub="item" />
+              <StatCard label="TERJUAL" icon="inventory_2" value={String(stats?.todayProductsSold ?? 0)} sub="item" />
             </div>
           </div>
         )}

@@ -128,13 +128,13 @@ export function ProductsPage(): JSX.Element {
           {isLoading && <ListSkeleton />}
           {isError && <ErrorState message={error instanceof Error ? error.message : "Gagal memuat produk"} />}
           {!isLoading && !isError && filtered.length === 0 && (
-            <EmptyState icon="local_cafe" title="Belum ada produk" subtitle="Tambah produk pertama untuk mulai berjualan." />
+            <EmptyState icon="inventory_2" title="Belum ada produk" subtitle="Tambah produk pertama untuk mulai berjualan." />
           )}
           {filtered.map((p) => (
             <div key={p.id} role="button" onClick={() => setEditing(p)}
               className="w-full bg-surface-container-lowest p-3 rounded-xl shadow-card border border-transparent active:scale-[0.98] transition-transform flex items-center gap-3 text-left cursor-pointer">
               <div className="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 overflow-hidden">
-                {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <Icon name="local_cafe" className="text-outline" />}
+                {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <Icon name="inventory_2" className="text-outline" />}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-body-md text-body-md font-semibold text-on-surface truncate">{p.name}</h3>

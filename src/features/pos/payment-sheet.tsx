@@ -253,7 +253,7 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
                 <div className="flex items-center gap-1.5">
                   <Icon name="edit_note" className="text-[16px] text-on-surface-variant/50 shrink-0" />
                   <input value={l.note ?? ""} onChange={(e) => onNote(cartKey, e.target.value)}
-                    placeholder="Catatan (cth: less sugar, extra shot)"
+                    placeholder="Catatan (cth: tanpa box, gift wrap)"
                     className="w-full h-7 px-2 rounded-md border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:border-primary font-body-md text-[11px] text-on-surface-variant" />
                 </div>
               </div>

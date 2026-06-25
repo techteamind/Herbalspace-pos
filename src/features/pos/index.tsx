@@ -173,7 +173,7 @@ export function PosPage(): JSX.Element {
                 <button key={fid} onClick={() => handleProductTap(p)}
                   className="shrink-0 w-[100px] bg-surface-container-lowest rounded-xl border border-outline-variant/20 shadow-elevation-1 active:scale-95 transition-transform text-left overflow-hidden">
                   <div className="aspect-square bg-surface-container flex items-center justify-center overflow-hidden">
-                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <Icon name="local_cafe" className="text-[24px] text-outline" />}
+                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <Icon name="inventory_2" className="text-[24px] text-outline" />}
                   </div>
                   <div className="px-1.5 py-1">
                     <p className="font-body-md text-[11px] font-semibold text-on-surface leading-tight line-clamp-1">{p.name}</p>
@@ -207,7 +207,7 @@ export function PosPage(): JSX.Element {
                     {cartQty > 0 && <span className="absolute top-1.5 right-1.5 z-10 bg-primary text-on-primary w-6 h-6 rounded-full flex items-center justify-center font-label-caps text-label-caps shadow-elevation-2">{cartQty}</span>}
                     {hasVariants && <span className="absolute top-1.5 left-1.5 z-10 bg-secondary-container text-on-secondary-container px-2 h-5 rounded-full flex items-center font-label-caps text-[9px] shadow-elevation-1">{p.variants!.length} varian</span>}
                     <div className="aspect-[4/3] bg-surface-container flex items-center justify-center overflow-hidden">
-                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <Icon name="local_cafe" className="text-[36px] text-outline" />}
+                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <Icon name="inventory_2" className="text-[36px] text-outline" />}
                     </div>
                     <div className="px-2.5 py-2">
                       <h3 className="font-body-md text-body-md font-semibold text-on-surface leading-tight line-clamp-2 text-[13px]">{p.name}</h3>
@@ -262,6 +262,7 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
   const hasVariants = variants.length > 0;
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [selectedMods, setSelectedMods] = useState<Record<string, Set<string>>>({});
+  const [useBase, setUseBase] = useState(false);
 
   const activeSelections = Object.values(selected).filter(Boolean);
   const filtered = variants.filter((v) => {
@@ -269,7 +270,7 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
     return activeSelections.every((optId) => ids.includes(optId));
   });
 
-  const matchedVariant = filtered.length === 1 ? filtered[0] : null;
+  const matchedVariant = useBase ? null : (filtered.length === 1 ? filtered[0] : null);
 
   function toggleMod(groupId: string, optId: string, maxSelect: number) {
     setSelectedMods((prev) => {
@@ -316,8 +317,8 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
             <p className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-2">{g.name}</p>
             <div className="flex flex-wrap gap-2">
               {g.options.map((opt) => (
-                <button key={opt.id} onClick={() => setSelected((s) => ({ ...s, [g.id]: s[g.id] === opt.id ? "" : opt.id }))}
-                  className={`h-9 px-4 rounded-full font-body-md text-body-md transition-colors ${selected[g.id] === opt.id ? "bg-primary text-on-primary shadow-card" : "bg-surface-container text-on-surface-variant border border-outline-variant"}`}>
+                <button key={opt.id} onClick={() => { setUseBase(false); setSelected((s) => ({ ...s, [g.id]: s[g.id] === opt.id ? "" : opt.id })); }}
+                  className={`h-9 px-4 rounded-full font-body-md text-body-md transition-colors ${!useBase && selected[g.id] === opt.id ? "bg-primary text-on-primary shadow-card" : "bg-surface-container text-on-surface-variant border border-outline-variant"}`}>
                   {opt.label}
                 </button>
               ))}
@@ -325,10 +326,23 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
           </div>
         ))}
 
+        {/* Base product option */}
+        {hasVariants && (
+          <div className="space-y-2">
+            <p className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Produk dasar</p>
+            <button onClick={() => { setUseBase(true); setSelected({}); }}
+              className={`w-full flex items-center justify-between rounded-xl px-4 h-14 border active:scale-[0.98] transition-all ${useBase ? "bg-primary/10 border-primary shadow-card" : "bg-surface-container-lowest border-outline-variant/30"}`}>
+              <span className="font-body-md text-body-md font-semibold text-on-surface">{product.name}</span>
+              <span className="font-body-md text-body-md font-bold text-primary">{formatRupiah(product.price)}</span>
+            </button>
+          </div>
+        )}
+
         {groups.length === 0 && hasVariants && (
           <div className="space-y-2">
+            <p className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Varian</p>
             {variants.map((v) => (
-              <button key={v.id} onClick={() => onSelect(v, getSelectedModifiers().length ? getSelectedModifiers() : undefined)}
+              <button key={v.id} onClick={() => { setUseBase(false); onSelect(v, getSelectedModifiers().length ? getSelectedModifiers() : undefined); }}
                 className="w-full flex items-center justify-between bg-surface-container-lowest rounded-xl px-4 h-14 border border-outline-variant/30 active:scale-[0.98] transition-transform">
                 <span className="font-body-md text-body-md font-semibold text-on-surface">{v.label}</span>
                 <span className="font-body-md text-body-md font-bold text-primary">{formatRupiah(v.price)}</span>
@@ -370,7 +384,18 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
         {/* Add to cart button */}
         {(hasVariants && groups.length > 0) ? (
           <div className="space-y-2 pt-2 border-t border-outline-variant/30">
-            {matchedVariant ? (
+            {useBase ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="font-body-md text-body-md text-on-surface">{product.name}</span>
+                  <span className="font-display-price-mobile text-display-price-mobile text-primary">{formatRupiah(Number(product.price) + modTotal)}</span>
+                </div>
+                <button onClick={() => onSelect(undefined, getSelectedModifiers().length ? getSelectedModifiers() : undefined)}
+                  className="w-full bg-primary text-on-primary rounded-xl h-12 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform shadow-elevation-2">
+                  Tambah ke Keranjang
+                </button>
+              </>
+            ) : matchedVariant ? (
               <>
                 <div className="flex items-center justify-between">
                   <span className="font-body-md text-body-md text-on-surface">{matchedVariant.label}</span>
@@ -388,6 +413,17 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
                 </p>
               </div>
             )}
+          </div>
+        ) : hasVariants && groups.length === 0 && useBase ? (
+          <div className="pt-2 border-t border-outline-variant/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-body-md text-body-md text-on-surface">{product.name}</span>
+              <span className="font-display-price-mobile text-display-price-mobile text-primary">{formatRupiah(Number(product.price) + modTotal)}</span>
+            </div>
+            <button onClick={() => onSelect(undefined, getSelectedModifiers().length ? getSelectedModifiers() : undefined)}
+              className="w-full bg-primary text-on-primary rounded-xl h-12 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform shadow-elevation-2">
+              Tambah ke Keranjang
+            </button>
           </div>
         ) : !hasVariants && modifierGroups.length > 0 ? (
           <div className="pt-2 border-t border-outline-variant/30 space-y-2">

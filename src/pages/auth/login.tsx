@@ -75,7 +75,7 @@ export default function LoginPage(): JSX.Element {
             disabled={busy}
             required
             className="w-full h-touch-target-min px-4 rounded-lg border border-outline-variant bg-surface-container-low focus:outline-none focus:border-primary font-body-md text-body-md"
-            placeholder="nama@kafe.com"
+            placeholder="nama@email.com"
           />
         </div>
 
