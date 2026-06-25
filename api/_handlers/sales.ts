@@ -46,18 +46,11 @@ export default createHandler({
     const sale = result[0] as { total: string };
     if (customerId) {
       const earnedPoints = Math.floor(Number(sale.total) / 10000);
-      if (earnedPoints > 0) {
-        await db.execute(sql`
-          UPDATE customers SET points = points + ${earnedPoints},
-            total_spent = total_spent + ${Number(sale.total)}
-          WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
-        `);
-      } else {
-        await db.execute(sql`
-          UPDATE customers SET total_spent = total_spent + ${Number(sale.total)}
-          WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
-        `);
-      }
+      await db.execute(sql`
+        UPDATE customers SET points = points + ${earnedPoints},
+          total_spent = total_spent + ${Number(sale.total)}
+        WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
+      `);
     }
     const saleRow = result[0] as Record<string, unknown>;
     await logAudit(auth, "create", "transaction", saleRow.id as string, { total: sale.total, items: items.length });

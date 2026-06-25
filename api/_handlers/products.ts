@@ -81,8 +81,11 @@ export default createHandler({
     if (!requireRole(auth, "manager", res)) return;
     const id = String(req.query.id ?? "");
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
-    await db.delete(products).where(and(eq(products.id, id), eq(products.tenantId, auth.tenantId)));
-    await logAudit(auth, "delete", "product", id);
-    res.status(204).end();
+    const [row] = await db.update(products).set({ isActive: false, updatedAt: new Date() })
+      .where(and(eq(products.id, id), eq(products.tenantId, auth.tenantId)))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Produk tidak ditemukan" }); return; }
+    await logAudit(auth, "deactivate", "product", id, { name: row.name });
+    res.json(row);
   },
 });

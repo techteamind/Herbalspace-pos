@@ -3,7 +3,7 @@ import { db } from "../../db/index.js";
 import { transactions, stockMovements, ingredients, recipeItems, customers } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
-import { outletFilter } from "../_lib/auth.js";
+import { outletFilter, requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -27,6 +27,7 @@ export default createHandler({
   },
 
   async PUT(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { id, action, reason } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
 

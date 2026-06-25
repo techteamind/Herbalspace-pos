@@ -1,4 +1,4 @@
-import { eq, and, desc, ilike, or } from "drizzle-orm";
+import { eq, and, desc, ilike, or, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { customers, transactions } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
@@ -37,6 +37,7 @@ export default createHandler({
 
   async POST(req, res, auth) {
     const { name, phone, email, note } = req.body;
+    if (!name || typeof name !== "string" || !name.trim()) { res.status(400).json({ error: "Nama pelanggan wajib diisi" }); return; }
     const [row] = await db.insert(customers).values({
       tenantId: auth.tenantId, outletId: auth.outletId ?? undefined, name, phone: phone || null, email: email || null, note: note || null,
     }).returning();
@@ -60,6 +61,12 @@ export default createHandler({
   async DELETE(req, res, auth) {
     const id = String(req.query.id ?? "");
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
+    const [txnCount] = await db.select({ count: sql<number>`count(*)::int` }).from(transactions)
+      .where(and(eq(transactions.customerId, id), eq(transactions.tenantId, auth.tenantId)));
+    if ((txnCount?.count ?? 0) > 0) {
+      res.status(400).json({ error: "Pelanggan memiliki riwayat transaksi dan tidak bisa dihapus" });
+      return;
+    }
     await db.delete(customers).where(and(eq(customers.id, id), eq(customers.tenantId, auth.tenantId)));
     res.status(204).end();
   },

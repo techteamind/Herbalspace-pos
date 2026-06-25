@@ -82,7 +82,7 @@ export default createHandler({
       for (let i = 6; i >= 0; i--) {
         const d = new Date(todayStart);
         d.setDate(d.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
+        const key = d.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
         const hit = byDay.get(key);
         days.push({
           date: d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" }),
