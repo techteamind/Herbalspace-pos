@@ -25,6 +25,7 @@ export function createHandler(handlers: MethodHandlers) {
     try {
       await handler(req, res, auth);
     } catch (err) {
+      console.error(`[API Error] ${method} ${req.url}:`, err);
       res.status(500).json({ error: err instanceof Error ? err.message : "Terjadi kesalahan" });
     }
   };

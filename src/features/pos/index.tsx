@@ -263,9 +263,10 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [selectedMods, setSelectedMods] = useState<Record<string, Set<string>>>({});
 
+  const activeSelections = Object.values(selected).filter(Boolean);
   const filtered = variants.filter((v) => {
     const ids = v.optionIds as string[];
-    return Object.values(selected).every((optId) => ids.includes(optId));
+    return activeSelections.every((optId) => ids.includes(optId));
   });
 
   const matchedVariant = filtered.length === 1 ? filtered[0] : null;

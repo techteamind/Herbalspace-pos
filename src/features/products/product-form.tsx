@@ -49,6 +49,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
     () => (initial?.modifiers ?? []).map((m) => m.modifierGroupId)
   );
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const busy = create.isPending || update.isPending || del.isPending || uploading;
   const err = create.error || update.error || del.error;
 
@@ -83,44 +84,50 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
   }
 
   async function submit(): Promise<void> {
-    let productId: string;
-    if (editing) {
-      await update.mutateAsync({ id: initial.id, name, price: Number(price), categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined });
-      productId = initial.id;
-    } else {
-      const created = await create.mutateAsync({ name, price: Number(price) || 0, categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined });
-      productId = (created as { id: string }).id;
-    }
-    if (variantGroups.length > 0 && variants.length > 0) {
-      const validGroups = variantGroups.filter((g) => g.name && g.options.some((o) => o));
-      if (validGroups.length > 0) {
+    setSubmitError(null);
+    try {
+      let productId: string;
+      if (editing) {
+        await update.mutateAsync({ id: initial.id, name, price: Number(price), categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined });
+        productId = initial.id;
+      } else {
+        const created = await create.mutateAsync({ name, price: Number(price) || 0, categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined });
+        productId = (created as { id: string }).id;
+      }
+      if (variantGroups.length > 0 && variants.length > 0) {
+        const validGroups = variantGroups.filter((g) => g.name && g.options.some((o) => o));
+        if (validGroups.length > 0) {
+          await apiFetch("variants", {
+            method: "POST",
+            body: JSON.stringify({
+              productId,
+              groups: validGroups.map((g) => ({ name: g.name, options: g.options.filter((o) => o) })),
+              variants: variants.map((v) => ({
+                optionIds: v.optionIds,
+                label: v.label,
+                sku: v.sku || undefined,
+                price: Number(v.price) || Number(price) || 0,
+              })),
+            }),
+          });
+        }
+      } else if (editing) {
         await apiFetch("variants", {
           method: "POST",
-          body: JSON.stringify({
-            productId,
-            groups: validGroups.map((g) => ({ name: g.name, options: g.options.filter((o) => o) })),
-            variants: variants.map((v) => ({
-              optionIds: v.optionIds,
-              label: v.label,
-              sku: v.sku || undefined,
-              price: Number(v.price) || Number(price) || 0,
-            })),
-          }),
+          body: JSON.stringify({ productId, groups: [], variants: [] }),
         });
       }
-    } else if (editing) {
-      await apiFetch("variants", {
+      await apiFetch("product-modifiers", {
         method: "POST",
-        body: JSON.stringify({ productId, groups: [], variants: [] }),
+        body: JSON.stringify({ productId, modifierGroupIds: selectedModifierIds }),
       });
+      haptic();
+      toast(editing ? "Produk diperbarui" : "Produk ditambahkan");
+      onClose();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Gagal menyimpan produk";
+      try { const parsed = JSON.parse(msg); setSubmitError(parsed.error ?? msg); } catch { setSubmitError(msg); }
     }
-    await apiFetch("product-modifiers", {
-      method: "POST",
-      body: JSON.stringify({ productId, modifierGroupIds: selectedModifierIds }),
-    });
-    haptic();
-    toast(editing ? "Produk diperbarui" : "Produk ditambahkan");
-    onClose();
   }
 
   async function remove(): Promise<void> {
@@ -233,7 +240,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
         </div>
       )}
 
-      {err && <p className="font-body-md text-body-md text-error">{err instanceof Error ? err.message : "Gagal menyimpan"}</p>}
+      {(err || submitError) && <p className="font-body-md text-body-md text-error">{submitError || (err instanceof Error ? err.message : "Gagal menyimpan")}</p>}
       <button onClick={submit} disabled={!name || !price || busy}
         className="w-full bg-primary text-on-primary rounded-xl h-14 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
         {busy ? "Menyimpan..." : "Simpan Produk"}
