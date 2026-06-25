@@ -21,12 +21,21 @@ interface Props {
   onChange: (groups: VariantGroupInput[], variants: VariantRow[]) => void;
 }
 
-function generateCombinations(groups: VariantGroupInput[]): VariantRow[] {
+function generateCombinations(groups: VariantGroupInput[], existingVariants?: VariantRow[]): VariantRow[] {
   if (groups.length === 0 || groups.some((g) => g.options.length === 0)) return [];
   const combos: VariantRow[] = [];
   const recurse = (gi: number, picked: string[], ids: string[]) => {
     if (gi === groups.length) {
-      combos.push({ optionIds: ids, label: picked.join(" / "), sku: "", price: "" });
+      const label = picked.join(" / ");
+      const existing = existingVariants?.find((v) =>
+        v.optionIds.join(",") === ids.join(",") || v.label === label
+      );
+      combos.push({
+        optionIds: ids,
+        label,
+        sku: existing?.sku ?? "",
+        price: existing?.price ?? "",
+      });
       return;
     }
     groups[gi]!.options.forEach((opt, oi) => {
@@ -42,12 +51,12 @@ export function VariantEditor({ basePrice, groups, variants, onChange }: Props):
 
   function addGroup(): void {
     const next = [...groups, { name: "", options: [""] }];
-    onChange(next, generateCombinations(next));
+    onChange(next, generateCombinations(next, variants));
   }
 
   function removeGroup(gi: number): void {
     const next = groups.filter((_, i) => i !== gi);
-    onChange(next, generateCombinations(next));
+    onChange(next, generateCombinations(next, variants));
   }
 
   function updateGroupName(gi: number, name: string): void {
@@ -57,24 +66,19 @@ export function VariantEditor({ basePrice, groups, variants, onChange }: Props):
 
   function addOption(gi: number): void {
     const next = groups.map((g, i) => (i === gi ? { ...g, options: [...g.options, ""] } : g));
-    onChange(next, generateCombinations(next));
+    onChange(next, generateCombinations(next, variants));
   }
 
   function removeOption(gi: number, oi: number): void {
     const next = groups.map((g, i) => (i === gi ? { ...g, options: g.options.filter((_, j) => j !== oi) } : g));
-    onChange(next, generateCombinations(next));
+    onChange(next, generateCombinations(next, variants));
   }
 
   function updateOption(gi: number, oi: number, val: string): void {
     const next = groups.map((g, i) =>
       i === gi ? { ...g, options: g.options.map((o, j) => (j === oi ? val : o)) } : g
     );
-    const newVariants = generateCombinations(next);
-    const merged = newVariants.map((nv) => {
-      const existing = variants.find((v) => v.optionIds.join(",") === nv.optionIds.join(","));
-      return existing ? { ...nv, label: nv.label, sku: existing.sku, price: existing.price } : nv;
-    });
-    onChange(next, merged);
+    onChange(next, generateCombinations(next, variants));
   }
 
   function updateVariant(idx: number, field: "sku" | "price", val: string): void {

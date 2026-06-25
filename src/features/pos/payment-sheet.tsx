@@ -227,7 +227,8 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
         {/* Item list */}
         <div className="space-y-3">
           {lines.map((l) => {
-            const cartKey = l.variantId ? `${l.product.id}:${l.variantId}` : l.product.id;
+            const modKey = l.modifiers?.length ? `:m${l.modifiers.map((m) => m.name).sort().join(",")}` : "";
+            const cartKey = (l.variantId ? `${l.product.id}:${l.variantId}` : l.product.id) + modKey;
             const basePrice = l.variantPrice ?? Number(l.product.price);
             const modTotal = (l.modifiers ?? []).reduce((m, mod) => m + mod.price, 0);
             const unitPrice = basePrice + modTotal;

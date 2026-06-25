@@ -45,11 +45,12 @@ DECLARE
   r_recipe       record;
   v_new_balance  numeric(14,3);
 BEGIN
-  -- nomor struk harian: TRX-YYYYMMDD-####
+  -- nomor struk harian: TRX-YYYYMMDD-#### (FOR UPDATE mencegah duplikat saat concurrent)
   SELECT COUNT(*) + 1 INTO v_seq
   FROM transactions
   WHERE tenant_id = p_tenant_id
-    AND created_at::date = CURRENT_DATE;
+    AND created_at::date = CURRENT_DATE
+  FOR UPDATE;
   v_number := 'TRX-' || to_char(CURRENT_DATE, 'YYYYMMDD') || '-' || lpad(v_seq::text, 4, '0');
 
   -- header sementara (total diisi setelah loop)
