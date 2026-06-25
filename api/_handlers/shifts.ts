@@ -63,6 +63,7 @@ export default createHandler({
       if (!shift) { res.status(404).json({ error: "Shift tidak ditemukan" }); return; }
       if (shift.closedAt) { res.status(400).json({ error: "Shift sudah ditutup" }); return; }
 
+      const shiftOutletId = shift.outletId;
       const salesResult = await db
         .select({
           total: sql<string>`coalesce(sum(${transactions.total}), 0)`,
@@ -74,6 +75,7 @@ export default createHandler({
             eq(transactions.tenantId, auth.tenantId),
             eq(transactions.status, "paid"),
             gte(transactions.createdAt, shift.openedAt),
+            ...(shiftOutletId ? [eq(transactions.outletId, shiftOutletId)] : []),
           ),
         );
 
@@ -87,6 +89,7 @@ export default createHandler({
             eq(transactions.status, "paid"),
             eq(payments.method, "cash"),
             gte(transactions.createdAt, shift.openedAt),
+            ...(shiftOutletId ? [eq(transactions.outletId, shiftOutletId)] : []),
           ),
         );
 

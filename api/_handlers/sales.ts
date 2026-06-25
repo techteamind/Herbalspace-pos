@@ -1,7 +1,6 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { authenticate, unauthorized } from "../_lib/auth.js";
+import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
 
 interface SaleItem {
@@ -17,32 +16,21 @@ interface SalePayment {
   change_amount?: number;
 }
 
-/**
- * POST /api/sales — membuat transaksi penjualan secara atomik via create_sale().
- * Stok bahan baku otomatis terpotong & tercatat di stock_movements.
- */
-export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method tidak diizinkan" });
-    return;
-  }
-  const auth = await authenticate(req);
-  if (!auth) return unauthorized(res);
+export default createHandler({
+  async POST(req, res, auth) {
+    const { customerId, discount, taxPercent, items, payments } = req.body as {
+      customerId?: string | null;
+      discount?: number;
+      taxPercent?: number;
+      items: SaleItem[];
+      payments: SalePayment[];
+    };
 
-  const { customerId, discount, taxPercent, items, payments } = req.body as {
-    customerId?: string | null;
-    discount?: number;
-    taxPercent?: number;
-    items: SaleItem[];
-    payments: SalePayment[];
-  };
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: "Item transaksi kosong" });
+      return;
+    }
 
-  if (!Array.isArray(items) || items.length === 0) {
-    res.status(400).json({ error: "Item transaksi kosong" });
-    return;
-  }
-
-  try {
     const result = await db.execute(sql`
       SELECT * FROM create_sale(
         ${auth.tenantId}::uuid,
@@ -74,7 +62,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const saleRow = result[0] as Record<string, unknown>;
     await logAudit(auth, "create", "transaction", saleRow.id as string, { total: sale.total, items: items.length });
     res.status(201).json(saleRow);
-  } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Gagal membuat transaksi" });
-  }
-}
+  },
+});

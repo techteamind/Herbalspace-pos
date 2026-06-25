@@ -58,7 +58,7 @@ export function SettingsPage(): JSX.Element {
     onError: (err: Error) => setPwError(err.message),
   });
 
-  const [storeName, setCafeName] = useState("");
+  const [storeName, setStoreName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [taxPercent, setTaxPercent] = useState("");
@@ -74,7 +74,7 @@ export function SettingsPage(): JSX.Element {
     } else if (which === "password") {
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setPwError("");
     } else if (which === "profile") {
-      setCafeName(s.storeName);
+      setStoreName(s.storeName);
       setAddress(s.address ?? "");
       setPhone(s.phone ?? "");
     } else if (which === "tax") {
@@ -197,7 +197,7 @@ export function SettingsPage(): JSX.Element {
       {sheet === "profile" && (
         <FormSheet title="Profil Toko" onClose={() => setSheet(null)}>
           <Field label="Nama Toko">
-            <input className={inputCls} value={storeName} onChange={(e) => setCafeName(e.target.value)} />
+            <input className={inputCls} value={storeName} onChange={(e) => setStoreName(e.target.value)} />
           </Field>
           <Field label="Alamat">
             <textarea className={`${inputCls} h-20 py-3`} value={address} onChange={(e) => setAddress(e.target.value)} />

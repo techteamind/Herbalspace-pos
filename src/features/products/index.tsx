@@ -140,7 +140,11 @@ export function ProductsPage(): JSX.Element {
                 <h3 className="font-body-md text-body-md font-semibold text-on-surface truncate">{p.name}</h3>
                 <div className="flex items-center gap-2 mt-0.5">
                   {p.category && <span className="font-label-caps text-label-caps bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full">{p.category.name}</span>}
-                  <span className="font-body-md text-body-md text-primary font-semibold">{formatRupiah(p.price)}</span>
+                  <span className="font-body-md text-body-md text-primary font-semibold">
+                    {(p.variants?.length ?? 0) > 0
+                      ? `${formatRupiah(Math.min(...p.variants!.map((v) => Number(v.price))))}${p.variants!.length > 1 ? ` - ${formatRupiah(Math.max(...p.variants!.map((v) => Number(v.price))))}` : ""}`
+                      : formatRupiah(p.price)}
+                  </span>
                 </div>
               </div>
               <button onClick={(e) => removeProduct(p, e)} className="w-8 h-8 flex items-center justify-center text-error/60 hover:text-error shrink-0">
