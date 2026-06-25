@@ -40,3 +40,8 @@ vite.config.d.ts
 /android
 /ios
 .env*
+
+# build artifacts
+*.apk
+*.aab
+*.ipa

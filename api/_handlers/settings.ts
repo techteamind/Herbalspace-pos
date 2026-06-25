@@ -21,7 +21,7 @@ export default createHandler({
     if (!requireRole(auth, "manager", res)) return;
     const data = req.body;
     const updates: Record<string, unknown> = { updatedAt: new Date() };
-    if (data.cafeName !== undefined) updates.cafeName = data.cafeName;
+    if (data.storeName !== undefined) updates.storeName = data.storeName;
     if (data.address !== undefined) updates.address = data.address || null;
     if (data.phone !== undefined) updates.phone = data.phone || null;
     if (data.logoUrl !== undefined) updates.logoUrl = data.logoUrl || null;

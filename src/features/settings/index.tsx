@@ -58,7 +58,7 @@ export function SettingsPage(): JSX.Element {
     onError: (err: Error) => setPwError(err.message),
   });
 
-  const [cafeName, setCafeName] = useState("");
+  const [storeName, setCafeName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [taxPercent, setTaxPercent] = useState("");
@@ -74,7 +74,7 @@ export function SettingsPage(): JSX.Element {
     } else if (which === "password") {
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setPwError("");
     } else if (which === "profile") {
-      setCafeName(s.cafeName);
+      setCafeName(s.storeName);
       setAddress(s.address ?? "");
       setPhone(s.phone ?? "");
     } else if (which === "tax") {
@@ -96,7 +96,7 @@ export function SettingsPage(): JSX.Element {
   }
 
   async function saveProfile() {
-    await update.mutateAsync({ cafeName, address, phone });
+    await update.mutateAsync({ storeName, address, phone });
     setSheet(null);
   }
   async function saveTax() {
@@ -131,7 +131,7 @@ export function SettingsPage(): JSX.Element {
           <Row icon="lock" label="Ganti Password" onClick={() => openSheet("password")} />
         </Section>
         <Section title="Profil Toko">
-          <Row icon="storefront" label="Nama & Alamat" value={s?.cafeName ?? "Herbaspace"} onClick={() => openSheet("profile")} />
+          <Row icon="storefront" label="Nama & Alamat" value={s?.storeName ?? "Herbaspace"} onClick={() => openSheet("profile")} />
           <Row icon="call" label="Telepon" value={s?.phone ?? "—"} onClick={() => openSheet("profile")} />
         </Section>
         <Section title="Pajak & Biaya">
@@ -197,7 +197,7 @@ export function SettingsPage(): JSX.Element {
       {sheet === "profile" && (
         <FormSheet title="Profil Toko" onClose={() => setSheet(null)}>
           <Field label="Nama Toko">
-            <input className={inputCls} value={cafeName} onChange={(e) => setCafeName(e.target.value)} />
+            <input className={inputCls} value={storeName} onChange={(e) => setCafeName(e.target.value)} />
           </Field>
           <Field label="Alamat">
             <textarea className={`${inputCls} h-20 py-3`} value={address} onChange={(e) => setAddress(e.target.value)} />
@@ -205,7 +205,7 @@ export function SettingsPage(): JSX.Element {
           <Field label="Telepon">
             <input className={inputCls} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </Field>
-          <button onClick={saveProfile} disabled={update.isPending || !cafeName.trim()}
+          <button onClick={saveProfile} disabled={update.isPending || !storeName.trim()}
             className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
             {update.isPending ? "Menyimpan..." : "Simpan"}
           </button>

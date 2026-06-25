@@ -37,7 +37,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
     printReceipt({
       transactionId: txn.id,
       number: txn.number,
-      cafeName: settings?.cafeName ?? "Herbaspace",
+      storeName: settings?.storeName ?? "Herbaspace",
       outletName,
       datetime: new Date(txn.createdAt).toLocaleString("id-ID"),
       lines: txn.items.map((i) => ({ name: i.productName, qty: i.quantity, price: Number(i.unitPrice) })),

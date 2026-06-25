@@ -4,7 +4,7 @@ export interface ReceiptLine { name: string; qty: number; price: number; note?: 
 export interface Receipt {
   transactionId?: string;
   number: string;
-  cafeName: string;
+  storeName: string;
   outletName?: string;
   address?: string;
   phone?: string;
@@ -43,7 +43,7 @@ export function printReceipt(r: Receipt): void {
   .tot{font-weight:bold;font-size:13px}
   .center{text-align:center}
 </style></head><body>
-  <h2>${escapeHtml(r.cafeName)}</h2>
+  <h2>${escapeHtml(r.storeName)}</h2>
   ${r.outletName ? `<div class="center" style="font-size:12px;font-weight:bold">${escapeHtml(r.outletName)}</div>` : ""}
   ${r.address ? `<div class="center" style="font-size:11px">${escapeHtml(r.address)}</div>` : ""}
   ${r.phone ? `<div class="center" style="font-size:11px">${escapeHtml(r.phone)}</div>` : ""}

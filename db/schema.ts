@@ -404,7 +404,7 @@ export const outlets = pgTable("outlets", {
 /* --------------------------- Settings ---------------------------- */
 export const settings = pgTable("settings", {
   tenantId: uuid("tenant_id").primaryKey().references(() => tenants.id, { onDelete: "cascade" }),
-  cafeName: text("cafe_name").notNull().default("Herbaspace"),
+  storeName: text("cafe_name").notNull().default("Herbaspace"),
   address: text("address"),
   phone: text("phone"),
   logoUrl: text("logo_url"),

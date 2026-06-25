@@ -49,7 +49,7 @@ export default createHandler({
     });
 
     res.json({
-      storeName: store?.cafeName ?? "Herbaspace",
+      storeName: store?.storeName ?? "Herbaspace",
       storeAddress: store?.address ?? "",
       storePhone: store?.phone ?? "",
       receiptHeader: store?.receiptHeader ?? "",

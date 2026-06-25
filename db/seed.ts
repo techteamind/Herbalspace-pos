@@ -18,7 +18,7 @@ async function seed() {
   // Settings
   await db.insert(settings).values({
     tenantId: tenant!.id,
-    cafeName: "Herbaspace",
+    storeName: "Herbaspace",
     address: "Jl. Cihampelas No. 42, Bandung",
     phone: "022-1234567",
     taxPercent: "0",

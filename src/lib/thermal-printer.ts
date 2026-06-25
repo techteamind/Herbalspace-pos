@@ -12,7 +12,7 @@ function cmd(...bytes: number[]): Uint8Array {
 }
 
 export interface ThermalReceiptData {
-  cafeName: string;
+  storeName: string;
   address?: string;
   phone?: string;
   number: string;
@@ -40,7 +40,7 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
 
   // Header
   push(cmd(ESC, 0x45, 1)); // bold on
-  push(encode(data.cafeName + "\n"));
+  push(encode(data.storeName + "\n"));
   push(cmd(ESC, 0x45, 0)); // bold off
   if (data.address) push(encode(data.address + "\n"));
   if (data.phone) push(encode(data.phone + "\n"));

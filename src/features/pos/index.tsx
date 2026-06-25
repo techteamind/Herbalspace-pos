@@ -125,7 +125,7 @@ export function PosPage(): JSX.Element {
     setCart({});
     setSuccess({
       ...data,
-      cafeName: settings?.cafeName ?? "Herbaspace",
+      storeName: settings?.storeName ?? "Herbaspace",
       outletName: activeOutlet?.name,
       address: activeOutlet?.address ?? settings?.address ?? undefined,
       phone: activeOutlet?.phone ?? settings?.phone ?? undefined,
@@ -465,7 +465,7 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
     setPrinting(true);
     try {
       await printThermal({
-        cafeName: receipt.cafeName,
+        storeName: receipt.storeName,
         number: receipt.number,
         datetime: receipt.datetime,
         lines: receipt.lines,
