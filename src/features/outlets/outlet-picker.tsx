@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Icon } from "@/components/shared";
-import { useOutlets } from "@/hooks/use-outlets";
+import { useOutlets, useCreateOutlet } from "@/hooks/use-outlets";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function OutletPicker(): JSX.Element {
   const { data: outlets, isLoading } = useOutlets();
   const { setOutletId } = useAuth();
+  const createOutlet = useCreateOutlet();
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
 
   return (
     <div className="fixed inset-0 z-[90] bg-background flex flex-col items-center justify-center px-6 max-w-3xl mx-auto">
@@ -24,9 +28,31 @@ export function OutletPicker(): JSX.Element {
             ))}
           </div>
         )}
-        {!isLoading && (outlets ?? []).filter((o) => o.isActive).length === 0 && (
-          <div className="text-center py-8">
+        {!isLoading && (outlets ?? []).filter((o) => o.isActive).length === 0 && !showCreate && (
+          <div className="text-center py-8 space-y-4">
             <p className="font-body-md text-body-md text-on-surface-variant">Belum ada outlet aktif.</p>
+            <button onClick={() => setShowCreate(true)}
+              className="h-12 px-6 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold active:scale-95 transition-transform">
+              <Icon name="add" className="text-[18px] mr-1 align-text-bottom" />Buat Outlet Pertama
+            </button>
+          </div>
+        )}
+        {showCreate && (
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 shadow-card space-y-3">
+            <input className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary"
+              value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nama outlet, cth: Herbaspace Pusat" autoFocus />
+            <div className="flex gap-2">
+              <button onClick={() => { setShowCreate(false); setNewName(""); }}
+                className="flex-1 h-11 rounded-xl border border-outline-variant font-body-md text-body-md text-on-surface-variant">Batal</button>
+              <button disabled={!newName.trim() || createOutlet.isPending}
+                onClick={async () => {
+                  const created = await createOutlet.mutateAsync({ name: newName.trim() }) as { id: string };
+                  setOutletId(created.id);
+                }}
+                className="flex-1 h-11 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold disabled:opacity-50">
+                {createOutlet.isPending ? "Membuat..." : "Buat & Pilih"}
+              </button>
+            </div>
           </div>
         )}
         {(outlets ?? []).filter((o) => o.isActive).map((outlet) => (

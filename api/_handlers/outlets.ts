@@ -46,7 +46,10 @@ export default createHandler({
     if (!requireRole(auth, "owner", res)) return;
     const id = String(req.query.id ?? "");
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
-    await db.delete(outlets).where(and(eq(outlets.id, id), eq(outlets.tenantId, auth.tenantId)));
-    res.status(204).end();
+    const [row] = await db.update(outlets).set({ isActive: false })
+      .where(and(eq(outlets.id, id), eq(outlets.tenantId, auth.tenantId)))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Outlet tidak ditemukan" }); return; }
+    res.json(row);
   },
 });

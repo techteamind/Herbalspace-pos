@@ -43,6 +43,11 @@ export function PromosPage(): JSX.Element {
                   {p.type === "buy_x_get_y" && ` Beli ${p.buyQty} Gratis ${p.getQty}`}
                   {p.type === "happy_hour" && ` ${Number(p.value)}%`}
                 </p>
+                {Number(p.minPurchase) > 0 && (
+                  <p className="font-label-caps text-label-caps text-on-surface-variant mt-0.5">
+                    Min. belanja Rp{Number(p.minPurchase).toLocaleString("id-ID")}
+                  </p>
+                )}
                 {p.startHour && p.endHour && (
                   <p className="font-label-caps text-label-caps text-on-surface-variant mt-0.5">
                     {p.startHour} – {p.endHour}
@@ -85,6 +90,7 @@ function PromoForm({ promo, onClose }: { promo: Promo | null; onClose: () => voi
   const [getQty, setGetQty] = useState(promo?.getQty ? String(promo.getQty) : "1");
   const [startHour, setStartHour] = useState(promo?.startHour ?? "");
   const [endHour, setEndHour] = useState(promo?.endHour ?? "");
+  const [minPurchase, setMinPurchase] = useState(promo?.minPurchase ? String(Number(promo.minPurchase)) : "");
   const [days, setDays] = useState<number[]>(promo?.daysOfWeek ?? []);
 
   function toggleDay(d: number): void {
@@ -94,6 +100,7 @@ function PromoForm({ promo, onClose }: { promo: Promo | null; onClose: () => voi
   async function submit(): Promise<void> {
     const data = {
       name, type, value: String(Number(value) || 0),
+      minPurchase: String(Number(minPurchase) || 0),
       buyQty: type === "buy_x_get_y" ? Number(buyQty) : null,
       getQty: type === "buy_x_get_y" ? Number(getQty) : null,
       startHour: startHour || null, endHour: endHour || null,
@@ -148,6 +155,9 @@ function PromoForm({ promo, onClose }: { promo: Promo | null; onClose: () => voi
             </button>
           ))}
         </div>
+      </Field>
+      <Field label="Minimum Belanja (Rp)">
+        <input className={inputCls} inputMode="numeric" value={minPurchase} onChange={(e) => setMinPurchase(e.target.value.replace(/[^0-9]/g, ""))} placeholder="0 = tanpa minimum" />
       </Field>
       <p className="font-label-caps text-label-caps text-on-surface-variant">Kosongkan jam & hari = berlaku sepanjang waktu.</p>
       <button onClick={submit} disabled={pending || !name.trim()}

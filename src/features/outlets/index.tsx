@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { PageHeader, Icon, FormSheet, Field, inputCls, ListSkeleton, EmptyState, ErrorState, useConfirm } from "@/components/shared";
-import { useOutlets, useCreateOutlet, useUpdateOutlet, useDeleteOutlet, type Outlet } from "@/hooks/use-outlets";
+import { PageHeader, Icon, FormSheet, Field, inputCls, ListSkeleton, EmptyState, ErrorState } from "@/components/shared";
+import { useOutlets, useCreateOutlet, useUpdateOutlet, type Outlet } from "@/hooks/use-outlets";
 
 export function OutletsPage(): JSX.Element {
   const { data: outlets, isLoading, isError, error } = useOutlets();
-  const deleteMut = useDeleteOutlet();
-  const { confirm: confirmDel, ConfirmDialog } = useConfirm();
+  const updateMut = useUpdateOutlet();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Outlet | null>(null);
 
@@ -22,18 +21,21 @@ export function OutletsPage(): JSX.Element {
           <div key={o.id} className="bg-surface-container-lowest rounded-xl p-4 shadow-card border border-outline-variant/40">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <h3 className="font-body-md text-body-md font-semibold text-on-surface">{o.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-body-md text-body-md font-semibold text-on-surface">{o.name}</h3>
+                  {!o.isActive && <span className="font-label-caps text-label-caps bg-surface-container text-on-surface-variant px-1.5 py-0.5 rounded">Nonaktif</span>}
+                </div>
                 {o.address && <p className="font-label-caps text-label-caps text-on-surface-variant mt-0.5">{o.address}</p>}
                 {o.phone && <p className="font-label-caps text-label-caps text-on-surface-variant">{o.phone}</p>}
               </div>
               <div className="flex gap-1">
+                <button onClick={() => updateMut.mutate({ id: o.id, isActive: !o.isActive })}
+                  className="p-2 text-on-surface-variant active:scale-90 transition-transform">
+                  <Icon name={o.isActive ? "toggle_on" : "toggle_off"} className={o.isActive ? "text-primary" : ""} />
+                </button>
                 <button onClick={() => { setEditing(o); setShowForm(true); }}
                   className="p-2 text-on-surface-variant active:scale-90 transition-transform">
                   <Icon name="edit" />
-                </button>
-                <button onClick={async () => { if (await confirmDel("Hapus outlet ini?", "Data outlet akan dihapus permanen.")) deleteMut.mutate(o.id); }}
-                  className="p-2 text-error active:scale-90 transition-transform">
-                  <Icon name="delete" />
                 </button>
               </div>
             </div>
@@ -42,7 +44,6 @@ export function OutletsPage(): JSX.Element {
       </div>
 
       {showForm && <OutletForm outlet={editing} onClose={() => { setShowForm(false); setEditing(null); }} />}
-      <ConfirmDialog />
     </>
   );
 }
