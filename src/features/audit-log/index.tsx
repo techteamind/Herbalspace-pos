@@ -5,6 +5,7 @@ const ACTION_LABEL: Record<string, string> = {
   create: "Buat",
   void: "Void",
   delete: "Hapus",
+  deactivate: "Nonaktifkan",
   price_change: "Ubah Harga",
   open: "Buka",
   close: "Tutup",

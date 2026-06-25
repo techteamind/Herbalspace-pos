@@ -25,8 +25,12 @@ export function CustomerForm({ initial, onClose, onDeleted }: { initial?: Custom
   }
   async function remove(): Promise<void> {
     if (!initial) return;
-    await del.mutateAsync(initial.id);
-    (onDeleted ?? onClose)();
+    try {
+      await del.mutateAsync(initial.id);
+      (onDeleted ?? onClose)();
+    } catch {
+      setShowDeleteConfirm(false);
+    }
   }
 
   return (
@@ -45,7 +49,7 @@ export function CustomerForm({ initial, onClose, onDeleted }: { initial?: Custom
           <Icon name="delete" />Hapus Pelanggan
         </button>
       )}
-      <ConfirmDialog open={showDeleteConfirm} title={`Hapus pelanggan "${initial?.name}"?`} message="Data pelanggan dan riwayat poin akan dihapus permanen."
+      <ConfirmDialog open={showDeleteConfirm} title={`Hapus pelanggan "${initial?.name}"?`} message="Pelanggan dengan riwayat transaksi tidak bisa dihapus."
         onConfirm={remove} onCancel={() => setShowDeleteConfirm(false)} />
     </FormSheet>
   );

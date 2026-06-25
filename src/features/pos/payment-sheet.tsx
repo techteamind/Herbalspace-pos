@@ -78,7 +78,9 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
           result.push({ promo: p, discountAmount: Number(p.value) });
         }
       } else if (p.type === "happy_hour") {
-        result.push({ promo: p, discountAmount: Math.round(subtotal * Number(p.value) / 100) });
+        if (subtotal >= Number(p.minPurchase)) {
+          result.push({ promo: p, discountAmount: Math.round(subtotal * Number(p.value) / 100) });
+        }
       } else if (p.type === "buy_x_get_y" && p.productId) {
         const line = lines.find((l) => l.product.id === p.productId);
         if (line && p.buyQty && p.getQty && line.qty >= p.buyQty) {

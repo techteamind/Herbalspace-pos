@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent } from "react";
 import { AnimatePresence } from "framer-motion";
 import { PageHeader, Icon, FormSheet, Field, inputCls, useConfirm } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
-import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/use-products";
+import { useProducts, useCreateProduct, useUpdateProduct } from "@/hooks/use-products";
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/use-categories";
 import type { ProductWithCategory, Category } from "@/types";
 import { ProductForm } from "./product-form";
@@ -14,7 +14,6 @@ export function ProductsPage(): JSX.Element {
   const { data: products, isLoading, isError, error } = useProducts();
   const { data: categories } = useCategories();
   const updateProduct = useUpdateProduct();
-  const deleteProduct = useDeleteProduct();
   const deleteCategory = useDeleteCategory();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ProductWithCategory | null>(null);
@@ -70,13 +69,6 @@ export function ProductsPage(): JSX.Element {
   function toggleActive(p: ProductWithCategory, e: MouseEvent): void {
     e.stopPropagation();
     updateProduct.mutate({ id: p.id, isActive: !p.isActive });
-  }
-
-  async function removeProduct(p: ProductWithCategory, e: MouseEvent): Promise<void> {
-    e.stopPropagation();
-    if (await confirmDelete(`Hapus produk "${p.name}"?`, "Produk yang dihapus tidak dapat dikembalikan.")) {
-      deleteProduct.mutate(p.id);
-    }
   }
 
   async function removeCat(c: Category): Promise<void> {
@@ -147,9 +139,6 @@ export function ProductsPage(): JSX.Element {
                   </span>
                 </div>
               </div>
-              <button onClick={(e) => removeProduct(p, e)} className="w-8 h-8 flex items-center justify-center text-error/60 hover:text-error shrink-0">
-                <Icon name="delete" className="text-[20px]" />
-              </button>
               <span role="switch" aria-checked={p.isActive} onClick={(e) => toggleActive(p, e)}
                 className={`w-11 h-6 rounded-full relative shrink-0 cursor-pointer ${p.isActive ? "bg-primary-container" : "bg-surface-container-highest"}`}>
                 <span className={`absolute top-0.5 w-5 h-5 bg-surface-container-lowest rounded-full shadow transition-all ${p.isActive ? "right-0.5" : "left-0.5"}`} />

@@ -132,10 +132,9 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
 
   async function remove(): Promise<void> {
     if (!initial) return;
-    if (initial.imageUrl) await deleteProductImage(initial.imageUrl).catch(() => {});
     await del.mutateAsync(initial.id);
     hapticError();
-    toast("Produk dihapus", "error");
+    toast("Produk dinonaktifkan", "error");
     onClose();
   }
 
@@ -247,10 +246,10 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
       </button>
       {editing && (
         <button onClick={() => setShowDeleteConfirm(true)} disabled={busy} className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2">
-          <Icon name="delete" />Hapus Produk
+          <Icon name="block" />Nonaktifkan Produk
         </button>
       )}
-      <ConfirmDialog open={showDeleteConfirm} title={`Hapus produk "${initial?.name}"?`} message="Produk yang dihapus tidak dapat dikembalikan."
+      <ConfirmDialog open={showDeleteConfirm} title={`Nonaktifkan produk "${initial?.name}"?`} message="Produk akan dinonaktifkan dan tidak muncul di kasir. Data transaksi tetap tersimpan."
         onConfirm={remove} onCancel={() => setShowDeleteConfirm(false)} />
     </FormSheet>
   );
