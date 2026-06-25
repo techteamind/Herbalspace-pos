@@ -3,6 +3,7 @@ import { db } from "../../db/index.js";
 import { transactions, stockMovements, ingredients, recipeItems } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
+import { outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -11,7 +12,8 @@ export default createHandler({
 
     const effectiveOutletId = (qsOutletId as string) || auth.outletId;
     const conditions = [eq(transactions.tenantId, auth.tenantId)];
-    if (effectiveOutletId) conditions.push(eq(transactions.outletId, effectiveOutletId));
+    const txOf = outletFilter(transactions.outletId, effectiveOutletId);
+    if (txOf) conditions.push(txOf);
     if (from) conditions.push(gte(transactions.createdAt, new Date(from as string)));
     if (to) conditions.push(lt(transactions.createdAt, new Date(to as string)));
 

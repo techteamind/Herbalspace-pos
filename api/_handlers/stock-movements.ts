@@ -2,7 +2,7 @@ import { eq, and, desc, gte, lt } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { stockMovements, ingredients, units } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
-import { requireRole } from "../_lib/auth.js";
+import { requireRole, outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async POST(req, res, auth) {
@@ -52,7 +52,8 @@ export default createHandler({
     const limit = Math.min(Number(limitStr) || 100, 300);
 
     const conditions = [eq(stockMovements.tenantId, auth.tenantId)];
-    if (auth.outletId) conditions.push(eq(ingredients.outletId, auth.outletId));
+    const smOf = outletFilter(ingredients.outletId, auth.outletId);
+    if (smOf) conditions.push(smOf);
     if (from) conditions.push(gte(stockMovements.createdAt, new Date(from as string)));
     if (to) conditions.push(lt(stockMovements.createdAt, new Date(to as string)));
     if (type) conditions.push(eq(stockMovements.type, type as typeof stockMovements.type.enumValues[number]));

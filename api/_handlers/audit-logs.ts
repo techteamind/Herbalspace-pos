@@ -2,6 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { auditLogs } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -11,7 +12,8 @@ export default createHandler({
     }
     const limit = Math.min(Number(req.query.limit) || 100, 500);
     const conditions = [eq(auditLogs.tenantId, auth.tenantId)];
-    if (auth.outletId) conditions.push(eq(auditLogs.outletId, auth.outletId));
+    const of = outletFilter(auditLogs.outletId, auth.outletId);
+    if (of) conditions.push(of);
     const rows = await db.select().from(auditLogs)
       .where(and(...conditions))
       .orderBy(desc(auditLogs.createdAt))

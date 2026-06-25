@@ -2,22 +2,24 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { expenses, expenseCategories } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
-import { requireRole } from "../_lib/auth.js";
+import { requireRole, outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
     const section = req.query.section as string | undefined;
     if (section === "categories") {
       const catConditions = [eq(expenseCategories.tenantId, auth.tenantId)];
-      if (auth.outletId) catConditions.push(eq(expenseCategories.outletId, auth.outletId));
+      const catOf = outletFilter(expenseCategories.outletId, auth.outletId);
+      if (catOf) catConditions.push(catOf);
       const rows = await db.query.expenseCategories.findMany({
         where: and(...catConditions),
       });
       res.json(rows);
       return;
     }
-    const expWhere = auth.outletId
-      ? and(eq(expenses.tenantId, auth.tenantId), eq(expenses.outletId, auth.outletId))
+    const expOf = outletFilter(expenses.outletId, auth.outletId);
+    const expWhere = expOf
+      ? and(eq(expenses.tenantId, auth.tenantId), expOf)
       : eq(expenses.tenantId, auth.tenantId);
     const rows = await db.query.expenses.findMany({
       where: expWhere,

@@ -2,6 +2,7 @@ import { eq, and, desc, ilike, or } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { customers, transactions } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -24,7 +25,8 @@ export default createHandler({
 
     const search = req.query.q as string | undefined;
     const conditions = [eq(customers.tenantId, auth.tenantId)];
-    if (auth.outletId) conditions.push(eq(customers.outletId, auth.outletId));
+    const of = outletFilter(customers.outletId, auth.outletId);
+    if (of) conditions.push(of);
     if (search) {
       const escaped = search.replace(/[%_\\]/g, "\\$&");
       conditions.push(or(ilike(customers.name, `%${escaped}%`), ilike(customers.phone, `%${escaped}%`))!);

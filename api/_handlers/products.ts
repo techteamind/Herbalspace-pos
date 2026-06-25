@@ -1,14 +1,15 @@
-import { eq, and, asc, or, isNull } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { products, priceHistory } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
-import { requireRole } from "../_lib/auth.js";
+import { requireRole, outletFilter } from "../_lib/auth.js";
 import { logAudit } from "../_lib/audit.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
-    const where = auth.outletId
-      ? and(eq(products.tenantId, auth.tenantId), or(eq(products.outletId, auth.outletId), isNull(products.outletId)))
+    const pOf = outletFilter(products.outletId, auth.outletId);
+    const where = pOf
+      ? and(eq(products.tenantId, auth.tenantId), pOf)
       : eq(products.tenantId, auth.tenantId);
     const rows = await db.query.products.findMany({
       where,

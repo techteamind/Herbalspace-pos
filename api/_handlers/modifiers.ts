@@ -2,12 +2,13 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { modifierGroups, modifierOptions } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
-import { requireRole } from "../_lib/auth.js";
+import { requireRole, outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
     const conditions = [eq(modifierGroups.tenantId, auth.tenantId)];
-    if (auth.outletId) conditions.push(eq(modifierGroups.outletId, auth.outletId));
+    const of = outletFilter(modifierGroups.outletId, auth.outletId);
+    if (of) conditions.push(of);
     const groups = await db.query.modifierGroups.findMany({
       where: and(...conditions),
       with: { options: true },

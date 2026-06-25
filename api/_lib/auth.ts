@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { jwtVerify, createRemoteJWKSet, type JWTPayload } from "jose";
-import { eq } from "drizzle-orm";
+import { eq, or, isNull, type SQL, type Column } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { profiles, tenants, settings } from "../../db/schema.js";
 
@@ -122,6 +122,11 @@ export async function authenticate(req: VercelRequest): Promise<AuthContext | nu
 /** Helper untuk mengembalikan 401. */
 export function unauthorized(res: VercelResponse): void {
   res.status(401).json({ error: "Tidak terautentikasi" });
+}
+
+export function outletFilter(column: Column, outletId: string | null): SQL | undefined {
+  if (!outletId) return undefined;
+  return or(eq(column, outletId), isNull(column));
 }
 
 const ROLE_LEVEL: Record<string, number> = { cashier: 0, manager: 1, owner: 2 };

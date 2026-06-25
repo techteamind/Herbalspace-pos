@@ -2,6 +2,7 @@ import { sql, eq, and, desc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { transactions, ingredients, units } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { outletFilter as makeOutletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -11,7 +12,7 @@ export default createHandler({
     const yesterdayStart = new Date(todayStart);
     yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
-    const outletFilter = auth.outletId ? sql` AND t.outlet_id = ${auth.outletId}::uuid` : sql``;
+    const outletFilter = auth.outletId ? sql` AND (t.outlet_id = ${auth.outletId}::uuid OR t.outlet_id IS NULL)` : sql``;
 
     if (section === "stats") {
       const [todayRows] = await db.execute(sql`
@@ -95,7 +96,8 @@ export default createHandler({
 
     if (section === "recent-transactions") {
       const conds = [eq(transactions.tenantId, auth.tenantId), eq(transactions.status, "paid")];
-      if (auth.outletId) conds.push(eq(transactions.outletId, auth.outletId));
+      const rtOf = makeOutletFilter(transactions.outletId, auth.outletId);
+      if (rtOf) conds.push(rtOf);
       const rows = await db.query.transactions.findMany({
         where: and(...conds),
         orderBy: desc(transactions.createdAt),
@@ -143,7 +145,7 @@ export default createHandler({
             eq(ingredients.tenantId, auth.tenantId),
             eq(ingredients.isActive, true),
             sql`${ingredients.currentStock}::numeric <= ${ingredients.minStock}::numeric`,
-            ...(auth.outletId ? [eq(ingredients.outletId, auth.outletId)] : []),
+            ...(makeOutletFilter(ingredients.outletId, auth.outletId) ? [makeOutletFilter(ingredients.outletId, auth.outletId)!] : []),
           ),
         );
       res.json(rows);

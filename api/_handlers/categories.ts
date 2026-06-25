@@ -2,12 +2,13 @@ import { eq, and, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { categories } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
-import { requireRole } from "../_lib/auth.js";
+import { requireRole, outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
     const conditions = [eq(categories.tenantId, auth.tenantId)];
-    if (auth.outletId) conditions.push(eq(categories.outletId, auth.outletId));
+    const of = outletFilter(categories.outletId, auth.outletId);
+    if (of) conditions.push(of);
     const rows = await db.select().from(categories)
       .where(and(...conditions))
       .orderBy(asc(categories.sortOrder), asc(categories.name));

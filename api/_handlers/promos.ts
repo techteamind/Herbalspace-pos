@@ -2,13 +2,14 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { promos } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
-import { requireRole } from "../_lib/auth.js";
+import { requireRole, outletFilter } from "../_lib/auth.js";
 import { logAudit } from "../_lib/audit.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
     const conditions = [eq(promos.tenantId, auth.tenantId)];
-    if (auth.outletId) conditions.push(eq(promos.outletId, auth.outletId));
+    const of = outletFilter(promos.outletId, auth.outletId);
+    if (of) conditions.push(of);
     const rows = await db.select().from(promos)
       .where(and(...conditions))
       .orderBy(desc(promos.createdAt));

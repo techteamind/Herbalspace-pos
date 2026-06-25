@@ -3,6 +3,7 @@ import { db } from "../../db/index.js";
 import { shifts, transactions, payments } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
+import { outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -18,8 +19,9 @@ export default createHandler({
       return;
     }
 
-    const where = auth.outletId
-      ? and(eq(shifts.tenantId, auth.tenantId), eq(shifts.outletId, auth.outletId))
+    const shiftOf = outletFilter(shifts.outletId, auth.outletId);
+    const where = shiftOf
+      ? and(eq(shifts.tenantId, auth.tenantId), shiftOf)
       : eq(shifts.tenantId, auth.tenantId);
     const rows = await db.query.shifts.findMany({
       where,
