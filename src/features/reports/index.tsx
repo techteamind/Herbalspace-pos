@@ -83,6 +83,7 @@ export function ReportsPage(): JSX.Element {
 
   const reportData: ReportData = {
     period,
+    outletName: activeOutlet?.name,
     summary: { omzet, hpp, labaKotor, pengeluaran: expenseTotal, labaBersih },
     topProducts: topProducts.map(([name, value]) => ({ name, value })),
   };

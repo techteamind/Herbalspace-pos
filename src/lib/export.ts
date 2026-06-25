@@ -2,6 +2,7 @@ import { formatRupiah, escapeHtml as escHtml } from "./utils";
 
 export interface ReportData {
   period: string;
+  outletName?: string;
   summary: { omzet: number; hpp: number; labaKotor: number; pengeluaran: number; labaBersih: number };
   topProducts: { name: string; value: number }[];
 }
@@ -9,6 +10,7 @@ export interface ReportData {
 export function exportReportExcel(d: ReportData): void {
   const rows = [
     ["Laporan Herbaspace POS"],
+    [d.outletName ? `Outlet: ${d.outletName}` : "Semua Outlet"],
     [`Periode: ${d.period}`],
     [],
     ["Ringkasan Keuangan"],
@@ -51,6 +53,7 @@ export function exportReportPdf(d: ReportData): void {
   @media print { body { padding: 16px; } }
 </style></head><body>
 <h1>Laporan Herbaspace POS</h1>
+${d.outletName ? `<p style="color:#3f4942;font-size:14px;margin:2px 0">Outlet: ${escHtml(d.outletName)}</p>` : `<p style="color:#3f4942;font-size:14px;margin:2px 0">Semua Outlet</p>`}
 <p class="period">Periode: ${d.period} &mdash; Dicetak ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
 <h2>Ringkasan Keuangan</h2>
 <table>

@@ -1,6 +1,6 @@
 import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { transactions, stockMovements, ingredients, recipeItems } from "../../db/schema.js";
+import { transactions, stockMovements, ingredients, recipeItems, customers } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
 import { outletFilter } from "../_lib/auth.js";
@@ -41,6 +41,15 @@ export default createHandler({
       await db.transaction(async (tx) => {
         await tx.update(transactions).set({ status: "void" })
           .where(and(eq(transactions.id, id), eq(transactions.tenantId, auth.tenantId)));
+
+        if (txn.customerId) {
+          const total = Number(txn.total);
+          const earnedPoints = Math.floor(total / 10000);
+          await tx.update(customers).set({
+            points: sql`GREATEST(${customers.points} - ${earnedPoints}, 0)`,
+            totalSpent: sql`GREATEST(${customers.totalSpent} - ${total}, 0)`,
+          }).where(and(eq(customers.id, txn.customerId), eq(customers.tenantId, auth.tenantId)));
+        }
 
         for (const item of txn.items) {
           if (!item.productId) continue;
