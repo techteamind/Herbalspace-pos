@@ -1,6 +1,5 @@
 import { type ReactNode, useState, useEffect } from "react";
 import { PageHeader, Icon, FormSheet, Field, inputCls } from "@/components/shared";
-import { supabase } from "@/lib/supabase";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api-client";
@@ -35,7 +34,7 @@ const PAY_OPTIONS = [
 ] as const;
 
 export function SettingsPage(): JSX.Element {
-  const { profileName, user } = useAuth();
+  const { profileName, user, logout } = useAuth();
   const qc = useQueryClient();
   const { data: s } = useSettings();
   const update = useUpdateSettings();
@@ -149,7 +148,7 @@ export function SettingsPage(): JSX.Element {
         </Section>
 
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => void logout().catch(() => {})}
           className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <Icon name="logout" />Keluar

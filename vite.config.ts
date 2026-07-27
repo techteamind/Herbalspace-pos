@@ -109,6 +109,7 @@ export default defineConfig({
     localApi(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: null, // registrasi manual di main.tsx — SW dinonaktifkan di APK (Capacitor)
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [

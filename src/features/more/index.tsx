@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader, Icon } from "@/components/shared";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOutlets } from "@/hooks/use-outlets";
-import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/types/auth";
 
 interface MenuItem { to: string; icon: string; label: string; minRole?: UserRole }
@@ -50,7 +49,7 @@ const SECTIONS: MenuSection[] = [
 const ROLE_LEVEL: Record<UserRole, number> = { cashier: 0, manager: 1, owner: 2 };
 
 export function MorePage(): JSX.Element {
-  const { role, outletId, setOutletId, profileName, user } = useAuth();
+  const { role, outletId, setOutletId, profileName, user, logout } = useAuth();
   const { data: outlets } = useOutlets();
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const userLevel = ROLE_LEVEL[role ?? "cashier"];
@@ -107,7 +106,7 @@ export function MorePage(): JSX.Element {
 
         {/* Logout button */}
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => void logout().catch(() => {})}
           className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <Icon name="logout" />Keluar

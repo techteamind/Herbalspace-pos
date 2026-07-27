@@ -18,11 +18,12 @@ interface Props {
   taxPercent: number;
   onClose: () => void;
   onSuccess: (data: { transactionId: string; number: string; subtotal: number; discount: number; tax: number; total: number; method: string; received?: number; change?: number; customerName?: string; customerPhone?: string; lines: { name: string; qty: number; price: number; note?: string }[] }) => void;
+  onQueued: () => void;
   onQty: (productId: string, delta: number) => void;
   onNote: (productId: string, note: string) => void;
 }
 
-export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onNote }: Props): JSX.Element {
+export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQueued, onQty, onNote }: Props): JSX.Element {
   const [method, setMethod] = useState<Method>("cash");
   const [received, setReceived] = useState("");
   const [discountInput, setDiscountInput] = useState("");
@@ -82,12 +83,25 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
           result.push({ promo: p, discountAmount: Math.round(subtotal * Number(p.value) / 100) });
         }
       } else if (p.type === "buy_x_get_y" && p.productId) {
-        const line = lines.find((l) => l.product.id === p.productId);
-        if (line && p.buyQty && p.getQty && line.qty >= p.buyQty) {
-          const freeQty = Math.floor(line.qty / p.buyQty) * p.getQty;
-          result.push({ promo: p, discountAmount: freeQty * Number(line.product.price) });
+        // unit gratis ikut berada di keranjang: "Beli X Gratis Y" = tiap (X+Y) unit, Y gratis
+        const matching = lines.filter((l) => l.product.id === p.productId);
+        const totalQty = matching.reduce((s, l) => s + l.qty, 0);
+        if (p.buyQty && p.getQty && totalQty >= p.buyQty + p.getQty) {
+          const freeQty = Math.floor(totalQty / (p.buyQty + p.getQty)) * p.getQty;
+          // yang digratiskan = unit termurah di keranjang (harga varian dihitung, modifier tidak)
+          const unitPrices = matching
+            .flatMap((l) => Array<number>(l.qty).fill(l.variantPrice ?? Number(l.product.price)))
+            .sort((a, b) => a - b);
+          const discountAmount = unitPrices.slice(0, freeQty).reduce((s, v) => s + v, 0);
+          if (discountAmount > 0) result.push({ promo: p, discountAmount });
         }
       }
+    }
+    // ponytail: promo tidak di-stack — hanya promo dengan diskon terbesar yang
+    // dipakai (stacking aditif bisa tembus 100%); ubah jika bisnis butuh stacking
+    if (result.length > 1) {
+      result.sort((a, b) => b.discountAmount - a.discountAmount);
+      result.length = 1;
     }
     return result;
   }, [activePromos, subtotal, lines]);
@@ -106,6 +120,9 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
   const insufficient = method === "cash" && receivedNum < total;
 
   const processingRef = useRef(false);
+  // idempotency key: stabil selama sheet ini terbuka, jadi retry setelah gagal
+  // ambigu tidak membuat transaksi ganda di server
+  const clientRefRef = useRef<string>(crypto.randomUUID());
   async function process(): Promise<void> {
     if (processingRef.current) return;
     processingRef.current = true;
@@ -124,6 +141,7 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
         customerId,
         taxPercent,
         discount,
+        clientRef: clientRefRef.current,
         items: lines.map((l) => {
           const modTotal = (l.modifiers ?? []).reduce((m, mod) => m + mod.price, 0);
           const modLabel = l.modifiers?.length ? ` [${l.modifiers.map((m) => m.name).join(", ")}]` : "";
@@ -140,7 +158,10 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQty, onN
           amount: total,
           ...(method === "cash" ? { amount_received: receivedNum, change_amount: change } : {}),
         }],
-      }) as { transaction_id: string; number: string; total: string };
+      }) as { transaction_id: string; number: string; total: string; _queued?: boolean };
+      // Offline: transaksi masuk antrean, BELUM punya nomor struk. Jangan tampilkan
+      // struk sukses palsu (nomor "undefined") — beri tahu kasir bahwa ini menunggu sync.
+      if (result._queued) { onQueued(); return; }
       onSuccess({
         transactionId: result.transaction_id,
         number: result.number,

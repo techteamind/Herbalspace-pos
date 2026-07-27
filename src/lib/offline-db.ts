@@ -56,6 +56,16 @@ export async function removeQueuedRequest(id: number): Promise<void> {
   });
 }
 
+export async function clearQueue(): Promise<void> {
+  const db = await openDB();
+  const tx = db.transaction(QUEUE_STORE, "readwrite");
+  tx.objectStore(QUEUE_STORE).clear();
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export async function getQueueCount(): Promise<number> {
   const db = await openDB();
   const tx = db.transaction(QUEUE_STORE, "readonly");

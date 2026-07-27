@@ -18,7 +18,8 @@ function rangeFor(period: Period): { from: Date; to: Date } {
   const from = new Date(to);
   if (period === "Harian") from.setDate(to.getDate() - 1);
   else if (period === "Mingguan") from.setDate(to.getDate() - 7);
-  else if (period === "Bulanan") from.setMonth(to.getMonth() - 1);
+  // 30 hari flat: setMonth(-1) di tanggal 29-31 overflow dan menyusutkan window
+  else if (period === "Bulanan") from.setDate(to.getDate() - 30);
   else from.setFullYear(to.getFullYear() - 1);
   return { from, to };
 }
@@ -33,7 +34,7 @@ export function ReportsPage(): JSX.Element {
   const [period, setPeriod] = useState<Period>("Bulanan");
   const { from, to } = useMemo(() => rangeFor(period), [period]);
 
-  const { data: trx, isLoading } = useTransactions({ from: from.toISOString(), to: to.toISOString(), limit: 500 });
+  const { data: trx, isLoading } = useTransactions({ from: from.toISOString(), to: to.toISOString(), limit: 1000 });
   const { data: expenses } = useExpenses();
   const { data: ingredientList } = useIngredients();
 

@@ -61,7 +61,13 @@ export function useActivePromos() {
     if (!p.isActive) return false;
     if (p.startAt && new Date(p.startAt) > now) return false;
     if (p.endAt && new Date(p.endAt) < now) return false;
-    if (p.startHour && p.endHour && (currentHour < p.startHour || currentHour > p.endHour)) return false;
+    if (p.startHour && p.endHour) {
+      // window lintas tengah malam (mis. 21:00–01:00): aktif jika >= start ATAU <= end
+      const inWindow = p.startHour <= p.endHour
+        ? currentHour >= p.startHour && currentHour <= p.endHour
+        : currentHour >= p.startHour || currentHour <= p.endHour;
+      if (!inWindow) return false;
+    }
     if (p.daysOfWeek && p.daysOfWeek.length > 0 && !p.daysOfWeek.includes(currentDay)) return false;
     return true;
   });

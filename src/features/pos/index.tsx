@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { PageHeader, Icon, ListSkeleton, ErrorState } from "@/components/shared";
+import { PageHeader, Icon, ListSkeleton, ErrorState, EmptyState, useToast } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
 import { useProducts } from "@/hooks/use-products";
 import { useSettings } from "@/hooks/use-settings";
@@ -31,6 +31,7 @@ export function PosPage(): JSX.Element {
   const { data: products, isLoading, isError, error } = useProducts();
   const { data: settings } = useSettings();
   const { outletId } = useAuth();
+  const toast = useToast();
   const { data: outlets } = useOutlets();
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const [activeCat, setActiveCat] = useState("Semua");
@@ -140,6 +141,13 @@ export function PosPage(): JSX.Element {
     });
   }
 
+  function onQueued(): void {
+    hapticSuccess();
+    setShowPayment(false);
+    setCart({});
+    toast("Transaksi tersimpan offline — akan disinkronkan otomatis saat online", "info");
+  }
+
   return (
     <>
       <PageHeader title="Kasir" />
@@ -194,6 +202,10 @@ export function PosPage(): JSX.Element {
       <div className="px-container-padding mt-1">
         {isLoading && <ListSkeleton rows={6} variant="grid" />}
         {isError && <ErrorState message={error instanceof Error ? error.message : "Gagal memuat produk"} />}
+        {!isLoading && !isError && visible.length === 0 && (
+          <EmptyState icon="storefront" title="Belum ada produk"
+            subtitle={search ? "Tidak ada produk yang cocok dengan pencarian." : "Tambahkan produk di menu Produk untuk mulai berjualan."} />
+        )}
         {!isLoading && !isError && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {visible.map((p) => {
@@ -244,7 +256,7 @@ export function PosPage(): JSX.Element {
 
       {showPayment && (
         <PaymentSheet lines={lines} taxPercent={Number(settings?.taxPercent ?? 0)}
-          onClose={() => setShowPayment(false)} onSuccess={onSuccess} onQty={changeQty} onNote={changeNote} />
+          onClose={() => setShowPayment(false)} onSuccess={onSuccess} onQueued={onQueued} onQty={changeQty} onNote={changeNote} />
       )}
 
       {showScanner && <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />}

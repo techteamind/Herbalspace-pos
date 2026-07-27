@@ -3,6 +3,9 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { AuthContextValue, AuthUser, UserRole } from "@/types/auth";
 import { apiFetch, getActiveOutletId, setActiveOutletId } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
+import { clearQueue, getQueueCount } from "@/lib/offline-db";
+import { syncQueue } from "@/lib/offline-sync";
 
 const AuthContextProvider = createContext<AuthContextValue | undefined>(undefined);
 
@@ -77,12 +80,23 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   const logout = useCallback(async (): Promise<void> => {
     setError(null);
+    // Kirim antrean offline SELAGI token masih valid, sebelum signOut.
+    await syncQueue().catch(() => {});
+    const pending = await getQueueCount().catch(() => 0);
+
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
       const err = new Error(signOutError.message);
       setError(err);
       throw err;
     }
+    // Bersihkan jejak user: cache query + outlet aktif. Antrean HANYA dihapus kalau
+    // sudah kosong (semua tersinkron); kalau masih ada (mis. logout saat offline),
+    // simpan agar transaksi tidak hilang — akan disinkron saat online berikutnya.
+    // ponytail: antrean sisa akan tersinkron dengan atribusi kasir user berikutnya;
+    // simpan cashier saat capture bila atribusi lintas-user jadi masalah.
+    queryClient.clear();
+    if (pending === 0) await clearQueue().catch(() => {});
     setSession(null);
     setOutletId(null);
   }, [setOutletId]);

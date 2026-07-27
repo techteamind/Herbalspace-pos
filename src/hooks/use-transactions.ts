@@ -19,6 +19,7 @@ interface SalePayload {
   customerId?: string | null;
   discount?: number;
   taxPercent?: number;
+  clientRef?: string;
   items: {
     product_id: string;
     product_name: string;
