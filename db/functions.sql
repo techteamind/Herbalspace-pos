@@ -23,7 +23,8 @@ CREATE OR REPLACE FUNCTION create_sale(
   p_tax_percent numeric,
   p_items       jsonb,
   p_payments    jsonb,
-  p_outlet_id   uuid DEFAULT NULL
+  p_outlet_id   uuid DEFAULT NULL,
+  p_client_ref  uuid DEFAULT NULL
 )
 RETURNS TABLE (transaction_id uuid, number text, total numeric, cogs_total numeric)
 LANGUAGE plpgsql
@@ -45,25 +46,45 @@ DECLARE
   r_recipe       record;
   v_new_balance  numeric(14,3);
 BEGIN
-  -- nomor struk harian: TRX-YYYYMMDD-#### (FOR UPDATE mencegah duplikat saat concurrent)
+  -- serialisasi per-tenant: mencegah nomor struk duplikat saat concurrent
+  -- (lock lepas otomatis saat commit/rollback)
+  PERFORM pg_advisory_xact_lock(hashtext('create_sale:' || p_tenant_id::text));
+
+  -- idempotency: replay dengan client_ref yang sama mengembalikan transaksi
+  -- yang sudah ada, bukan membuat duplikat (aman untuk retry offline queue)
+  IF p_client_ref IS NOT NULL THEN
+    RETURN QUERY SELECT t.id, t.number, t.total, t.cogs_total
+    FROM transactions t
+    WHERE t.tenant_id = p_tenant_id AND t.client_ref = p_client_ref;
+    IF FOUND THEN RETURN; END IF;
+  END IF;
+
+  -- nomor struk harian: TRX-YYYYMMDD-####
   SELECT COUNT(*) + 1 INTO v_seq
   FROM transactions
   WHERE tenant_id = p_tenant_id
-    AND created_at::date = CURRENT_DATE
-  FOR UPDATE;
+    AND created_at::date = CURRENT_DATE;
   v_number := 'TRX-' || to_char(CURRENT_DATE, 'YYYYMMDD') || '-' || lpad(v_seq::text, 4, '0');
 
   -- header sementara (total diisi setelah loop)
   INSERT INTO transactions (id, tenant_id, outlet_id, number, customer_id, cashier_id, status,
-                            subtotal, discount, tax_amount, total, cogs_total)
+                            subtotal, discount, tax_amount, total, cogs_total, client_ref)
   VALUES (v_tx_id, p_tenant_id, p_outlet_id, v_number, p_customer_id, p_cashier_id, 'paid',
-          0, COALESCE(p_discount,0), 0, 0, 0);
+          0, COALESCE(p_discount,0), 0, 0, 0, p_client_ref);
 
   -- proses tiap item
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
     v_product_id := (v_item->>'product_id')::uuid;
     v_qty        := (v_item->>'quantity')::int;
+
+    IF v_qty IS NULL OR v_qty <= 0 THEN
+      RAISE EXCEPTION 'Kuantitas item tidak valid: %', v_qty;
+    END IF;
+    IF (v_item->>'unit_price')::numeric < 0 THEN
+      RAISE EXCEPTION 'Harga item tidak valid';
+    END IF;
+
     v_line_total := (v_item->>'unit_price')::numeric * v_qty;
 
     -- HPP per unit = total (qty bahan × last_cost) dari resep
@@ -102,15 +123,24 @@ BEGIN
     END LOOP;
   END LOOP;
 
-  -- pajak & total
-  v_tax   := round((v_subtotal - COALESCE(p_discount,0)) * COALESCE(p_tax_percent,0) / 100.0, 2);
+  -- pajak & total (bulat ke rupiah utuh, konsisten dengan perhitungan klien)
+  v_tax   := round((v_subtotal - COALESCE(p_discount,0)) * COALESCE(p_tax_percent,0) / 100.0, 0);
   v_total := v_subtotal - COALESCE(p_discount,0) + v_tax;
+
+  IF v_total < 0 THEN
+    RAISE EXCEPTION 'Total transaksi negatif (diskon melebihi subtotal)';
+  END IF;
 
   UPDATE transactions
     SET subtotal = v_subtotal, tax_amount = v_tax, total = v_total, cogs_total = v_cogs_total
     WHERE id = v_tx_id;
 
-  -- pembayaran
+  -- pembayaran: status 'paid' hanya sah jika jumlah pembayaran menutup total
+  IF (SELECT COALESCE(SUM((x->>'amount')::numeric), 0)
+      FROM jsonb_array_elements(p_payments) x) < v_total THEN
+    RAISE EXCEPTION 'Pembayaran kurang dari total transaksi';
+  END IF;
+
   FOR v_pay IN SELECT * FROM jsonb_array_elements(p_payments)
   LOOP
     INSERT INTO payments (tenant_id, transaction_id, method, amount, amount_received, change_amount)
@@ -119,6 +149,14 @@ BEGIN
             NULLIF(v_pay->>'amount_received','')::numeric,
             COALESCE(NULLIF(v_pay->>'change_amount','')::numeric, 0));
   END LOOP;
+
+  -- poin & total belanja pelanggan (atomik bersama transaksi; void tinggal membalik)
+  IF p_customer_id IS NOT NULL THEN
+    UPDATE customers
+      SET points = points + floor(v_total / 10000)::int,
+          total_spent = total_spent + v_total
+      WHERE id = p_customer_id AND tenant_id = p_tenant_id;
+  END IF;
 
   RETURN QUERY SELECT v_tx_id, v_number, v_total, v_cogs_total;
 END;

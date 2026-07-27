@@ -2,7 +2,7 @@ import {
   pgTable, pgEnum, uuid, text, timestamp, numeric, integer,
   boolean, jsonb, index, uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 /* ----------------------------- Enums ----------------------------- */
 export const userRole = pgEnum("user_role", ["owner", "manager", "cashier"]);
@@ -162,6 +162,7 @@ export const transactions = pgTable("transactions", {
   taxAmount: numeric("tax_amount", { precision: 14, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 14, scale: 2 }).notNull(),
   cogsTotal: numeric("cogs_total", { precision: 14, scale: 2 }).notNull().default("0"),
+  clientRef: uuid("client_ref"),
   paidAt: timestamp("paid_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
@@ -170,6 +171,8 @@ export const transactions = pgTable("transactions", {
   byTenantStatusDate: index("transactions_tenant_status_date_idx").on(t.tenantId, t.status, t.createdAt),
   byOutlet: index("transactions_outlet_idx").on(t.outletId),
   numberUnq: uniqueIndex("transactions_number_unq").on(t.tenantId, t.number),
+  clientRefUnq: uniqueIndex("transactions_client_ref_unq").on(t.tenantId, t.clientRef)
+    .where(sql`client_ref IS NOT NULL`),
 }));
 
 export const transactionItems = pgTable("transaction_items", {
