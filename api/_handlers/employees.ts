@@ -62,17 +62,23 @@ export default createHandler({
         return;
       }
 
-      const [profile] = await db.insert(profiles).values({
-        id: data.user.id,
-        tenantId: auth.tenantId,
-        fullName,
-        email,
-        role: role || "cashier",
-        outletId: outletId || null,
-        isActive: true,
-      }).returning();
-
-      res.status(201).json(profile);
+      try {
+        const [profile] = await db.insert(profiles).values({
+          id: data.user.id,
+          tenantId: auth.tenantId,
+          fullName,
+          email,
+          role: role || "cashier",
+          outletId: outletId || null,
+          isActive: true,
+        }).returning();
+        res.status(201).json(profile);
+      } catch (insErr) {
+        // insert profil gagal → hapus auth user agar email tidak ter-orphan
+        // (kalau tidak, email "sudah terpakai" tapi tak punya profil, tak bisa dibuat ulang)
+        await admin.auth.admin.deleteUser(data.user.id).catch(() => {});
+        throw insErr;
+      }
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : "Gagal menambah karyawan" });
     }
@@ -85,6 +91,28 @@ export default createHandler({
     }
     const { id, role, outletId, isActive } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
+    if (role !== undefined && !["owner", "manager", "cashier"].includes(role)) {
+      res.status(400).json({ error: "Role tidak valid" }); return;
+    }
+
+    const target = await db.query.profiles.findFirst({
+      where: and(eq(profiles.id, id), eq(profiles.tenantId, auth.tenantId)),
+    });
+    if (!target) { res.status(404).json({ error: "Karyawan tidak ditemukan" }); return; }
+
+    // Guard: jangan sampai owner AKTIF terakhir di-demote / dinonaktifkan → tenant
+    // terkunci permanen (tak ada yang bisa kelola karyawan/outlet lagi).
+    const demoting = role !== undefined && role !== "owner";
+    const deactivating = isActive === false;
+    if (target.role === "owner" && target.isActive && (demoting || deactivating)) {
+      const ownerRows = await db.select({ count: sql<number>`count(*)::int` })
+        .from(profiles)
+        .where(and(eq(profiles.tenantId, auth.tenantId), eq(profiles.role, "owner"), eq(profiles.isActive, true)));
+      if ((ownerRows[0]?.count ?? 0) <= 1) {
+        res.status(400).json({ error: "Tidak bisa menonaktifkan atau menurunkan owner aktif terakhir" });
+        return;
+      }
+    }
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (role !== undefined) updates.role = role;

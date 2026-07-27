@@ -33,6 +33,12 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
+    // Shift wajib terikat outlet: tanpa itu, rekonsiliasi kas saat tutup akan
+    // menjumlah SELURUH outlet tenant (angka kas ngawur di bisnis multi-outlet).
+    if (!auth.outletId) {
+      res.status(400).json({ error: "Pilih outlet dulu sebelum membuka shift" });
+      return;
+    }
     const existConds = [eq(shifts.tenantId, auth.tenantId), isNull(shifts.closedAt)];
     if (auth.outletId) existConds.push(eq(shifts.outletId, auth.outletId));
     const existing = await db.query.shifts.findFirst({
@@ -62,6 +68,12 @@ export default createHandler({
       });
       if (!shift) { res.status(404).json({ error: "Shift tidak ditemukan" }); return; }
       if (shift.closedAt) { res.status(400).json({ error: "Shift sudah ditutup" }); return; }
+      // Hanya kasir pemilik shift, atau manager/owner, yang boleh menutup shift.
+      const isPrivileged = auth.role === "manager" || auth.role === "owner";
+      if (shift.cashierId !== auth.userId && !isPrivileged) {
+        res.status(403).json({ error: "Tidak bisa menutup shift kasir lain" });
+        return;
+      }
 
       const shiftOutletId = shift.outletId;
       const salesResult = await db
