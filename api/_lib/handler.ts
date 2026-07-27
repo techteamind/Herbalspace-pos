@@ -26,7 +26,13 @@ export function createHandler(handlers: MethodHandlers) {
       await handler(req, res, auth);
     } catch (err) {
       console.error(`[API Error] ${method} ${req.url}:`, err);
-      res.status(500).json({ error: err instanceof Error ? err.message : "Terjadi kesalahan" });
+      // Pesan RAISE EXCEPTION dari fungsi DB aman ditampilkan; error teknis
+      // (query/driver, mengandung SQL & parameter) tidak boleh bocor ke klien.
+      const msg = err instanceof Error ? err.message : "";
+      const isDbUserError = /Kuantitas|Harga item|Total transaksi/.test(msg);
+      res.status(isDbUserError ? 400 : 500).json({
+        error: isDbUserError ? msg : "Terjadi kesalahan pada server. Coba lagi.",
+      });
     }
   };
 }

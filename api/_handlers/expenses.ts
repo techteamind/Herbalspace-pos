@@ -21,10 +21,11 @@ export default createHandler({
     const expWhere = expOf
       ? and(eq(expenses.tenantId, auth.tenantId), expOf)
       : eq(expenses.tenantId, auth.tenantId);
+    // ponytail: cap 1000 baris; jika data melebihi ini, laporan butuh agregasi di server
     const rows = await db.query.expenses.findMany({
       where: expWhere,
       orderBy: desc(expenses.spentAt),
-      limit: 100,
+      limit: Math.min(Number(req.query.limit) || 100, 1000),
       with: { category: true, createdByProfile: true },
     });
     res.json(rows);

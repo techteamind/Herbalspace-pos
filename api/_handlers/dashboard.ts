@@ -8,9 +8,11 @@ export default createHandler({
   async GET(req, res, auth) {
     const { section } = req.query;
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    // batas hari mengikuti WIB (UTC+7); server (Vercel) berjalan di UTC
+    const DAY = 86_400_000;
+    const wibNow = new Date(now.getTime() + 7 * 3_600_000);
+    const todayStart = new Date(Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate()) - 7 * 3_600_000);
+    const yesterdayStart = new Date(todayStart.getTime() - DAY);
 
     const outletFilter = auth.outletId ? sql` AND (t.outlet_id = ${auth.outletId}::uuid OR t.outlet_id IS NULL)` : sql``;
 
@@ -56,10 +58,8 @@ export default createHandler({
     }
 
     if (section === "weekly-revenue") {
-      const weekStart = new Date(todayStart);
-      weekStart.setDate(weekStart.getDate() - 6);
-      const weekEnd = new Date(todayStart);
-      weekEnd.setDate(weekEnd.getDate() + 1);
+      const weekStart = new Date(todayStart.getTime() - 6 * DAY);
+      const weekEnd = new Date(todayStart.getTime() + DAY);
 
       const rows = await db.execute(sql`
         SELECT
@@ -80,12 +80,11 @@ export default createHandler({
 
       const days: { date: string; revenue: number; trxCount: number }[] = [];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(todayStart);
-        d.setDate(d.getDate() - i);
+        const d = new Date(todayStart.getTime() - i * DAY);
         const key = d.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
         const hit = byDay.get(key);
         days.push({
-          date: d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric" }),
+          date: d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", timeZone: "Asia/Jakarta" }),
           revenue: hit?.revenue ?? 0,
           trxCount: hit?.trxCount ?? 0,
         });

@@ -38,10 +38,21 @@ export default createHandler({
   async POST(req, res, auth) {
     const { name, phone, email, note } = req.body;
     if (!name || typeof name !== "string" || !name.trim()) { res.status(400).json({ error: "Nama pelanggan wajib diisi" }); return; }
-    const [row] = await db.insert(customers).values({
-      tenantId: auth.tenantId, outletId: auth.outletId ?? undefined, name, phone: phone || null, email: email || null, note: note || null,
-    }).returning();
-    res.status(201).json(row);
+    try {
+      const [row] = await db.insert(customers).values({
+        tenantId: auth.tenantId, outletId: auth.outletId ?? undefined, name, phone: phone || null, email: email || null, note: note || null,
+      }).returning();
+      res.status(201).json(row);
+    } catch (err) {
+      // nomor HP sudah terdaftar → kembalikan pelanggan yang ada, bukan 500
+      if (phone && err instanceof Error && /customers_tenant_phone_unq|duplicate key/.test(err.message)) {
+        const existing = await db.query.customers.findFirst({
+          where: and(eq(customers.tenantId, auth.tenantId), eq(customers.phone, phone)),
+        });
+        if (existing) { res.status(200).json(existing); return; }
+      }
+      throw err;
+    }
   },
 
   async PUT(req, res, auth) {

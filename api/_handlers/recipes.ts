@@ -2,6 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { recipeItems, products } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 export default createHandler({
   // GET /api/recipes?productId= -> daftar bahan resep + info bahan
@@ -17,11 +18,13 @@ export default createHandler({
 
   // PUT /api/recipes -> ganti seluruh resep produk + hitung ulang HPP
   async PUT(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return;
     const { productId, items } = req.body as {
       productId: string;
       items: { ingredientId: string; quantity: number }[];
     };
     if (!productId) { res.status(400).json({ error: "productId wajib" }); return; }
+    if (!Array.isArray(items)) { res.status(400).json({ error: "items wajib berupa array" }); return; }
 
     const result = await db.transaction(async (tx) => {
       await tx.delete(recipeItems).where(

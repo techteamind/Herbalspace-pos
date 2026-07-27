@@ -18,17 +18,36 @@ interface SalePayment {
 
 export default createHandler({
   async POST(req, res, auth) {
-    const { customerId, discount, taxPercent, items, payments } = req.body as {
+    const { customerId, discount, taxPercent, items, payments, clientRef } = req.body as {
       customerId?: string | null;
       discount?: number;
       taxPercent?: number;
       items: SaleItem[];
       payments: SalePayment[];
+      clientRef?: string | null;
     };
 
     if (!Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: "Item transaksi kosong" });
       return;
+    }
+    for (const it of items) {
+      if (!Number.isInteger(it.quantity) || it.quantity <= 0 || typeof it.unit_price !== "number" || it.unit_price < 0) {
+        res.status(400).json({ error: "Item transaksi tidak valid" });
+        return;
+      }
+    }
+    const itemsTotal = items.reduce((s, it) => s + it.unit_price * it.quantity, 0);
+    const safeDiscount = Math.min(Math.max(discount ?? 0, 0), itemsTotal);
+    const safeTax = Math.min(Math.max(taxPercent ?? 0, 0), 100);
+    if (customerId) {
+      const cust = await db.execute(sql`
+        SELECT id FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
+      `);
+      if (cust.length === 0) {
+        res.status(400).json({ error: "Pelanggan tidak ditemukan" });
+        return;
+      }
     }
 
     const result = await db.execute(sql`
@@ -36,24 +55,17 @@ export default createHandler({
         ${auth.tenantId}::uuid,
         ${auth.userId}::uuid,
         ${customerId ?? null}::uuid,
-        ${discount ?? 0}::numeric,
-        ${taxPercent ?? 0}::numeric,
+        ${safeDiscount}::numeric,
+        ${safeTax}::numeric,
         ${JSON.stringify(items)}::jsonb,
         ${JSON.stringify(payments ?? [])}::jsonb,
-        ${auth.outletId ?? null}::uuid
+        ${auth.outletId ?? null}::uuid,
+        ${clientRef ?? null}::uuid
       );
     `);
     const sale = result[0] as { total: string };
-    if (customerId) {
-      const earnedPoints = Math.floor(Number(sale.total) / 10000);
-      await db.execute(sql`
-        UPDATE customers SET points = points + ${earnedPoints},
-          total_spent = total_spent + ${Number(sale.total)}
-        WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
-      `);
-    }
     const saleRow = result[0] as Record<string, unknown>;
-    await logAudit(auth, "create", "transaction", saleRow.id as string, { total: sale.total, items: items.length });
+    await logAudit(auth, "create", "transaction", saleRow.transaction_id as string, { total: sale.total, items: items.length });
     res.status(201).json(saleRow);
   },
 });
