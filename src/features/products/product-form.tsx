@@ -37,8 +37,15 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
     name: g.name,
     options: g.options.map((o) => o.label),
   }));
+  // Peta id-opsi (UUID DB) → kunci posisi "gi-oi". Server DELETE+INSERT opsi saat
+  // simpan (UUID baru) dan hanya mengenali kunci posisi; kalau UUID lama dikirim
+  // apa adanya, ia jadi orphan → varian tak match di kasir → tertagih harga dasar.
+  const optionKeyById: Record<string, string> = {};
+  (initial?.variantGroups ?? []).forEach((g, gi) => {
+    g.options.forEach((o, oi) => { optionKeyById[o.id] = `${gi}-${oi}`; });
+  });
   const initVariants = (initial?.variants ?? []).map((v) => ({
-    optionIds: v.optionIds as string[],
+    optionIds: (v.optionIds as string[]).map((id) => optionKeyById[id] ?? id),
     label: v.label,
     sku: v.sku ?? "",
     price: String(Number(v.price)),

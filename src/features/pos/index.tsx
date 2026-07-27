@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { PageHeader, Icon, ListSkeleton, ErrorState, EmptyState, useToast } from "@/components/shared";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, publicBaseUrl } from "@/lib/utils";
 import { useProducts } from "@/hooks/use-products";
 import { useSettings } from "@/hooks/use-settings";
 import { useOutlets } from "@/hooks/use-outlets";
@@ -504,7 +504,7 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
     setSharing(true);
     try {
       const res = await apiFetch("share-receipt", { method: "POST", body: JSON.stringify({ transactionId: receipt.transactionId }) }) as { token: string };
-      const link = `${window.location.origin}/receipt/${res.token}`;
+      const link = `${publicBaseUrl()}/receipt/${res.token}`;
       const text = `Struk ${receipt.number}\nTotal: ${formatRupiah(receipt.total)}\n\nLihat struk: ${link}\n(Link berlaku 24 jam)`;
       const phone = receipt.customerPhone.replace(/[^0-9]/g, "").replace(/^0/, "62");
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");

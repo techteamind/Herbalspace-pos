@@ -11,6 +11,18 @@ export function formatRupiah(value: number | string): string {
   return "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n));
 }
 
+/** Base URL publik untuk link yang dibuka orang lain (mis. struk WA).
+ *  Di APK, window.location.origin = "localhost" → link mati bagi pelanggan.
+ *  Urutan: VITE_PUBLIC_URL (override) → origin web nyata → VITE_API_BASE (domain Vercel). */
+export function publicBaseUrl(): string {
+  const explicit = import.meta.env.VITE_PUBLIC_URL?.replace(/\/$/, "");
+  if (explicit) return explicit;
+  const origin = window.location.origin;
+  if (!/localhost/.test(origin)) return origin;
+  const apiBase = import.meta.env.VITE_API_BASE?.replace(/\/$/, "");
+  return apiBase || origin;
+}
+
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }

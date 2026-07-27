@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/shared";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, publicBaseUrl } from "@/lib/utils";
 import { printReceipt } from "@/lib/receipt";
 import { useSettings } from "@/hooks/use-settings";
 import { useVoidTransaction } from "@/hooks/use-transactions";
@@ -56,7 +56,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
     setSharing(true);
     try {
       const res = await apiFetch("share-receipt", { method: "POST", body: JSON.stringify({ transactionId: txn.id }) }) as { token: string };
-      const link = `${window.location.origin}/receipt/${res.token}`;
+      const link = `${publicBaseUrl()}/receipt/${res.token}`;
       const text = `Struk ${txn.number}\nTotal: ${formatRupiah(txn.total)}\n\nLihat struk: ${link}\n(Link berlaku 24 jam)`;
       const phone = txn.customer?.phone?.replace(/[^0-9]/g, "").replace(/^0/, "62") ?? "";
       const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
