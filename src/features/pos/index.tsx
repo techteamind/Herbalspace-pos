@@ -255,7 +255,7 @@ export function PosPage(): JSX.Element {
       )}
 
       {showPayment && (
-        <PaymentSheet lines={lines} taxPercent={Number(settings?.taxPercent ?? 0)}
+        <PaymentSheet lines={lines} taxPercent={Number(settings?.taxPercent ?? 0)} enabledMethods={settings?.enabledPaymentMethods}
           onClose={() => setShowPayment(false)} onSuccess={onSuccess} onQueued={onQueued} onQty={changeQty} onNote={changeNote} />
       )}
 

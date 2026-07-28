@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageHeader, Icon, FormSheet, Field, inputCls, ListSkeleton, EmptyState, ErrorState, useConfirm } from "@/components/shared";
 import { usePromos, useCreatePromo, useUpdatePromo, useDeletePromo, type Promo } from "@/hooks/use-promos";
+import { useProducts } from "@/hooks/use-products";
 
 const TYPE_LABELS: Record<Promo["type"], string> = {
   discount_percent: "Diskon %",
@@ -92,6 +93,10 @@ function PromoForm({ promo, onClose }: { promo: Promo | null; onClose: () => voi
   const [endHour, setEndHour] = useState(promo?.endHour ?? "");
   const [minPurchase, setMinPurchase] = useState(promo?.minPurchase ? String(Number(promo.minPurchase)) : "");
   const [days, setDays] = useState<number[]>(promo?.daysOfWeek ?? []);
+  const [productId, setProductId] = useState(promo?.productId ?? "");
+  const [startDate, setStartDate] = useState(promo?.startAt ? promo.startAt.slice(0, 10) : "");
+  const [endDate, setEndDate] = useState(promo?.endAt ? promo.endAt.slice(0, 10) : "");
+  const { data: products } = useProducts();
 
   function toggleDay(d: number): void {
     setDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
@@ -103,6 +108,9 @@ function PromoForm({ promo, onClose }: { promo: Promo | null; onClose: () => voi
       minPurchase: String(Number(minPurchase) || 0),
       buyQty: type === "buy_x_get_y" ? Number(buyQty) : null,
       getQty: type === "buy_x_get_y" ? Number(getQty) : null,
+      productId: type === "buy_x_get_y" ? (productId || null) : null,
+      startAt: startDate ? new Date(startDate + "T00:00:00").toISOString() : null,
+      endAt: endDate ? new Date(endDate + "T23:59:59").toISOString() : null,
       startHour: startHour || null, endHour: endHour || null,
       daysOfWeek: days.length > 0 ? days : null,
     };
@@ -129,14 +137,23 @@ function PromoForm({ promo, onClose }: { promo: Promo | null; onClose: () => voi
         </Field>
       )}
       {type === "buy_x_get_y" && (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Beli">
-            <input className={inputCls} inputMode="numeric" value={buyQty} onChange={(e) => setBuyQty(e.target.value.replace(/[^0-9]/g, ""))} />
+        <>
+          <Field label="Produk">
+            <select className={inputCls} value={productId} onChange={(e) => setProductId(e.target.value)}>
+              <option value="">— Pilih produk —</option>
+              {(products ?? []).map((pr) => <option key={pr.id} value={pr.id}>{pr.name}</option>)}
+            </select>
           </Field>
-          <Field label="Gratis">
-            <input className={inputCls} inputMode="numeric" value={getQty} onChange={(e) => setGetQty(e.target.value.replace(/[^0-9]/g, ""))} />
-          </Field>
-        </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Beli">
+              <input className={inputCls} inputMode="numeric" value={buyQty} onChange={(e) => setBuyQty(e.target.value.replace(/[^0-9]/g, ""))} />
+            </Field>
+            <Field label="Gratis">
+              <input className={inputCls} inputMode="numeric" value={getQty} onChange={(e) => setGetQty(e.target.value.replace(/[^0-9]/g, ""))} />
+            </Field>
+          </div>
+          {!productId && <p className="font-label-caps text-label-caps text-error">Pilih produk agar promo ini berlaku.</p>}
+        </>
       )}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Jam Mulai">
@@ -156,10 +173,18 @@ function PromoForm({ promo, onClose }: { promo: Promo | null; onClose: () => voi
           ))}
         </div>
       </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Mulai Tanggal">
+          <input className={inputCls} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </Field>
+        <Field label="Sampai Tanggal">
+          <input className={inputCls} type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </Field>
+      </div>
       <Field label="Minimum Belanja (Rp)">
         <input className={inputCls} inputMode="numeric" value={minPurchase} onChange={(e) => setMinPurchase(e.target.value.replace(/[^0-9]/g, ""))} placeholder="0 = tanpa minimum" />
       </Field>
-      <p className="font-label-caps text-label-caps text-on-surface-variant">Kosongkan jam & hari = berlaku sepanjang waktu.</p>
+      <p className="font-label-caps text-label-caps text-on-surface-variant">Kosongkan tanggal, jam & hari = berlaku sepanjang waktu.</p>
       <button onClick={submit} disabled={pending || !name.trim()}
         className="w-full bg-primary text-on-primary rounded-xl h-14 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
         {pending ? "Menyimpan..." : promo ? "Simpan" : "Buat Promo"}

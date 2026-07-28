@@ -16,6 +16,7 @@ const METHODS: { key: Method; label: string }[] = [
 interface Props {
   lines: CartLine[];
   taxPercent: number;
+  enabledMethods?: string[];
   onClose: () => void;
   onSuccess: (data: { transactionId: string; number: string; subtotal: number; discount: number; tax: number; total: number; method: string; received?: number; change?: number; customerName?: string; customerPhone?: string; lines: { name: string; qty: number; price: number; note?: string }[] }) => void;
   onQueued: () => void;
@@ -23,8 +24,10 @@ interface Props {
   onNote: (productId: string, note: string) => void;
 }
 
-export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQueued, onQty, onNote }: Props): JSX.Element {
-  const [method, setMethod] = useState<Method>("cash");
+export function PaymentSheet({ lines, taxPercent, enabledMethods, onClose, onSuccess, onQueued, onQty, onNote }: Props): JSX.Element {
+  // hormati metode aktif dari Pengaturan; fallback ke semua kalau kosong/tak diset
+  const methods = enabledMethods?.length ? METHODS.filter((m) => enabledMethods.includes(m.key)) : METHODS;
+  const [method, setMethod] = useState<Method>(methods[0]?.key ?? "cash");
   const [received, setReceived] = useState("");
   const [discountInput, setDiscountInput] = useState("");
   const [discountType, setDiscountType] = useState<"rp" | "pct">("rp");
@@ -328,10 +331,10 @@ export function PaymentSheet({ lines, taxPercent, onClose, onSuccess, onQueued, 
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          {METHODS.map((m) => (
+        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${methods.length}, minmax(0, 1fr))` }}>
+          {methods.map((m) => (
             <button key={m.key} onClick={() => setMethod(m.key)}
-              className={`h-11 rounded-lg font-body-md text-body-md font-semibold border ${method === m.key ? "bg-primary-container text-on-primary border-transparent" : "bg-surface-container-lowest text-on-surface border-outline-variant"}`}>{m.label}</button>
+              className={`h-11 rounded-lg font-body-md text-body-md font-semibold border ${method === m.key ? "bg-primary-container text-on-primary-container border-transparent" : "bg-surface-container-lowest text-on-surface border-outline-variant"}`}>{m.label}</button>
           ))}
         </div>
 
