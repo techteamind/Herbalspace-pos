@@ -187,6 +187,7 @@ export const transactionItems = pgTable("transaction_items", {
   unitPrice: numeric("unit_price", { precision: 14, scale: 2 }).notNull(),
   unitCogs: numeric("unit_cogs", { precision: 14, scale: 2 }).notNull().default("0"),
   lineTotal: numeric("line_total", { precision: 14, scale: 2 }).notNull(),
+  note: text("note"),
 }, (t) => ({
   byTransaction: index("transaction_items_transaction_idx").on(t.transactionId),
 }));

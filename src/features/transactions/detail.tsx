@@ -112,6 +112,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
               <div className="flex-1 min-w-0">
                 <p className="font-body-md text-body-md text-on-surface">{item.productName}</p>
                 <p className="font-label-caps text-label-caps text-on-surface-variant">{item.quantity}x {formatRupiah(item.unitPrice)}</p>
+                {item.note && <p className="font-label-caps text-label-caps text-on-surface-variant/70 italic">Catatan: {item.note}</p>}
               </div>
               <span className="font-body-md text-body-md font-semibold text-on-surface">{formatRupiah(item.lineTotal)}</span>
             </div>

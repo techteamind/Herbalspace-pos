@@ -95,9 +95,10 @@ BEGIN
     WHERE ri.product_id = v_product_id;
 
     INSERT INTO transaction_items (tenant_id, transaction_id, product_id, product_name,
-                                   quantity, unit_price, unit_cogs, line_total)
+                                   quantity, unit_price, unit_cogs, line_total, note)
     VALUES (p_tenant_id, v_tx_id, v_product_id, v_item->>'product_name',
-            v_qty, (v_item->>'unit_price')::numeric, v_unit_cogs, v_line_total);
+            v_qty, (v_item->>'unit_price')::numeric, v_unit_cogs, v_line_total,
+            NULLIF(v_item->>'note', ''));
 
     v_subtotal   := v_subtotal + v_line_total;
     v_cogs_total := v_cogs_total + (v_unit_cogs * v_qty);
