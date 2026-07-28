@@ -53,16 +53,35 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   useEffect(() => {
     if (!session) { setRole(null); setProfileName(null); setAssignedOutletId(null); return; }
     let cancelled = false;
-    apiFetch("me").then((data: any) => {
-      if (cancelled) return;
-      setRole(data.role);
-      setProfileName(data.profileName);
-      setAssignedOutletId(data.outletId ?? null);
-      if (data.outletId && data.role !== "owner") {
-        setOutletId(data.outletId);
-      }
-    }).catch(() => {});
-    return () => { cancelled = true; };
+    let timer: number | undefined;
+    let attempt = 0;
+
+    const load = (): void => {
+      if (timer) { clearTimeout(timer); timer = undefined; }
+      apiFetch("me").then((data: any) => {
+        if (cancelled) return;
+        attempt = 0;
+        setRole(data.role);
+        setProfileName(data.profileName);
+        setAssignedOutletId(data.outletId ?? null);
+        if (data.outletId && data.role !== "owner") setOutletId(data.outletId);
+      }).catch(() => {
+        // /me gagal (jaringan flaky/offline) → retry backoff, jangan biarkan role
+        // null seluruh sesi. Reconnect ("online") memicu load segera.
+        if (cancelled) return;
+        attempt += 1;
+        timer = window.setTimeout(load, Math.min(5000 * 2 ** (attempt - 1), 30000));
+      });
+    };
+    load();
+
+    const onOnline = (): void => { attempt = 0; load(); };
+    window.addEventListener("online", onOnline);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("online", onOnline);
+    };
   }, [session, setOutletId]);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {

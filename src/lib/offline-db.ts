@@ -1,6 +1,7 @@
 const DB_NAME = "herbaspace-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const QUEUE_STORE = "sync-queue";
+const FAILED_STORE = "failed-queue";
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -9,6 +10,9 @@ function openDB(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(QUEUE_STORE)) {
         db.createObjectStore(QUEUE_STORE, { keyPath: "id", autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains(FAILED_STORE)) {
+        db.createObjectStore(FAILED_STORE, { keyPath: "id", autoIncrement: true });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -74,5 +78,40 @@ export async function getQueueCount(): Promise<number> {
     const req = store.count();
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+  });
+}
+
+// Pindahkan request yang ditolak permanen (4xx) dari antrean aktif ke daftar
+// "gagal" — supaya tidak diulang selamanya, tapi juga tidak hilang diam-diam.
+export async function moveToFailed(req: QueuedRequest): Promise<void> {
+  const db = await openDB();
+  const tx = db.transaction([QUEUE_STORE, FAILED_STORE], "readwrite");
+  const { id, ...rest } = req;
+  tx.objectStore(FAILED_STORE).add({ ...rest, failedAt: new Date().toISOString() });
+  if (id !== undefined) tx.objectStore(QUEUE_STORE).delete(id);
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function getFailedCount(): Promise<number> {
+  const db = await openDB();
+  const tx = db.transaction(FAILED_STORE, "readonly");
+  const store = tx.objectStore(FAILED_STORE);
+  return new Promise((resolve, reject) => {
+    const req = store.count();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function clearFailed(): Promise<void> {
+  const db = await openDB();
+  const tx = db.transaction(FAILED_STORE, "readwrite");
+  tx.objectStore(FAILED_STORE).clear();
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }

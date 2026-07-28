@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { BottomNav, Icon, ToastProvider } from "@/components/shared";
 import { useAuth } from "@/contexts/AuthContext";
-import { useOnlineStatus, useQueueCount, useAutoSync } from "@/hooks/use-online-status";
+import { useOnlineStatus, useQueueCount, useFailedCount, useAutoSync } from "@/hooks/use-online-status";
 import { syncQueue } from "@/lib/offline-sync";
 
 const pageVariants = {
@@ -16,6 +16,7 @@ export function AppLayout(): JSX.Element {
   const location = useLocation();
   const online = useOnlineStatus();
   const queueCount = useQueueCount();
+  const failedCount = useFailedCount();
   useAutoSync();
 
   if (loading) {
@@ -44,17 +45,25 @@ export function AppLayout(): JSX.Element {
             </motion.div>
           </AnimatePresence>
         </main>
-        {(!online || queueCount > 0) && (
+        {(!online || queueCount > 0 || failedCount > 0) && (
           <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl z-[70]">
-            <div className={`flex items-center justify-center gap-2 px-4 py-1.5 text-[12px] font-semibold ${online ? "bg-primary-container text-on-primary-container" : "bg-error-container text-on-error-container"}`}>
-              <Icon name={online ? "sync" : "cloud_off"} className="text-[14px]" />
-              {!online && "Offline — data tersimpan lokal"}
-              {online && queueCount > 0 && (
-                <button onClick={() => syncQueue()} className="underline">
-                  {queueCount} antrian menunggu sinkronisasi
-                </button>
-              )}
-            </div>
+            {(!online || queueCount > 0) && (
+              <div className={`flex items-center justify-center gap-2 px-4 py-1.5 text-[12px] font-semibold ${online ? "bg-primary-container text-on-primary-container" : "bg-error-container text-on-error-container"}`}>
+                <Icon name={online ? "sync" : "cloud_off"} className="text-[14px]" />
+                {!online && "Offline — data tersimpan lokal"}
+                {online && queueCount > 0 && (
+                  <button onClick={() => syncQueue()} className="underline">
+                    {queueCount} antrian menunggu sinkronisasi
+                  </button>
+                )}
+              </div>
+            )}
+            {failedCount > 0 && (
+              <div className="flex items-center justify-center gap-2 px-4 py-1.5 text-[12px] font-semibold bg-error text-on-error">
+                <Icon name="error" className="text-[14px]" />
+                {failedCount} transaksi gagal disinkron — hubungi admin
+              </div>
+            )}
           </div>
         )}
         <BottomNav />

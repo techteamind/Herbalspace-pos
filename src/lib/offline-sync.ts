@@ -1,18 +1,31 @@
-import { getQueuedRequests, removeQueuedRequest, getQueueCount } from "./offline-db";
+import { getQueuedRequests, removeQueuedRequest, getQueueCount, moveToFailed, getFailedCount } from "./offline-db";
 import { supabase } from "./supabase";
 import { getActiveOutletId } from "./api-client";
 
 let syncing = false;
 const listeners = new Set<(count: number) => void>();
+const failedListeners = new Set<(count: number) => void>();
+
+// Status yang TIDAK akan pernah berhasil kalau diulang (request/data cacat) —
+// pindahkan ke daftar gagal, bukan diulang selamanya. 401/403/5xx dianggap
+// transient (token bisa refresh, server bisa pulih) dan tetap diantre.
+const PERMANENT_FAIL = new Set([400, 404, 422]);
 
 export function onQueueChange(fn: (count: number) => void): () => void {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
 
+export function onFailedChange(fn: (count: number) => void): () => void {
+  failedListeners.add(fn);
+  return () => failedListeners.delete(fn);
+}
+
 async function notifyListeners(): Promise<void> {
   const count = await getQueueCount();
   listeners.forEach((fn) => fn(count));
+  const failed = await getFailedCount();
+  failedListeners.forEach((fn) => fn(failed));
 }
 
 export async function syncQueue(): Promise<{ synced: number; failed: number }> {
@@ -44,11 +57,15 @@ export async function syncQueue(): Promise<{ synced: number; failed: number }> {
         if (res.ok || res.status === 409) {
           await removeQueuedRequest(item.id!);
           synced++;
-        } else {
+        } else if (PERMANENT_FAIL.has(res.status)) {
+          // ditolak permanen — pindahkan ke daftar gagal, hentikan pengulangan
+          await moveToFailed(item);
           failed++;
+        } else {
+          // transient (401/403/5xx) — biarkan, coba lagi di siklus berikutnya
         }
       } catch {
-        failed++;
+        // kegagalan jaringan — biarkan diantre, coba lagi nanti
       }
     }
   } finally {

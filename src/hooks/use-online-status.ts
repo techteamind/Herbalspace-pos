@@ -1,6 +1,6 @@
 import { useSyncExternalStore, useEffect, useState } from "react";
-import { onQueueChange, startAutoSync } from "@/lib/offline-sync";
-import { getQueueCount } from "@/lib/offline-db";
+import { onQueueChange, onFailedChange, startAutoSync } from "@/lib/offline-sync";
+import { getQueueCount, getFailedCount } from "@/lib/offline-db";
 
 function subscribe(cb: () => void): () => void {
   window.addEventListener("online", cb);
@@ -25,6 +25,18 @@ export function useQueueCount(): number {
   useEffect(() => {
     getQueueCount().then(setCount);
     const unsub = onQueueChange(setCount);
+    return unsub;
+  }, []);
+
+  return count;
+}
+
+export function useFailedCount(): number {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    getFailedCount().then(setCount);
+    const unsub = onFailedChange(setCount);
     return unsub;
   }, []);
 
