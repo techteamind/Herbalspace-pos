@@ -246,7 +246,7 @@ export function PosPage(): JSX.Element {
 
       {count > 0 && !showPayment && (
         <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 w-full max-w-3xl z-50 px-5">
-          <button onClick={() => setShowPayment(true)}
+          <button onClick={() => outletId ? setShowPayment(true) : toast("Pilih outlet dulu untuk mulai menjual", "error")}
             className="w-full bg-primary text-on-primary rounded-2xl h-14 flex items-center justify-between px-5 shadow-elevation-3 active:scale-[0.98] transition-transform">
             <div className="flex items-center gap-3"><Icon name="shopping_cart" filled /><span className="text-[14px] font-semibold">{count} Item</span></div>
             <div className="flex items-center gap-2"><span className="text-[14px] font-bold">{formatRupiah(total)}</span><Icon name="arrow_forward" /></div>

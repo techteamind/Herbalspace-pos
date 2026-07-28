@@ -47,13 +47,24 @@ export default createHandler({
     if (existing) { res.status(400).json({ error: "Sudah ada shift aktif. Tutup dulu sebelum buka baru." }); return; }
 
     const { openingCash } = req.body;
-    const [row] = await db.insert(shifts).values({
-      tenantId: auth.tenantId,
-      outletId: auth.outletId,
-      cashierId: auth.userId,
-      cashierName: auth.profileName,
-      openingCash: String(openingCash ?? 0),
-    }).returning();
+    let row;
+    try {
+      // unique index shifts_open_unq adalah gate sebenarnya: dua "buka shift"
+      // bersamaan tak bisa dua-duanya lolos (cek di atas cuma fast-path).
+      [row] = await db.insert(shifts).values({
+        tenantId: auth.tenantId,
+        outletId: auth.outletId,
+        cashierId: auth.userId,
+        cashierName: auth.profileName,
+        openingCash: String(openingCash ?? 0),
+      }).returning();
+    } catch (err) {
+      if (err instanceof Error && /shifts_open_unq|duplicate key/.test(err.message)) {
+        res.status(409).json({ error: "Sudah ada shift aktif. Tutup dulu sebelum buka baru." });
+        return;
+      }
+      throw err;
+    }
     if (row) await logAudit(auth, "open", "shift", row.id, { openingCash: String(openingCash ?? 0) });
     res.status(201).json(row);
   },

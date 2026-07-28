@@ -31,6 +31,12 @@ export default createHandler({
       res.status(400).json({ error: "Item transaksi kosong" });
       return;
     }
+    // Penjualan wajib terikat satu outlet. Tanpa ini (owner mode "Semua Outlet"),
+    // transaksi outlet-null ikut terhitung di SETIAP outlet pada dashboard/laporan.
+    if (!auth.outletId) {
+      res.status(400).json({ error: "Pilih outlet dulu sebelum menjual" });
+      return;
+    }
     for (const it of items) {
       if (!Number.isInteger(it.quantity) || it.quantity <= 0 || typeof it.unit_price !== "number" || it.unit_price < 0) {
         res.status(400).json({ error: "Item transaksi tidak valid" });

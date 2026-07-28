@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "shifts_open_unq" ON "shifts" USING btree ("tenant_id","outlet_id") WHERE closed_at IS NULL;

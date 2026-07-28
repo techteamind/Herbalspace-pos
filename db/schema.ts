@@ -298,6 +298,8 @@ export const shifts = pgTable("shifts", {
 }, (t) => ({
   byTenant: index("shifts_tenant_idx").on(t.tenantId),
   byCashier: index("shifts_cashier_idx").on(t.cashierId),
+  // maks. satu shift terbuka per outlet per tenant (mencegah race dua shift aktif)
+  openUnq: uniqueIndex("shifts_open_unq").on(t.tenantId, t.outletId).where(sql`closed_at IS NULL`),
 }));
 
 /* --------------------------- Audit Logs ---------------------------- */
