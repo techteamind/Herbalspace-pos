@@ -484,6 +484,9 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
     try {
       await printThermal({
         storeName: receipt.storeName,
+        address: receipt.address,
+        phone: receipt.phone,
+        footer: receipt.receiptFooter,
         number: receipt.number,
         datetime: receipt.datetime,
         lines: receipt.lines,

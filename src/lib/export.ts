@@ -1,5 +1,14 @@
 import { formatRupiah, escapeHtml as escHtml } from "./utils";
 
+// Cegah CSV formula injection: nama produk/outlet (dikontrol user) yang diawali
+// = + - @ tab/CR bisa dieksekusi Excel/Sheets. Prefiks "'" menetralkannya.
+// Angka dilewati (bisa negatif yang sah, mis. laba bersih -Rp).
+function csvCell(c: unknown): string {
+  const s = String(c ?? "");
+  const safe = typeof c !== "number" && /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
 export interface ReportData {
   period: string;
   outletName?: string;
@@ -24,7 +33,7 @@ export function exportReportExcel(d: ReportData): void {
     ...d.topProducts.map((p) => [p.name, p.value]),
   ];
 
-  const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const csv = rows.map((r) => r.map(csvCell).join(",")).join("\n");
   const bom = "﻿";
   const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
