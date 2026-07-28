@@ -3,7 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { AuthContextValue, AuthUser, UserRole } from "@/types/auth";
 import { apiFetch, getActiveOutletId, setActiveOutletId } from "@/lib/api-client";
-import { queryClient } from "@/lib/query-client";
+import { queryClient, clearPersistedCache } from "@/lib/query-client";
 import { clearQueue, getQueueCount } from "@/lib/offline-db";
 import { syncQueue } from "@/lib/offline-sync";
 
@@ -115,6 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     // ponytail: antrean sisa akan tersinkron dengan atribusi kasir user berikutnya;
     // simpan cashier saat capture bila atribusi lintas-user jadi masalah.
     queryClient.clear();
+    clearPersistedCache();
     if (pending === 0) await clearQueue().catch(() => {});
     setSession(null);
     setOutletId(null);

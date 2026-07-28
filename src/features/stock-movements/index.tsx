@@ -8,10 +8,11 @@ const FILTERS: { label: string; type?: string }[] = [
 ];
 const TYPE_LABEL: Record<string, string> = { sale: "PENJUALAN", purchase: "PENERIMAAN", adjustment: "PENYESUAIAN", waste: "KERUSAKAN", return: "RETUR" };
 
-function kind(t: string): "in" | "out" | "adj" {
-  if (t === "purchase" || t === "return") return "in";
-  if (t === "sale" || t === "waste") return "out";
-  return "adj";
+// Warnai berdasar TANDA qty asli, bukan nama tipe: "retur" bisa mengurangi stok
+// (retur ke supplier) sehingga dulu tampil hijau "masuk" padahal stok berkurang.
+function kind(m: StockMovementRow): "in" | "out" | "adj" {
+  if (m.type === "adjustment") return "adj";
+  return Number(m.qtyChange) >= 0 ? "in" : "out";
 }
 
 export function StockMovementsPage(): JSX.Element {
@@ -46,7 +47,7 @@ export function StockMovementsPage(): JSX.Element {
           <EmptyState icon="swap_vert" title="Belum ada pergerakan" subtitle="Pergerakan stok akan muncul setelah ada transaksi atau penerimaan." />
         )}
         {(data ?? []).map((m) => {
-          const k = kind(m.type);
+          const k = kind(m);
           return (
             <div key={m.id} className="bg-surface-container-lowest rounded-xl shadow-card p-4 flex gap-3">
               <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${dot(k)}`} />

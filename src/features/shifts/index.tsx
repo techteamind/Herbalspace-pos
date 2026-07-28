@@ -12,7 +12,7 @@ export function ShiftsPage(): JSX.Element {
 
   return (
     <>
-      <PageHeader title="Shift Kasir" leftIcon="arrow_back" onLeft={() => history && window.history.back()} />
+      <PageHeader title="Shift Kasir" leftIcon="arrow_back" onLeft={() => window.history.back()} />
       <div className="px-container-padding space-y-4 pb-24">
         {loadingActive ? <ListSkeleton /> : activeShift ? (
           <ActiveShiftCard shift={activeShift} onClose={() => setShowClose(true)} />
@@ -94,13 +94,20 @@ function ActiveShiftCard({ shift, onClose }: { shift: Shift; onClose: () => void
   );
 }
 
+function parseApiError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : "Gagal membuka shift";
+  try { return JSON.parse(msg).error ?? msg; } catch { return msg; }
+}
+
 function OpenShiftForm({ onClose }: { onClose: () => void }): JSX.Element {
   const open = useOpenShift();
   const [cash, setCash] = useState("");
 
   async function submit(): Promise<void> {
-    await open.mutateAsync({ openingCash: Number(cash) || 0 });
-    onClose();
+    try {
+      await open.mutateAsync({ openingCash: Number(cash) || 0 });
+      onClose();
+    } catch { /* pesan ditampilkan via open.isError di bawah */ }
   }
 
   return (
@@ -111,6 +118,9 @@ function OpenShiftForm({ onClose }: { onClose: () => void }): JSX.Element {
           placeholder="0" autoFocus />
       </Field>
       <p className="font-label-caps text-label-caps text-on-surface-variant">Masukkan jumlah uang tunai di laci kasir saat ini.</p>
+      {open.isError && (
+        <p className="font-body-md text-body-md text-error">{parseApiError(open.error)}</p>
+      )}
       <button onClick={submit} disabled={open.isPending}
         className="w-full bg-primary text-on-primary rounded-xl h-14 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
         {open.isPending ? "Memproses..." : "Buka Shift"}
