@@ -45,6 +45,7 @@ DECLARE
   v_line_total   numeric(14,2);
   v_qty          int;
   v_product_id   uuid;
+  v_variant_id   uuid;
   r_recipe       record;
   v_new_balance  numeric(14,3);
 BEGIN
@@ -78,6 +79,7 @@ BEGIN
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
     v_product_id := (v_item->>'product_id')::uuid;
+    v_variant_id := NULLIF(v_item->>'variant_id', '')::uuid;
     v_qty        := (v_item->>'quantity')::int;
 
     IF v_qty IS NULL OR v_qty <= 0 THEN
@@ -96,14 +98,22 @@ BEGIN
     JOIN ingredients i ON i.id = ri.ingredient_id
     WHERE ri.product_id = v_product_id;
 
-    INSERT INTO transaction_items (tenant_id, transaction_id, product_id, product_name,
+    INSERT INTO transaction_items (tenant_id, transaction_id, product_id, variant_id, product_name,
                                    quantity, unit_price, unit_cogs, line_total, note)
-    VALUES (p_tenant_id, v_tx_id, v_product_id, v_item->>'product_name',
+    VALUES (p_tenant_id, v_tx_id, v_product_id, v_variant_id, v_item->>'product_name',
             v_qty, (v_item->>'unit_price')::numeric, v_unit_cogs, v_line_total,
             NULLIF(v_item->>'note', ''));
 
     v_subtotal   := v_subtotal + v_line_total;
     v_cogs_total := v_cogs_total + (v_unit_cogs * v_qty);
+
+    -- potong stok barang jadi (hanya kalau dilacak / stock IS NOT NULL). Varian
+    -- diutamakan; kalau tak ada varian, potong stok produk. Overselling dibiarkan.
+    IF v_variant_id IS NOT NULL THEN
+      UPDATE product_variants SET stock = stock - v_qty WHERE id = v_variant_id AND stock IS NOT NULL;
+    ELSE
+      UPDATE products SET stock = stock - v_qty WHERE id = v_product_id AND stock IS NOT NULL;
+    END IF;
 
     -- potong stok bahan sesuai resep × qty, catat movement
     FOR r_recipe IN

@@ -1,6 +1,6 @@
 import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { transactions, stockMovements, ingredients, customers } from "../../db/schema.js";
+import { transactions, transactionItems, stockMovements, ingredients, customers, products, productVariants } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
 import { outletFilter, requireRole } from "../_lib/auth.js";
@@ -95,6 +95,21 @@ export default createHandler({
             note: reason ? `Void: ${reason}` : `Void transaksi ${txn.number}`,
             createdBy: auth.userId,
           });
+        }
+
+        // kembalikan stok barang jadi (produk/varian), hanya yang dilacak (stock != null)
+        const soldItems = await tx.select().from(transactionItems)
+          .where(and(eq(transactionItems.tenantId, auth.tenantId), eq(transactionItems.transactionId, id)));
+        for (const it of soldItems) {
+          if (it.variantId) {
+            await tx.update(productVariants)
+              .set({ stock: sql`${productVariants.stock} + ${it.quantity}` })
+              .where(and(eq(productVariants.id, it.variantId), sql`${productVariants.stock} IS NOT NULL`));
+          } else if (it.productId) {
+            await tx.update(products)
+              .set({ stock: sql`${products.stock} + ${it.quantity}` })
+              .where(and(eq(products.id, it.productId), sql`${products.stock} IS NOT NULL`));
+          }
         }
       });
       if (alreadyVoided) { res.status(400).json({ error: "Transaksi sudah di-void" }); return; }

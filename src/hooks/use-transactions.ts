@@ -23,9 +23,11 @@ interface SalePayload {
   clientRef?: string;
   items: {
     product_id: string;
+    variant_id?: string;
     product_name: string;
     quantity: number;
     unit_price: number;
+    note?: string;
   }[];
   payments: {
     method: "cash" | "qris" | "card" | "transfer";

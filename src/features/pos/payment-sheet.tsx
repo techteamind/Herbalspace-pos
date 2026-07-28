@@ -153,6 +153,7 @@ export function PaymentSheet({ lines, taxPercent, serviceChargePercent = 0, enab
           const modLabel = l.modifiers?.length ? ` [${l.modifiers.map((m) => m.name).join(", ")}]` : "";
           return {
             product_id: l.product.id,
+            variant_id: l.variantId || undefined,
             product_name: (l.variantLabel ? `${l.product.name} (${l.variantLabel})` : l.product.name) + modLabel,
             quantity: l.qty,
             unit_price: (l.variantPrice ?? Number(l.product.price)) + modTotal,

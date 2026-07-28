@@ -137,6 +137,13 @@ export function ProductsPage(): JSX.Element {
                       ? `${formatRupiah(Math.min(...p.variants!.map((v) => Number(v.price))))}${p.variants!.length > 1 ? ` - ${formatRupiah(Math.max(...p.variants!.map((v) => Number(v.price))))}` : ""}`
                       : formatRupiah(p.price)}
                   </span>
+                  {(() => {
+                    const hasVar = (p.variants?.length ?? 0) > 0;
+                    const tracked = hasVar ? p.variants!.some((v) => v.stock != null) : p.stock != null;
+                    if (!tracked) return null;
+                    const s = hasVar ? p.variants!.reduce((a, v) => a + (v.stock ?? 0), 0) : (p.stock ?? 0);
+                    return <span className={`font-label-caps text-label-caps px-2 py-0.5 rounded-full ${s <= 0 ? "bg-error-container text-on-error-container" : "bg-secondary-container text-on-secondary-container"}`}>Stok {s}</span>;
+                  })()}
                 </div>
               </div>
               <span role="switch" aria-checked={p.isActive} onClick={(e) => toggleActive(p, e)}

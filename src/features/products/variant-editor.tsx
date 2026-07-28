@@ -12,6 +12,7 @@ interface VariantRow {
   label: string;
   sku: string;
   price: string;
+  stock: string;
 }
 
 interface Props {
@@ -35,6 +36,7 @@ function generateCombinations(groups: VariantGroupInput[], existingVariants?: Va
         label,
         sku: existing?.sku ?? "",
         price: existing?.price ?? "",
+        stock: existing?.stock ?? "",
       });
       return;
     }
@@ -81,7 +83,7 @@ export function VariantEditor({ basePrice, groups, variants, onChange }: Props):
     onChange(next, generateCombinations(next, variants));
   }
 
-  function updateVariant(idx: number, field: "sku" | "price", val: string): void {
+  function updateVariant(idx: number, field: "sku" | "price" | "stock", val: string): void {
     const next = variants.map((v, i) => (i === idx ? { ...v, [field]: val } : v));
     onChange(groups, next);
   }
@@ -157,11 +159,15 @@ export function VariantEditor({ basePrice, groups, variants, onChange }: Props):
           {variants.map((v, i) => (
             <div key={v.optionIds.join(",")} className="bg-surface-container-lowest rounded-lg p-3 border border-outline-variant/50">
               <p className="font-body-md text-body-md font-semibold text-on-surface mb-2">{v.label || "—"}</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Field label="Harga">
                   <input className={inputCls} inputMode="numeric" value={v.price}
                     onChange={(e) => updateVariant(i, "price", e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder={String(basePrice || 0)} />
+                </Field>
+                <Field label="Stok">
+                  <input className={inputCls} inputMode="numeric" value={v.stock}
+                    onChange={(e) => updateVariant(i, "stock", e.target.value.replace(/[^0-9]/g, ""))} placeholder="—" />
                 </Field>
                 <Field label="SKU">
                   <input className={inputCls} value={v.sku}

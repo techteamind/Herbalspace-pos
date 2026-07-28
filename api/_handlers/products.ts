@@ -21,7 +21,7 @@ export default createHandler({
 
   async POST(req, res, auth) {
     if (!requireRole(auth, "manager", res)) return;
-    const { name, price, costPrice, categoryId, sku, imageUrl } = req.body;
+    const { name, price, costPrice, categoryId, sku, imageUrl, stock } = req.body;
     if (!name || typeof name !== "string") { res.status(400).json({ error: "name wajib" }); return; }
     if (price === undefined || isNaN(Number(price))) { res.status(400).json({ error: "price wajib dan harus angka" }); return; }
     const [row] = await db.insert(products).values({
@@ -33,6 +33,7 @@ export default createHandler({
       categoryId: categoryId || null,
       sku: sku || null,
       imageUrl: imageUrl || null,
+      stock: stock === undefined || stock === null || stock === "" ? null : Number(stock),
     }).returning();
     res.status(201).json(row);
   },
@@ -48,6 +49,7 @@ export default createHandler({
     if (data.categoryId !== undefined) updates.categoryId = data.categoryId || null;
     if (data.sku !== undefined) updates.sku = data.sku || null;
     if (data.imageUrl !== undefined) updates.imageUrl = data.imageUrl || null;
+    if (data.stock !== undefined) updates.stock = data.stock === null || data.stock === "" ? null : Number(data.stock);
     if (data.isActive !== undefined) updates.isActive = data.isActive;
 
     let oldPrice: string | undefined;

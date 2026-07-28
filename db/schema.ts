@@ -62,6 +62,8 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
   price: numeric("price", { precision: 14, scale: 2 }).notNull(),
   costPrice: numeric("cost_price", { precision: 14, scale: 2 }).notNull().default("0"),
+  // stok barang jadi: NULL = tak dilacak (mis. produk berbasis resep); angka = dilacak
+  stock: integer("stock"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

@@ -27,6 +27,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
   const [price, setPrice] = useState(initial ? String(Number(initial.price)) : "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [sku, setSku] = useState(initial?.sku ?? "");
+  const [stock, setStock] = useState(initial?.stock != null ? String(initial.stock) : "");
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
   const [imagePreview, setImagePreview] = useState<string | null>(initial?.imageUrl ?? null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -49,6 +50,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
     label: v.label,
     sku: v.sku ?? "",
     price: String(Number(v.price)),
+    stock: v.stock != null ? String(v.stock) : "",
   }));
   const [variantGroups, setVariantGroups] = useState(initGroups);
   const [variants, setVariants] = useState(initVariants);
@@ -93,15 +95,18 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
   async function submit(): Promise<void> {
     setSubmitError(null);
     try {
+      // stok produk hanya relevan untuk produk TANPA varian; produk bervarian
+      // melacak stok per-varian, jadi jangan timpa stok dasar.
+      const stockVal = variantGroups.length === 0 ? (stock === "" ? null : Number(stock)) : undefined;
       let productId: string;
       if (editing) {
         // Kirim nilai apa adanya (termasuk "") supaya mengosongkan kategori/SKU/foto
         // tersimpan — backend menulis null saat field ada tapi kosong. Pakai `|| undefined`
         // dulu membuang field yang dikosongkan, jadi nilai lama bertahan.
-        await update.mutateAsync({ id: initial.id, name, price: Number(price), categoryId, sku, imageUrl });
+        await update.mutateAsync({ id: initial.id, name, price: Number(price), categoryId, sku, imageUrl, stock: stockVal });
         productId = initial.id;
       } else {
-        const created = await create.mutateAsync({ name, price: Number(price) || 0, categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined });
+        const created = await create.mutateAsync({ name, price: Number(price) || 0, categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined, stock: stockVal });
         productId = (created as { id: string }).id;
       }
       if (variantGroups.length > 0 && variants.length > 0) {
@@ -117,6 +122,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
                 label: v.label,
                 sku: v.sku || undefined,
                 price: Number(v.price) || Number(price) || 0,
+                stock: v.stock === "" ? null : Number(v.stock),
               })),
             }),
           });
@@ -191,7 +197,12 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
           </select>
         </Field>
       </div>
-      <Field label="SKU (opsional)"><input className={inputCls} value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SLV-030" /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="SKU (opsional)"><input className={inputCls} value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SLV-030" /></Field>
+        {variantGroups.length === 0 && (
+          <Field label="Stok (kosong = tak dilacak)"><input className={inputCls} inputMode="numeric" value={stock} onChange={(e) => setStock(e.target.value.replace(/[^0-9]/g, ""))} placeholder="mis. 20" /></Field>
+        )}
+      </div>
 
       <VariantEditor
         basePrice={Number(price) || 0}

@@ -23,7 +23,7 @@ export default createHandler({
     const { productId, groups, variants } = req.body as {
       productId: string;
       groups: { name: string; options: string[] }[];
-      variants: { optionIds: string[]; label: string; sku?: string; price: number; costPrice?: number }[];
+      variants: { optionIds: string[]; label: string; sku?: string; price: number; costPrice?: number; stock?: number | null }[];
     };
     if (!productId) { res.status(400).json({ error: "productId wajib" }); return; }
 
@@ -70,6 +70,7 @@ export default createHandler({
           sku: v.sku || null,
           price: String(v.price),
           costPrice: String(v.costPrice ?? 0),
+          stock: v.stock === undefined || v.stock === null ? null : Number(v.stock),
         }).returning();
         results.push(row);
       }

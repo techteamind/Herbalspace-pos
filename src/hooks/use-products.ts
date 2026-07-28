@@ -12,7 +12,7 @@ export function useProducts() {
 export function useCreateProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; price: number; costPrice?: number; categoryId?: string; sku?: string; imageUrl?: string }) =>
+    mutationFn: (data: { name: string; price: number; costPrice?: number; categoryId?: string; sku?: string; imageUrl?: string; stock?: number | null }) =>
       apiFetch("products", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });
