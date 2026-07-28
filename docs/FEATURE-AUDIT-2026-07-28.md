@@ -165,6 +165,23 @@ export, plugin ESC/POS Bluetooth/USB untuk thermal).
 
 ---
 
+## Status pengerjaan (update 28 Juli 2026)
+
+Dikerjakan berurutan & di-deploy:
+- ✅ **A2** promo product-picker + input tanggal · ✅ **A3** service charge end-to-end
+  (butuh migrasi 0007 + create_sale) · ✅ **A4** filter metode pembayaran
+- ✅ **B1** stok barang jadi LENGKAP: lacak per produk & varian, potong saat jual,
+  kembalikan saat void, form input, alur "Terima Stok", badge daftar, nilai stok di
+  Neraca, alert produk habis di dashboard (migrasi 0008 + create_sale)
+- ✅ **C** struk konsisten (kasir/header/catatan di semua struk) · ✅ **F** swipe-edit dibuang
+- ⏸️ **A1** tukar poin — DITUNDA atas permintaan (poin tetap terkumpul, belum bisa dipakai)
+
+Belum dikerjakan: **B2** refund · **B3** split payment · **B4** kasbon/piutang ·
+**D** plugin native (cetak/scan/export) · **E** drop kolom mati (ditahan: sebagian
+dipakai fitur mendatang). Keamanan promo (authz PUT/DELETE, validasi server) juga terbuka.
+
+---
+
 ## Rekomendasi prioritas
 
 1. **B1 Stok barang jadi** — paling fundamental untuk retail parfum. Perubahan model + DB.
