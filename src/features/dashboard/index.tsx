@@ -5,6 +5,7 @@ import { PageHeader, StatCard, Icon, PullRefreshIndicator } from "@/components/s
 import { formatRupiah } from "@/lib/utils";
 import { useDashboardStats, useTopProducts, useLowStock, useWeeklyRevenue } from "@/hooks/use-dashboard";
 import { useOutlets } from "@/hooks/use-outlets";
+import { useProducts } from "@/hooks/use-products";
 import { usePullRefresh } from "@/hooks/use-pull-refresh";
 import { apiFetch } from "@/lib/api-client";
 import type { LowStockItem } from "@/types";
@@ -18,8 +19,16 @@ function pctChange(today: number, yesterday: number): string {
 export function DashboardPage(): JSX.Element {
   const { profileName: authName, role, outletId, setOutletId } = useAuth();
   const { data: outlets } = useOutlets();
+  const { data: allProducts } = useProducts();
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const canSwitch = role === "owner";
+
+  // produk/varian barang jadi yang stoknya habis (dilacak & <= 0)
+  const outOfStockProducts = (allProducts ?? []).flatMap((p) => {
+    const vars = p.variants ?? [];
+    if (vars.length > 0) return vars.filter((v) => v.stock != null && v.stock <= 0).map((v) => `${p.name} — ${v.label}`);
+    return p.stock != null && p.stock <= 0 ? [p.name] : [];
+  });
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -157,6 +166,22 @@ export function DashboardPage(): JSX.Element {
         )}
       </div>
 
+      {outOfStockProducts.length > 0 && (
+        <div className="px-container-padding -mt-1 pb-2">
+          <div className="bg-error-container/30 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2 text-on-error-container">
+              <Icon name="production_quantity_limits" className="text-[20px]" />
+              <h3 className="text-[15px] font-semibold">Produk Habis ({outOfStockProducts.length})</h3>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {outOfStockProducts.slice(0, 12).map((n) => (
+                <span key={n} className="text-[11.5px] bg-error text-on-error px-2 py-0.5 rounded-full">{n}</span>
+              ))}
+              {outOfStockProducts.length > 12 && <span className="text-[11.5px] text-on-surface-variant">+{outOfStockProducts.length - 12} lainnya</span>}
+            </div>
+          </div>
+        </div>
+      )}
       {showNotif && <NotificationPanel items={low ?? []} onClose={() => setShowNotif(false)} />}
       {showOutletSwitch && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30" onClick={() => setShowOutletSwitch(false)}>

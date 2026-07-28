@@ -4,6 +4,7 @@ import { formatRupiah } from "@/lib/utils";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useExpenses } from "@/hooks/use-expenses";
 import { useIngredients } from "@/hooks/use-ingredients";
+import { useProducts } from "@/hooks/use-products";
 import { useOutlets } from "@/hooks/use-outlets";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportReportExcel, exportReportPdf, type ReportData } from "@/lib/export";
@@ -37,6 +38,7 @@ export function ReportsPage(): JSX.Element {
   const { data: trx, isLoading } = useTransactions({ from: from.toISOString(), to: to.toISOString(), limit: 1000 });
   const { data: expenses } = useExpenses();
   const { data: ingredientList } = useIngredients();
+  const { data: productList } = useProducts();
 
   const paidTrx = (trx ?? []).filter((t) => t.status === "paid");
   const omzet = paidTrx.reduce((s, t) => s + Number(t.total), 0);
@@ -81,6 +83,13 @@ export function ReportsPage(): JSX.Element {
 
   // Neraca
   const stockValue = (ingredientList ?? []).reduce((s, i) => s + Number(i.currentStock) * Number(i.lastCost), 0);
+  // nilai stok barang jadi = Σ stok × HPP (varian diutamakan, lalu produk)
+  const productStockValue = (productList ?? []).reduce((s, p) => {
+    const vars = p.variants ?? [];
+    if (vars.length > 0) return s + vars.reduce((a, v) => a + (v.stock ?? 0) * Number(v.costPrice ?? 0), 0);
+    return s + (p.stock ?? 0) * Number(p.costPrice ?? 0);
+  }, 0);
+  const totalAset = stockValue + productStockValue;
 
   const reportData: ReportData = {
     period,
@@ -200,10 +209,11 @@ export function ReportsPage(): JSX.Element {
           <>
             <Section title="Aset">
               <Row label="Nilai Stok Bahan Baku" value={formatRupiah(stockValue)} sub />
+              <Row label="Nilai Stok Produk" value={formatRupiah(productStockValue)} sub />
               <p className="font-label-caps text-label-caps text-on-surface-variant">
-                {(ingredientList ?? []).length} jenis bahan × harga terakhir
+                stok × HPP (bahan baku + barang jadi)
               </p>
-              <Row label="Total Aset" value={formatRupiah(stockValue)} bold />
+              <Row label="Total Aset" value={formatRupiah(totalAset)} bold />
             </Section>
 
             <Section title="Pendapatan Periode Ini">
@@ -226,7 +236,7 @@ export function ReportsPage(): JSX.Element {
               <p className="font-display-price-mobile text-display-price-mobile mt-1">{formatRupiah(labaBersih)}</p>
             </div>
 
-            <Card label="Total Ekuitas (Aset + Laba)" value={formatRupiah(stockValue + labaBersih)} positive={stockValue + labaBersih >= 0} />
+            <Card label="Total Ekuitas (Aset + Laba)" value={formatRupiah(totalAset + labaBersih)} positive={totalAset + labaBersih >= 0} />
           </>
         )}
       </div>
