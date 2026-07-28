@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { jwtVerify, createRemoteJWKSet, type JWTPayload } from "jose";
-import { eq, or, isNull, type SQL, type Column } from "drizzle-orm";
+import { eq, and, or, isNull, type SQL, type Column } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { profiles, tenants, settings } from "../../db/schema.js";
+import { profiles, tenants, settings, outlets } from "../../db/schema.js";
 
 export interface AuthContext {
   userId: string;
@@ -112,7 +112,14 @@ export async function authenticate(req: VercelRequest): Promise<AuthContext | nu
   if (profile.role === "owner") {
     const headerOutlet = req.headers["x-outlet-id"];
     if (typeof headerOutlet === "string" && headerOutlet) {
-      outletId = headerOutlet;
+      // Validasi outlet milik tenant ini sebelum dipakai — mencegah owner
+      // menstempel/menyaring data dengan id outlet tenant lain. Kalau tidak
+      // valid, abaikan header (fallback ke scope default owner = semua outletnya).
+      const owned = await db.query.outlets.findFirst({
+        where: and(eq(outlets.id, headerOutlet), eq(outlets.tenantId, profile.tenantId)),
+        columns: { id: true },
+      });
+      if (owned) outletId = headerOutlet;
     }
   }
 

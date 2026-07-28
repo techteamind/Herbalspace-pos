@@ -40,6 +40,11 @@ export default createHandler({
       });
       if (!txn) { res.status(404).json({ error: "Transaksi tidak ditemukan" }); return; }
       if (txn.status === "void") { res.status(400).json({ error: "Transaksi sudah di-void" }); return; }
+      // manager/kasir hanya boleh void transaksi outlet-nya sendiri; owner bebas lintas-outlet
+      if (auth.role !== "owner" && auth.outletId && txn.outletId && txn.outletId !== auth.outletId) {
+        res.status(403).json({ error: "Tidak bisa membatalkan transaksi outlet lain" });
+        return;
+      }
 
       let alreadyVoided = false;
       await db.transaction(async (tx) => {

@@ -95,7 +95,10 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
     try {
       let productId: string;
       if (editing) {
-        await update.mutateAsync({ id: initial.id, name, price: Number(price), categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined });
+        // Kirim nilai apa adanya (termasuk "") supaya mengosongkan kategori/SKU/foto
+        // tersimpan — backend menulis null saat field ada tapi kosong. Pakai `|| undefined`
+        // dulu membuang field yang dikosongkan, jadi nilai lama bertahan.
+        await update.mutateAsync({ id: initial.id, name, price: Number(price), categoryId, sku, imageUrl });
         productId = initial.id;
       } else {
         const created = await create.mutateAsync({ name, price: Number(price) || 0, categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined });

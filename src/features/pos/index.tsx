@@ -462,6 +462,7 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
 const CONFETTI_COLORS = ["#1a6b4a", "#d4f5e4", "#956316", "#fff0d6", "#82d8aa", "#f0be6a"];
 
 function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => void }): JSX.Element {
+  const toast = useToast();
   const [sharing, setSharing] = useState(false);
   const [printing, setPrinting] = useState(false);
   const thermalOk = isThermalSupported();
@@ -495,7 +496,9 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
         change: receipt.change,
         customerName: receipt.customerName,
       });
-    } catch { /* ignore */ }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Gagal mencetak struk", "error");
+    }
     setPrinting(false);
   }
 
@@ -508,7 +511,9 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
       const text = `Struk ${receipt.number}\nTotal: ${formatRupiah(receipt.total)}\n\nLihat struk: ${link}\n(Link berlaku 24 jam)`;
       const phone = receipt.customerPhone.replace(/[^0-9]/g, "").replace(/^0/, "62");
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
-    } catch { /* ignore */ }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Gagal membuat link struk", "error");
+    }
     setSharing(false);
   }
 

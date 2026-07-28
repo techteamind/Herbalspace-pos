@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Icon } from "@/components/shared";
+import { Icon, useToast } from "@/components/shared";
 import { formatRupiah, publicBaseUrl } from "@/lib/utils";
 import { printReceipt } from "@/lib/receipt";
 import { useSettings } from "@/hooks/use-settings";
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
+  const toast = useToast();
   const { data: settings } = useSettings();
   const voidMutation = useVoidTransaction();
   const { role, outletId } = useAuth();
@@ -61,7 +62,9 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
       const phone = txn.customer?.phone?.replace(/[^0-9]/g, "").replace(/^0/, "62") ?? "";
       const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
       window.open(waUrl, "_blank");
-    } catch { /* ignore */ }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Gagal membuat link struk", "error");
+    }
     setSharing(false);
   }
 
