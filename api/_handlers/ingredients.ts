@@ -38,9 +38,21 @@ export default createHandler({
     if (!requireRole(auth, "manager", res)) return;
     const { id, ...data } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
+    // Satuan tidak boleh diubah: stok, qty resep, dan lastCost semuanya bernilai
+    // dalam satuan lama — mengubah unit tanpa konversi merusak stok & HPP.
+    if (data.unitId !== undefined) {
+      const current = await db.query.ingredients.findFirst({
+        where: and(eq(ingredients.id, id), eq(ingredients.tenantId, auth.tenantId)),
+        columns: { unitId: true },
+      });
+      if (current && data.unitId !== current.unitId) {
+        res.status(400).json({ error: "Satuan tidak bisa diubah setelah bahan dibuat. Buat bahan baru jika perlu satuan berbeda." });
+        return;
+      }
+    }
+
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updates.name = data.name;
-    if (data.unitId !== undefined) updates.unitId = data.unitId;
     if (data.minStock !== undefined) updates.minStock = String(data.minStock);
     if (data.lastCost !== undefined) updates.lastCost = String(data.lastCost);
     if (data.isActive !== undefined) updates.isActive = data.isActive;

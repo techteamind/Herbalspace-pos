@@ -23,6 +23,13 @@ export function publicBaseUrl(): string {
   return apiBase || origin;
 }
 
+/** Parse angka format Indonesia: titik = pemisah ribuan, koma = desimal.
+ *  "10.000" → 10000, "1,5" → 1.5. Number() bawaan salah baca "10.000" jadi 10. */
+export function parseLocaleNumber(s: string): number {
+  const n = Number(String(s).replace(/\./g, "").replace(",", "."));
+  return isNaN(n) ? 0 : n;
+}
+
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }

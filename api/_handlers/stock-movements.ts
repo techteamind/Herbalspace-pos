@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lt } from "drizzle-orm";
+import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { stockMovements, ingredients, units } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
@@ -22,24 +22,21 @@ export default createHandler({
       return;
     }
 
-    const ingredient = await db.query.ingredients.findFirst({
-      where: and(eq(ingredients.id, ingredientId), eq(ingredients.tenantId, auth.tenantId)),
-    });
-    if (!ingredient) { res.status(404).json({ error: "Bahan tidak ditemukan" }); return; }
-
-    const newBalance = Number(ingredient.currentStock) + qtyChange;
-
-    await db.update(ingredients)
-      .set({ currentStock: String(newBalance), updatedAt: new Date() })
-      .where(and(eq(ingredients.id, ingredientId), eq(ingredients.tenantId, auth.tenantId)));
+    // Atomik: hitung stok baru DI DB (bukan read-modify-write) agar penyesuaian
+    // bersamaan tidak saling menimpa. RETURNING sekaligus jadi cek keberadaan.
+    const [updated] = await db.update(ingredients)
+      .set({ currentStock: sql`${ingredients.currentStock} + ${qtyChange}`, updatedAt: new Date() })
+      .where(and(eq(ingredients.id, ingredientId), eq(ingredients.tenantId, auth.tenantId)))
+      .returning({ currentStock: ingredients.currentStock, lastCost: ingredients.lastCost });
+    if (!updated) { res.status(404).json({ error: "Bahan tidak ditemukan" }); return; }
 
     const [row] = await db.insert(stockMovements).values({
       tenantId: auth.tenantId,
       ingredientId,
       type,
       qtyChange: String(qtyChange),
-      balanceAfter: String(newBalance),
-      unitCost: ingredient.lastCost,
+      balanceAfter: updated.currentStock,
+      unitCost: updated.lastCost,
       note: note || null,
       createdBy: auth.userId,
     }).returning();
