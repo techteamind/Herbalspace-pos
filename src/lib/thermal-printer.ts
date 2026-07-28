@@ -15,10 +15,11 @@ export interface ThermalReceiptData {
   storeName: string;
   address?: string;
   phone?: string;
+  header?: string;
   number: string;
   datetime: string;
   cashierName?: string;
-  lines: { name: string; qty: number; price: number }[];
+  lines: { name: string; qty: number; price: number; note?: string }[];
   subtotal: number;
   discount: number;
   tax: number;
@@ -44,6 +45,7 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
   push(cmd(ESC, 0x45, 0)); // bold off
   if (data.address) push(encode(data.address + "\n"));
   if (data.phone) push(encode(data.phone + "\n"));
+  if (data.header) push(encode(data.header + "\n"));
   push(encode("================================\n"));
 
   // Transaction info - left align
@@ -60,6 +62,7 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
     const total = (line.qty * line.price).toLocaleString("id-ID");
     push(encode(`${name}\n`));
     push(encode(`  ${line.qty} x ${line.price.toLocaleString("id-ID")}`.padEnd(20) + total.padStart(12) + "\n"));
+    if (line.note) push(encode(`  * ${line.note}\n`));
   }
 
   push(encode("--------------------------------\n"));

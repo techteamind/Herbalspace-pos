@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { PageHeader, Icon, ListSkeleton, EmptyState, ErrorState, SwipeableRow } from "@/components/shared";
+import { PageHeader, Icon, ListSkeleton, EmptyState, ErrorState } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useOutlets } from "@/hooks/use-outlets";
@@ -54,8 +54,7 @@ export function TransactionsPage(): JSX.Element {
               {txns.map((t) => {
                 const method = t.payments[0]?.method ?? "cash";
                 return (
-                  <SwipeableRow key={t.id} onEdit={() => setSelected(t)}>
-                  <button onClick={() => setSelected(t)}
+                  <button key={t.id} onClick={() => setSelected(t)}
                     className="w-full bg-surface-container-lowest p-3 rounded-xl shadow-elevation-1 flex items-center gap-3 text-left active:scale-[0.99] transition-transform">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${t.status === "void" ? "bg-error-container" : "bg-primary-container"}`}>
                       <Icon name={t.status === "void" ? "block" : "receipt_long"} className={t.status === "void" ? "text-on-error-container" : "text-on-primary"} />
@@ -77,7 +76,6 @@ export function TransactionsPage(): JSX.Element {
                       </div>
                     </div>
                   </button>
-                  </SwipeableRow>
                 );
               })}
             </div>

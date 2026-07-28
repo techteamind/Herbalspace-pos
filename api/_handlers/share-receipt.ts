@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       where: eq(transactions.id, shared.transactionId),
       columns: { number: true, subtotal: true, discount: true, taxAmount: true, total: true, createdAt: true, status: true },
       with: {
-        items: { columns: { productName: true, quantity: true, unitPrice: true, lineTotal: true } },
+        items: { columns: { productName: true, quantity: true, unitPrice: true, lineTotal: true, note: true } },
         payments: { columns: { method: true, amount: true, amountReceived: true, changeAmount: true } },
         customer: { columns: { name: true } },
         cashier: { columns: { fullName: true } },

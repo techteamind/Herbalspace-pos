@@ -30,7 +30,7 @@ function saveFavorites(outletId: string, ids: string[]): void {
 export function PosPage(): JSX.Element {
   const { data: products, isLoading, isError, error } = useProducts();
   const { data: settings } = useSettings();
-  const { outletId } = useAuth();
+  const { outletId, profileName } = useAuth();
   const toast = useToast();
   const { data: outlets } = useOutlets();
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
@@ -137,6 +137,7 @@ export function PosPage(): JSX.Element {
       phone: activeOutlet?.phone ?? settings?.phone ?? undefined,
       receiptHeader: activeOutlet?.receiptHeader ?? settings?.receiptHeader ?? undefined,
       receiptFooter: activeOutlet?.receiptFooter ?? settings?.receiptFooter ?? undefined,
+      cashierName: profileName ?? undefined,
       datetime: new Date().toLocaleString("id-ID"),
     });
   }
@@ -486,7 +487,9 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
         storeName: receipt.storeName,
         address: receipt.address,
         phone: receipt.phone,
+        header: receipt.receiptHeader,
         footer: receipt.receiptFooter,
+        cashierName: receipt.cashierName,
         number: receipt.number,
         datetime: receipt.datetime,
         lines: receipt.lines,

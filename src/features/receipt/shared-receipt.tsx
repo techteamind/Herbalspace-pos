@@ -17,7 +17,7 @@ interface SharedReceiptData {
     createdAt: string;
     customer: { name: string } | null;
     cashier: { fullName: string } | null;
-    items: { productName: string; quantity: number; unitPrice: string; lineTotal: string }[];
+    items: { productName: string; quantity: number; unitPrice: string; lineTotal: string; note?: string | null }[];
     payments: { method: string; amount: string; amountReceived: string | null; changeAmount: string | null }[];
   };
   expiresAt: string;
@@ -93,6 +93,7 @@ export function SharedReceiptPage(): JSX.Element {
                 <div>
                   <span className="text-on-surface">{it.productName}</span>
                   <span className="text-on-surface-variant/60 ml-1">{it.quantity}x {formatRupiah(it.unitPrice)}</span>
+                  {it.note && <p className="text-on-surface-variant/70 text-xs italic">{it.note}</p>}
                 </div>
                 <span className="text-on-surface font-medium">{formatRupiah(it.lineTotal)}</span>
               </div>
