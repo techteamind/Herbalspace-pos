@@ -37,7 +37,8 @@ vite.config.js
 vite.config.d.ts
 
 # capacitor native
-/android
+# android/ is tracked (native config: build.gradle, manifest, res). Build artifacts,
+# local.properties, and synced web assets are excluded by android/.gitignore.
 /ios
 .env*
 
