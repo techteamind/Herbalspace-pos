@@ -10,12 +10,14 @@ Setup basis untuk Herbaspace POS sudah selesai! Ikuti langkah-langkah ini untuk 
 - File: `/db/schema.sql` (SQL schema lengkap)
 - File: `/db/schema.ts` (Drizzle ORM type-safe schema)
 - Includes: 15 tables untuk seluruh operasional POS
-- Multi-tenant architecture dengan RLS support
+- Multi-tenant architecture (isolasi tenant dijaga di lapisan aplikasi, lihat #2)
 
-### 2. ✅ Row Level Security (RLS) Policies
-- File: `/db/rls-policies.sql`
-- Policies untuk secure data access per organization
-- Role-based access control (owner, manager, cashier, inventory)
+### 2. ✅ Isolasi Tenant (di lapisan aplikasi, BUKAN RLS)
+- Ditegakkan di `api/_lib/auth.ts` + scoping `tenant_id` pada setiap handler
+  `api/_handlers/*.ts` (baca & tulis), plus `requireRole()` untuk endpoint admin.
+- RLS Postgres TIDAK dipakai: koneksi DB berprivilese mem-bypass RLS dan
+  `auth.uid()` tidak terisi pada koneksi langsung. Lihat `/db/rls-policies.sql`
+  (kini berisi penjelasan model keamanan, bukan policy).
 
 ### 3. ✅ Authentication System
 - Files:
@@ -51,10 +53,11 @@ Setup basis untuk Herbaspace POS sudah selesai! Ikuti langkah-langkah ini untuk 
 3. Run query
 4. Verify semua tables created di Supabase
 
-**B. Enable RLS Policies**
-1. Copy-paste isi file `/db/rls-policies.sql`
-2. Run di Supabase SQL Editor
-3. Verify policies di Supabase → Authentication → Policies
+**B. Fungsi bisnis & migrasi**
+1. Jalankan migrasi Drizzle: `npx drizzle-kit migrate` (atau jalankan file di `/drizzle/*.sql`)
+2. Deploy fungsi DB: `psql "$POSTGRES_URL" -f db/functions.sql`
+   (berisi `create_sale` — wajib agar penjualan berjalan)
+_Catatan: RLS tidak dipakai — isolasi tenant di lapisan aplikasi. Lihat `/db/rls-policies.sql`._
 
 ### Step 2: Test Setup di Local
 
@@ -84,7 +87,6 @@ npm run dev
 npm run db:studio
 
 # Cek semua tables tersedia
-# Cek RLS policies aktif
 ```
 
 ---
@@ -148,7 +150,7 @@ docs/
 | Database | PostgreSQL (Supabase) | Data persistence |
 | ORM | Drizzle ORM | Type-safe DB access |
 | Auth | Supabase Auth | User authentication |
-| Security | RLS Policies | Row-level security |
+| Security | App-layer tenant scoping | Isolasi tenant di setiap handler API |
 | State | Zustand + React Context | State management |
 | Forms | React Hook Form + Zod | Form validation |
 | API | React Query + Fetch API | Data fetching |
@@ -159,8 +161,8 @@ docs/
 ## ⚠️ Important Notes
 
 ### Security
-- ✅ JWT tokens dari Supabase Auth
-- ✅ RLS policies protect data per organization
+- ✅ JWT tokens dari Supabase Auth (diverifikasi di `api/_lib/auth.ts`)
+- ✅ Isolasi tenant ditegakkan di lapisan aplikasi (scoping `tenant_id` per handler); RLS tidak dipakai — lihat `/db/rls-policies.sql`
 - ✅ Server-side validation untuk semua operations
 - ✅ Never commit `.env` file (sudah di `.gitignore`)
 
