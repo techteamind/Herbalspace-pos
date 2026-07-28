@@ -15,7 +15,7 @@ export function ModifiersPage(): JSX.Element {
       <div className="px-container-padding space-y-3 pb-24">
         {isLoading && <ListSkeleton rows={4} />}
         {!isLoading && (groups ?? []).length === 0 && (
-          <EmptyState icon="add_circle" title="Belum ada modifier" subtitle="Tambah grup modifier seperti Extra Shot, Topping, dll." />
+          <EmptyState icon="add_circle" title="Belum ada modifier" subtitle="Tambah grup add-on seperti Ukuran Botol, Kemasan, Gift Wrap, dll." />
         )}
         {(groups ?? []).map((g) => (
           <button key={g.id} onClick={() => { setEditing(g); setShowForm(true); }}

@@ -104,7 +104,7 @@ export function ReportsPage(): JSX.Element {
         <div className="flex bg-surface-container rounded-xl p-1">
           {([["laba-rugi", "Laba Rugi"], ["neraca", "Neraca"]] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`flex-1 h-10 rounded-lg font-body-md text-body-md font-semibold transition-colors ${tab === key ? "bg-primary-container text-on-primary shadow-card" : "text-on-surface-variant"}`}>{label}</button>
+              className={`flex-1 h-10 rounded-lg font-body-md text-body-md font-semibold transition-colors ${tab === key ? "bg-primary-container text-on-primary-container shadow-card" : "text-on-surface-variant"}`}>{label}</button>
           ))}
         </div>
 
@@ -176,7 +176,7 @@ export function ReportsPage(): JSX.Element {
               ) : topProducts.map(([name, value], i) => (
                 <div key={name} className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center font-label-caps text-label-caps text-[11px] ${i === 0 ? "bg-primary-container text-on-primary" : "bg-surface-container text-on-surface-variant"}`}>{i + 1}</span>
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center font-label-caps text-label-caps text-[11px] ${i === 0 ? "bg-primary-container text-on-primary-container" : "bg-surface-container text-on-surface-variant"}`}>{i + 1}</span>
                     <span className="font-body-md text-body-md text-on-surface">{name}</span>
                   </div>
                   <span className="font-body-md text-body-md font-semibold text-on-surface-variant">{formatRupiah(value)}</span>
@@ -221,7 +221,7 @@ export function ReportsPage(): JSX.Element {
               <Row label="Total Pengeluaran" value={formatRupiah(expenseTotal)} bold className="text-error" />
             </Section>
 
-            <div className={`rounded-xl p-4 shadow-card ${labaBersih >= 0 ? "bg-primary-container text-on-primary" : "bg-error-container text-on-error-container"}`}>
+            <div className={`rounded-xl p-4 shadow-card ${labaBersih >= 0 ? "bg-primary-container text-on-primary-container" : "bg-error-container text-on-error-container"}`}>
               <p className="font-label-caps text-label-caps uppercase opacity-80">Saldo Bersih Periode</p>
               <p className="font-display-price-mobile text-display-price-mobile mt-1">{formatRupiah(labaBersih)}</p>
             </div>

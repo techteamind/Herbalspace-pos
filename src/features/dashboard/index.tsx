@@ -70,18 +70,23 @@ export function DashboardPage(): JSX.Element {
 
   return (
     <div {...handlers}>
-      <PageHeader title={activeOutlet?.name ?? "Herbaspace"} rightIcon={lowCount > 0 ? "notifications_active" : "notifications"} onRight={() => setShowNotif(true)} rightBadge={lowCount > 0 ? lowCount : undefined} />
+      <PageHeader title="Beranda" rightIcon={lowCount > 0 ? "notifications_active" : "notifications"} onRight={() => setShowNotif(true)} rightBadge={lowCount > 0 ? lowCount : undefined} />
       <PullRefreshIndicator distance={pullDistance} refreshing={refreshing} />
       <div className="px-container-padding space-y-5 pb-28">
         <div className="pt-1">
-          {canSwitch && (
+          {canSwitch ? (
             <button onClick={() => setShowOutletSwitch(true)}
               className="flex items-center gap-1.5 mb-1.5 text-primary font-medium text-[13px] active:scale-95 transition-transform">
               <Icon name="store" className="text-[16px]" />
               <span>{activeOutlet?.name ?? "Semua Outlet"}</span>
               <Icon name="swap_horiz" className="text-[14px] text-on-surface-variant" />
             </button>
-          )}
+          ) : activeOutlet?.name ? (
+            <div className="flex items-center gap-1.5 mb-1.5 text-on-surface-variant font-medium text-[13px]">
+              <Icon name="store" className="text-[16px]" />
+              <span>{activeOutlet.name}</span>
+            </div>
+          ) : null}
           <p className="text-[13px] text-on-surface-variant">{today}</p>
           <h2 className="text-[24px] font-bold text-on-surface tracking-tight leading-tight mt-0.5">Halo, {authName ?? stats?.profileName ?? "Kasir"} 👋</h2>
         </div>
@@ -99,7 +104,7 @@ export function DashboardPage(): JSX.Element {
               value={formatRupiah(stats?.todayRevenue ?? 0)}
               sub={pctChange(stats?.todayRevenue ?? 0, stats?.yesterdayRevenue ?? 0)} />
             <div className="grid grid-cols-3 gap-3">
-              <StatCard label="TRANSAKSI" icon="receipt_long" value={String(stats?.todayTransactions ?? 0)} sub="struk hari ini" />
+              <StatCard label="TRANSAKSI" icon="receipt_long" value={String(stats?.todayTransactions ?? 0)} sub="struk" />
               <StatCard label="RATA2" icon="trending_up" value={`Rp ${formatCompact(stats?.avgPerTransaction ?? 0)}`} sub="/transaksi" />
               <StatCard label="TERJUAL" icon="inventory_2" value={String(stats?.todayProductsSold ?? 0)} sub="item" />
             </div>

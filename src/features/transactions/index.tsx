@@ -15,7 +15,8 @@ export function TransactionsPage(): JSX.Element {
   const { outletId } = useAuth();
   const { data: outlets } = useOutlets();
   const [filterOutletId, setFilterOutletId] = useState<string | undefined>(undefined);
-  const effectiveOutletId = filterOutletId ?? outletId ?? undefined;
+  // "__all__" = paksa semua outlet; undefined = ikuti scope default (outlet auth)
+  const effectiveOutletId = filterOutletId === "__all__" ? undefined : (filterOutletId ?? outletId ?? undefined);
   const { data, isLoading, isError, error } = useTransactions({ limit: 100, outletId: effectiveOutletId });
   const [selected, setSelected] = useState<TransactionWithItems | null>(null);
   const list = data ?? [];
@@ -28,6 +29,10 @@ export function TransactionsPage(): JSX.Element {
       <PageHeader title="Riwayat Transaksi" leftIcon="arrow_back" onLeft={() => history.back()} />
       {hasMultipleOutlets && (
         <div className="px-container-padding pt-2 pb-1 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          <button onClick={() => setFilterOutletId("__all__")}
+            className={`h-8 px-4 rounded-full font-label-caps text-label-caps whitespace-nowrap shrink-0 ${effectiveOutletId === undefined ? "bg-primary-container text-on-primary-container shadow-card" : "bg-surface-container text-on-surface-variant border border-outline-variant"}`}>
+            Semua
+          </button>
           {(outlets ?? []).map((o) => (
             <button key={o.id} onClick={() => setFilterOutletId(o.id)}
               className={`h-8 px-4 rounded-full font-label-caps text-label-caps whitespace-nowrap shrink-0 ${effectiveOutletId === o.id ? "bg-primary-container text-on-primary-container shadow-card" : "bg-surface-container text-on-surface-variant border border-outline-variant"}`}>
