@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent } from "react";
 import { AnimatePresence } from "framer-motion";
 import { PageHeader, Icon, FormSheet, Field, inputCls, useConfirm } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
-import { useProducts, useCreateProduct, useUpdateProduct } from "@/hooks/use-products";
+import { useProducts, useCreateProduct, useUpdateProduct, useReceiveStock } from "@/hooks/use-products";
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/use-categories";
 import type { ProductWithCategory, Category } from "@/types";
 import { ProductForm } from "./product-form";
@@ -17,6 +17,7 @@ export function ProductsPage(): JSX.Element {
   const deleteCategory = useDeleteCategory();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ProductWithCategory | null>(null);
+  const [receiving, setReceiving] = useState<ProductWithCategory | null>(null);
   const [showCatForm, setShowCatForm] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [importing, setImporting] = useState(false);
@@ -140,9 +141,13 @@ export function ProductsPage(): JSX.Element {
                   {(() => {
                     const hasVar = (p.variants?.length ?? 0) > 0;
                     const tracked = hasVar ? p.variants!.some((v) => v.stock != null) : p.stock != null;
-                    if (!tracked) return null;
                     const s = hasVar ? p.variants!.reduce((a, v) => a + (v.stock ?? 0), 0) : (p.stock ?? 0);
-                    return <span className={`font-label-caps text-label-caps px-2 py-0.5 rounded-full ${s <= 0 ? "bg-error-container text-on-error-container" : "bg-secondary-container text-on-secondary-container"}`}>Stok {s}</span>;
+                    return (
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setReceiving(p); }}
+                        className={`font-label-caps text-label-caps px-2 py-0.5 rounded-full active:scale-95 transition-transform ${!tracked ? "bg-surface-container text-on-surface-variant" : s <= 0 ? "bg-error-container text-on-error-container" : "bg-secondary-container text-on-secondary-container"}`}>
+                        {tracked ? `Stok ${s}` : "+ Stok"}
+                      </button>
+                    );
                   })()}
                 </div>
               </div>
@@ -177,9 +182,48 @@ export function ProductsPage(): JSX.Element {
         {showForm && <ProductForm onClose={() => setShowForm(false)} />}
         {editing && <ProductForm initial={editing} onClose={() => setEditing(null)} />}
         {showCatForm && <CategoryForm initial={editingCat} onClose={() => { setShowCatForm(false); setEditingCat(null); }} />}
+        {receiving && <ReceiveStockSheet product={receiving} onClose={() => setReceiving(null)} />}
       </AnimatePresence>
       <ConfirmDialog />
     </>
+  );
+}
+
+function ReceiveStockSheet({ product, onClose }: { product: ProductWithCategory; onClose: () => void }): JSX.Element {
+  const receive = useReceiveStock();
+  const variants = product.variants ?? [];
+  const hasVar = variants.length > 0;
+  // qty tambahan yang diketik: kunci "base" untuk produk tanpa varian, atau variant.id
+  const [qty, setQty] = useState<Record<string, string>>({});
+
+  async function submit(): Promise<void> {
+    const adjustments = hasVar
+      ? variants.filter((v) => Number(qty[v.id]) > 0).map((v) => ({ variantId: v.id, qtyChange: Number(qty[v.id]) }))
+      : Number(qty.base) > 0 ? [{ productId: product.id, qtyChange: Number(qty.base) }] : [];
+    if (adjustments.length === 0) { onClose(); return; }
+    await receive.mutateAsync(adjustments);
+    onClose();
+  }
+
+  return (
+    <FormSheet title={`Terima Stok — ${product.name}`} onClose={onClose}>
+      <p className="font-label-caps text-label-caps text-on-surface-variant">Masukkan jumlah barang yang diterima (ditambahkan ke stok saat ini).</p>
+      {hasVar ? variants.map((v) => (
+        <Field key={v.id} label={`${v.label} (stok: ${v.stock ?? 0})`}>
+          <input className={inputCls} inputMode="numeric" value={qty[v.id] ?? ""}
+            onChange={(e) => setQty((q) => ({ ...q, [v.id]: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="0" />
+        </Field>
+      )) : (
+        <Field label={`Jumlah diterima (stok: ${product.stock ?? 0})`}>
+          <input className={inputCls} inputMode="numeric" value={qty.base ?? ""} autoFocus
+            onChange={(e) => setQty((q) => ({ ...q, base: e.target.value.replace(/[^0-9]/g, "") }))} placeholder="0" />
+        </Field>
+      )}
+      <button onClick={submit} disabled={receive.isPending}
+        className="w-full bg-primary text-on-primary rounded-xl h-14 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
+        {receive.isPending ? "Menyimpan..." : "Terima Stok"}
+      </button>
+    </FormSheet>
   );
 }
 

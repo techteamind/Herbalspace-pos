@@ -14,6 +14,7 @@ import modifiers from "./_handlers/modifiers.js";
 import outlets from "./_handlers/outlets.js";
 import priceHistory from "./_handlers/price-history.js";
 import productModifiers from "./_handlers/product-modifiers.js";
+import productStock from "./_handlers/product-stock.js";
 import products from "./_handlers/products.js";
 import promos from "./_handlers/promos.js";
 import recipes from "./_handlers/recipes.js";
@@ -43,6 +44,7 @@ const routes: Record<string, Handler> = {
   outlets,
   "price-history": priceHistory,
   "product-modifiers": productModifiers,
+  "product-stock": productStock,
   products,
   promos,
   recipes,

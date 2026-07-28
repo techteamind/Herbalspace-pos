@@ -27,6 +27,15 @@ export function useUpdateProduct() {
   });
 }
 
+export function useReceiveStock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (adjustments: { productId?: string; variantId?: string; qtyChange: number }[]) =>
+      apiFetch("product-stock", { method: "POST", body: JSON.stringify({ adjustments }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
 export function useDeleteProduct() {
   const qc = useQueryClient();
   return useMutation({
