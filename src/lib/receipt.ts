@@ -16,6 +16,7 @@ export interface Receipt {
   subtotal: number;
   discount?: number;
   tax: number;
+  serviceCharge?: number;
   total: number;
   method: string;
   received?: number;
@@ -57,6 +58,7 @@ export function printReceipt(r: Receipt): void {
     <tr><td>Subtotal</td><td style="text-align:right">${formatRupiah(r.subtotal)}</td></tr>
     ${r.discount ? `<tr><td>Diskon</td><td style="text-align:right">-${formatRupiah(r.discount)}</td></tr>` : ""}
     ${r.tax > 0 ? `<tr><td>Pajak</td><td style="text-align:right">${formatRupiah(r.tax)}</td></tr>` : ""}
+    ${r.serviceCharge ? `<tr><td>Service</td><td style="text-align:right">${formatRupiah(r.serviceCharge)}</td></tr>` : ""}
     <tr class="tot"><td>TOTAL</td><td style="text-align:right">${formatRupiah(r.total)}</td></tr>
     <tr><td>Bayar (${METHOD_LABEL[r.method] ?? r.method})</td><td style="text-align:right">${formatRupiah(r.received ?? r.total)}</td></tr>
     ${r.change ? `<tr><td>Kembalian</td><td style="text-align:right">${formatRupiah(r.change)}</td></tr>` : ""}

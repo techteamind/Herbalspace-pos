@@ -18,10 +18,11 @@ interface SalePayment {
 
 export default createHandler({
   async POST(req, res, auth) {
-    const { customerId, discount, taxPercent, items, payments, clientRef } = req.body as {
+    const { customerId, discount, taxPercent, serviceChargePercent, items, payments, clientRef } = req.body as {
       customerId?: string | null;
       discount?: number;
       taxPercent?: number;
+      serviceChargePercent?: number;
       items: SaleItem[];
       payments: SalePayment[];
       clientRef?: string | null;
@@ -46,6 +47,7 @@ export default createHandler({
     const itemsTotal = items.reduce((s, it) => s + it.unit_price * it.quantity, 0);
     const safeDiscount = Math.min(Math.max(discount ?? 0, 0), itemsTotal);
     const safeTax = Math.min(Math.max(taxPercent ?? 0, 0), 100);
+    const safeService = Math.min(Math.max(serviceChargePercent ?? 0, 0), 100);
     if (customerId) {
       const cust = await db.execute(sql`
         SELECT id FROM customers WHERE id = ${customerId}::uuid AND tenant_id = ${auth.tenantId}::uuid
@@ -66,7 +68,8 @@ export default createHandler({
         ${JSON.stringify(items)}::jsonb,
         ${JSON.stringify(payments ?? [])}::jsonb,
         ${auth.outletId ?? null}::uuid,
-        ${clientRef ?? null}::uuid
+        ${clientRef ?? null}::uuid,
+        ${safeService}::numeric
       );
     `);
     const sale = result[0] as { total: string };

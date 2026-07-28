@@ -16,15 +16,16 @@ const METHODS: { key: Method; label: string }[] = [
 interface Props {
   lines: CartLine[];
   taxPercent: number;
+  serviceChargePercent?: number;
   enabledMethods?: string[];
   onClose: () => void;
-  onSuccess: (data: { transactionId: string; number: string; subtotal: number; discount: number; tax: number; total: number; method: string; received?: number; change?: number; customerName?: string; customerPhone?: string; lines: { name: string; qty: number; price: number; note?: string }[] }) => void;
+  onSuccess: (data: { transactionId: string; number: string; subtotal: number; discount: number; tax: number; serviceCharge: number; total: number; method: string; received?: number; change?: number; customerName?: string; customerPhone?: string; lines: { name: string; qty: number; price: number; note?: string }[] }) => void;
   onQueued: () => void;
   onQty: (productId: string, delta: number) => void;
   onNote: (productId: string, note: string) => void;
 }
 
-export function PaymentSheet({ lines, taxPercent, enabledMethods, onClose, onSuccess, onQueued, onQty, onNote }: Props): JSX.Element {
+export function PaymentSheet({ lines, taxPercent, serviceChargePercent = 0, enabledMethods, onClose, onSuccess, onQueued, onQty, onNote }: Props): JSX.Element {
   // hormati metode aktif dari Pengaturan; fallback ke semua kalau kosong/tak diset
   const methods = enabledMethods?.length ? METHODS.filter((m) => enabledMethods.includes(m.key)) : METHODS;
   const [method, setMethod] = useState<Method>(methods[0]?.key ?? "cash");
@@ -117,7 +118,8 @@ export function PaymentSheet({ lines, taxPercent, enabledMethods, onClose, onSuc
   const discount = Math.min(promoDiscount + manualDiscountVal, subtotal);
   const afterDiscount = subtotal - discount;
   const tax = Math.round(afterDiscount * taxPercent / 100);
-  const total = afterDiscount + tax;
+  const serviceCharge = Math.round(afterDiscount * serviceChargePercent / 100);
+  const total = afterDiscount + tax + serviceCharge;
   const receivedNum = Number(received) || 0;
   const change = Math.max(0, receivedNum - total);
   const insufficient = method === "cash" && receivedNum < total;
@@ -143,6 +145,7 @@ export function PaymentSheet({ lines, taxPercent, enabledMethods, onClose, onSuc
       const result = await createSale.mutateAsync({
         customerId,
         taxPercent,
+        serviceChargePercent,
         discount,
         clientRef: clientRefRef.current,
         items: lines.map((l) => {
@@ -168,7 +171,7 @@ export function PaymentSheet({ lines, taxPercent, enabledMethods, onClose, onSuc
       onSuccess({
         transactionId: result.transaction_id,
         number: result.number,
-        subtotal, discount, tax, total, method,
+        subtotal, discount, tax, serviceCharge, total, method,
         ...(method === "cash" ? { received: receivedNum, change } : {}),
         customerName: finalName || undefined,
         customerPhone: finalPhone || undefined,
@@ -325,6 +328,7 @@ export function PaymentSheet({ lines, taxPercent, enabledMethods, onClose, onSuc
           {promoDiscount > 0 && <Line label="Diskon Promo" value={`-${formatRupiah(promoDiscount)}`} className="text-primary" />}
           {manualDiscountVal > 0 && <Line label="Diskon Manual" value={`-${formatRupiah(manualDiscountVal)}`} className="text-error" />}
           {taxPercent > 0 && <Line label={`Pajak (${taxPercent}%)`} value={formatRupiah(tax)} />}
+          {serviceCharge > 0 && <Line label={`Service (${serviceChargePercent}%)`} value={formatRupiah(serviceCharge)} />}
           <div className="flex justify-between items-center pt-1">
             <span className="font-body-lg text-body-lg font-semibold text-on-surface">Total</span>
             <span className="font-h2 text-h2 text-primary">{formatRupiah(total)}</span>

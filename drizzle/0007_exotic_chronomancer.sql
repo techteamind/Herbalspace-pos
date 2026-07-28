@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "service_charge" numeric(14, 2) DEFAULT '0' NOT NULL;

@@ -31,6 +31,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
   const subtotal = Number(txn.subtotal);
   const discount = Number(txn.discount);
   const tax = Number(txn.taxAmount);
+  const serviceCharge = Number(txn.serviceCharge ?? 0);
   const payment = txn.payments[0];
   const isVoid = txn.status === "void";
 
@@ -45,6 +46,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
       subtotal,
       discount: discount || undefined,
       tax,
+      serviceCharge: serviceCharge || undefined,
       total: Number(txn.total),
       method: payment?.method ?? "cash",
       received: payment?.amountReceived ? Number(payment.amountReceived) : undefined,
@@ -126,6 +128,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
           <Row label="Subtotal" value={formatRupiah(subtotal)} />
           {discount > 0 && <Row label="Diskon" value={`-${formatRupiah(discount)}`} valueClass="text-error" />}
           {tax > 0 && <Row label="Pajak" value={formatRupiah(tax)} />}
+          {serviceCharge > 0 && <Row label="Service" value={formatRupiah(serviceCharge)} />}
           <div className="flex justify-between items-center pt-1">
             <span className="font-body-lg text-body-lg font-semibold text-on-surface">Total</span>
             <span className={`font-h2 text-h2 ${isVoid ? "text-error line-through" : "text-primary"}`}>{formatRupiah(txn.total)}</span>

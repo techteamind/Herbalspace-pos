@@ -160,6 +160,7 @@ export const transactions = pgTable("transactions", {
   subtotal: numeric("subtotal", { precision: 14, scale: 2 }).notNull(),
   discount: numeric("discount", { precision: 14, scale: 2 }).notNull().default("0"),
   taxAmount: numeric("tax_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  serviceCharge: numeric("service_charge", { precision: 14, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 14, scale: 2 }).notNull(),
   cogsTotal: numeric("cogs_total", { precision: 14, scale: 2 }).notNull().default("0"),
   clientRef: uuid("client_ref"),

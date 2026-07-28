@@ -23,6 +23,7 @@ export interface ThermalReceiptData {
   subtotal: number;
   discount: number;
   tax: number;
+  serviceCharge?: number;
   total: number;
   method: string;
   received?: number;
@@ -72,6 +73,7 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
   push(encode(`Subtotal`.padEnd(20) + fmt(data.subtotal).padStart(12) + "\n"));
   if (data.discount > 0) push(encode(`Diskon`.padEnd(20) + `-${fmt(data.discount)}`.padStart(12) + "\n"));
   if (data.tax > 0) push(encode(`Pajak`.padEnd(20) + fmt(data.tax).padStart(12) + "\n"));
+  if (data.serviceCharge && data.serviceCharge > 0) push(encode(`Service`.padEnd(20) + fmt(data.serviceCharge).padStart(12) + "\n"));
   push(encode("--------------------------------\n"));
   push(cmd(ESC, 0x45, 1)); // bold
   push(encode(`TOTAL`.padEnd(20) + fmt(data.total).padStart(12) + "\n"));

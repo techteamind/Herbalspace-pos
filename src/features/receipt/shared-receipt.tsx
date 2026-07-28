@@ -13,6 +13,7 @@ interface SharedReceiptData {
     subtotal: string;
     discount: string;
     taxAmount: string;
+    serviceCharge?: string;
     total: string;
     createdAt: string;
     customer: { name: string } | null;
@@ -105,6 +106,7 @@ export function SharedReceiptPage(): JSX.Element {
             <Row label="Subtotal" value={formatRupiah(tx.subtotal)} />
             {discount > 0 && <Row label="Diskon" value={`-${formatRupiah(discount)}`} className="text-error" />}
             {Number(tx.taxAmount) > 0 && <Row label="Pajak" value={formatRupiah(tx.taxAmount)} />}
+            {Number(tx.serviceCharge) > 0 && <Row label="Service" value={formatRupiah(tx.serviceCharge!)} />}
             <div className="flex justify-between items-center pt-2 border-t border-outline-variant/30 text-base font-bold text-on-surface">
               <span>Total</span>
               <span className="text-primary">{formatRupiah(tx.total)}</span>

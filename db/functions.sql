@@ -24,7 +24,8 @@ CREATE OR REPLACE FUNCTION create_sale(
   p_items       jsonb,
   p_payments    jsonb,
   p_outlet_id   uuid DEFAULT NULL,
-  p_client_ref  uuid DEFAULT NULL
+  p_client_ref  uuid DEFAULT NULL,
+  p_service_charge_percent numeric DEFAULT 0
 )
 RETURNS TABLE (transaction_id uuid, number text, total numeric, cogs_total numeric)
 LANGUAGE plpgsql
@@ -36,6 +37,7 @@ DECLARE
   v_subtotal     numeric(14,2) := 0;
   v_cogs_total   numeric(14,2) := 0;
   v_tax          numeric(14,2) := 0;
+  v_service      numeric(14,2) := 0;
   v_total        numeric(14,2) := 0;
   v_item         jsonb;
   v_pay          jsonb;
@@ -124,16 +126,18 @@ BEGIN
     END LOOP;
   END LOOP;
 
-  -- pajak & total (bulat ke rupiah utuh, konsisten dengan perhitungan klien)
-  v_tax   := round((v_subtotal - COALESCE(p_discount,0)) * COALESCE(p_tax_percent,0) / 100.0, 0);
-  v_total := v_subtotal - COALESCE(p_discount,0) + v_tax;
+  -- pajak, service charge & total (bulat ke rupiah utuh, konsisten dengan klien)
+  v_tax     := round((v_subtotal - COALESCE(p_discount,0)) * COALESCE(p_tax_percent,0) / 100.0, 0);
+  v_service := round((v_subtotal - COALESCE(p_discount,0)) * COALESCE(p_service_charge_percent,0) / 100.0, 0);
+  v_total   := v_subtotal - COALESCE(p_discount,0) + v_tax + v_service;
 
   IF v_total < 0 THEN
     RAISE EXCEPTION 'Total transaksi negatif (diskon melebihi subtotal)';
   END IF;
 
   UPDATE transactions
-    SET subtotal = v_subtotal, tax_amount = v_tax, total = v_total, cogs_total = v_cogs_total
+    SET subtotal = v_subtotal, tax_amount = v_tax, service_charge = v_service,
+        total = v_total, cogs_total = v_cogs_total
     WHERE id = v_tx_id;
 
   -- pembayaran: status 'paid' hanya sah jika jumlah pembayaran menutup total

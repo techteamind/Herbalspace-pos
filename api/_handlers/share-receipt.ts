@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     // unit_cogs (HPP/margin), id internal, atau data lintas-tenant lainnya.
     const tx = await db.query.transactions.findFirst({
       where: eq(transactions.id, shared.transactionId),
-      columns: { number: true, subtotal: true, discount: true, taxAmount: true, total: true, createdAt: true, status: true },
+      columns: { number: true, subtotal: true, discount: true, taxAmount: true, serviceCharge: true, total: true, createdAt: true, status: true },
       with: {
         items: { columns: { productName: true, quantity: true, unitPrice: true, lineTotal: true, note: true } },
         payments: { columns: { method: true, amount: true, amountReceived: true, changeAmount: true } },
@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       receiptFooter: store?.receiptFooter ?? "",
       transaction: {
         number: tx.number, subtotal: tx.subtotal, discount: tx.discount,
-        taxAmount: tx.taxAmount, total: tx.total, createdAt: tx.createdAt,
+        taxAmount: tx.taxAmount, serviceCharge: tx.serviceCharge, total: tx.total, createdAt: tx.createdAt,
         customer: tx.customer, cashier: tx.cashier, items: tx.items, payments: tx.payments,
       },
       expiresAt: shared.expiresAt,

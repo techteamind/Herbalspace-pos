@@ -125,7 +125,7 @@ export function PosPage(): JSX.Element {
     return copy;
   });
 
-  function onSuccess(data: { transactionId: string; number: string; subtotal: number; discount: number; tax: number; total: number; method: string; received?: number; change?: number; customerName?: string; customerPhone?: string; lines: { name: string; qty: number; price: number }[] }): void {
+  function onSuccess(data: { transactionId: string; number: string; subtotal: number; discount: number; tax: number; serviceCharge?: number; total: number; method: string; received?: number; change?: number; customerName?: string; customerPhone?: string; lines: { name: string; qty: number; price: number; note?: string }[] }): void {
     hapticSuccess();
     setShowPayment(false);
     setCart({});
@@ -256,7 +256,7 @@ export function PosPage(): JSX.Element {
       )}
 
       {showPayment && (
-        <PaymentSheet lines={lines} taxPercent={Number(settings?.taxPercent ?? 0)} enabledMethods={settings?.enabledPaymentMethods}
+        <PaymentSheet lines={lines} taxPercent={Number(settings?.taxPercent ?? 0)} serviceChargePercent={Number(settings?.serviceChargePercent ?? 0)} enabledMethods={settings?.enabledPaymentMethods}
           onClose={() => setShowPayment(false)} onSuccess={onSuccess} onQueued={onQueued} onQty={changeQty} onNote={changeNote} />
       )}
 
@@ -496,6 +496,7 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
         subtotal: receipt.subtotal,
         discount: receipt.discount ?? 0,
         tax: receipt.tax,
+        serviceCharge: receipt.serviceCharge,
         total: receipt.total,
         method: receipt.method,
         received: receipt.received,
