@@ -18,7 +18,7 @@ interface SalePayment {
 
 export default createHandler({
   async POST(req, res, auth) {
-    const { customerId, discount, taxPercent, serviceChargePercent, items, payments, clientRef } = req.body as {
+    const { customerId, discount, taxPercent, serviceChargePercent, items, payments, clientRef, occurredAt } = req.body as {
       customerId?: string | null;
       discount?: number;
       taxPercent?: number;
@@ -26,7 +26,15 @@ export default createHandler({
       items: SaleItem[];
       payments: SalePayment[];
       clientRef?: string | null;
+      occurredAt?: string | null;
     };
+    // Jam transaksi dari klien (penting untuk sale offline yang di-sync belakangan).
+    // Tolak nilai ngawur / di masa depan → fallback ke waktu server (null).
+    let safeOccurredAt: string | null = null;
+    if (typeof occurredAt === "string") {
+      const t = Date.parse(occurredAt);
+      if (Number.isFinite(t) && t <= Date.now() + 60_000) safeOccurredAt = new Date(t).toISOString();
+    }
 
     if (!Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: "Item transaksi kosong" });
@@ -69,7 +77,8 @@ export default createHandler({
         ${JSON.stringify(payments ?? [])}::text::jsonb,
         ${auth.outletId ?? null}::uuid,
         ${clientRef ?? null}::uuid,
-        ${safeService}::numeric
+        ${safeService}::numeric,
+        ${safeOccurredAt}::timestamptz
       );
     `);
     const sale = result[0] as { total: string };

@@ -21,6 +21,7 @@ interface SalePayload {
   taxPercent?: number;
   serviceChargePercent?: number;
   clientRef?: string;
+  occurredAt?: string;
   items: {
     product_id: string;
     variant_id?: string;
@@ -54,8 +55,10 @@ export function useVoidTransaction() {
 export function useCreateSale() {
   const qc = useQueryClient();
   return useMutation({
+    // occurredAt distempel di sini = jam user menekan bayar. Kalau offline,
+    // body ini masuk antrean dengan jam tsb → sale tercatat di hari yang benar.
     mutationFn: (data: SalePayload) =>
-      apiFetch("sales", { method: "POST", body: JSON.stringify(data) }),
+      apiFetch("sales", { method: "POST", body: JSON.stringify({ occurredAt: new Date().toISOString(), ...data }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });

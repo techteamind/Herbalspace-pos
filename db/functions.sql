@@ -15,6 +15,12 @@
 --   { "product_id": uuid, "product_name": text, "quantity": int, "unit_price": numeric }
 -- Parameter p_payments: jsonb array of
 --   { "method": text, "amount": numeric, "amount_received": numeric, "change_amount": numeric }
+-- Buang overload lama (9-arg & 10-arg) supaya hanya ada SATU create_sale.
+-- p_occurred_at ditambah DEFAULT NULL sebagai param terakhir → panggilan 10-arg
+-- lama tetap cocok (pakai default), jadi urutan deploy DB vs app tak masalah.
+DROP FUNCTION IF EXISTS create_sale(uuid,uuid,uuid,numeric,numeric,jsonb,jsonb,uuid,uuid);
+DROP FUNCTION IF EXISTS create_sale(uuid,uuid,uuid,numeric,numeric,jsonb,jsonb,uuid,uuid,numeric);
+
 CREATE OR REPLACE FUNCTION create_sale(
   p_tenant_id   uuid,
   p_cashier_id  uuid,
@@ -25,7 +31,8 @@ CREATE OR REPLACE FUNCTION create_sale(
   p_payments    jsonb,
   p_outlet_id   uuid DEFAULT NULL,
   p_client_ref  uuid DEFAULT NULL,
-  p_service_charge_percent numeric DEFAULT 0
+  p_service_charge_percent numeric DEFAULT 0,
+  p_occurred_at timestamptz DEFAULT NULL
 )
 RETURNS TABLE (transaction_id uuid, number text, total numeric, cogs_total numeric)
 LANGUAGE plpgsql
@@ -48,6 +55,8 @@ DECLARE
   v_variant_id   uuid;
   r_recipe       record;
   v_new_balance  numeric(14,3);
+  v_created      timestamptz;
+  v_day          date;
 BEGIN
   -- serialisasi per-tenant: mencegah nomor struk duplikat saat concurrent
   -- (lock lepas otomatis saat commit/rollback)
@@ -62,18 +71,23 @@ BEGIN
     IF FOUND THEN RETURN; END IF;
   END IF;
 
-  -- nomor struk harian: TRX-YYYYMMDD-####
+  -- waktu transaksi: pakai p_occurred_at (penjualan offline dicatat di jam JUAL,
+  -- bukan jam sync). Fallback now(). Hari dihitung dalam WIB.
+  v_created := COALESCE(p_occurred_at, now());
+  v_day     := (v_created AT TIME ZONE 'Asia/Jakarta')::date;
+
+  -- nomor struk harian (batas hari WIB): TRX-YYYYMMDD-####
   SELECT COUNT(*) + 1 INTO v_seq
   FROM transactions
   WHERE tenant_id = p_tenant_id
-    AND created_at::date = CURRENT_DATE;
-  v_number := 'TRX-' || to_char(CURRENT_DATE, 'YYYYMMDD') || '-' || lpad(v_seq::text, 4, '0');
+    AND (created_at AT TIME ZONE 'Asia/Jakarta')::date = v_day;
+  v_number := 'TRX-' || to_char(v_day, 'YYYYMMDD') || '-' || lpad(v_seq::text, 4, '0');
 
-  -- header sementara (total diisi setelah loop)
+  -- header sementara (total diisi setelah loop); created_at eksplisit = jam jual
   INSERT INTO transactions (id, tenant_id, outlet_id, number, customer_id, cashier_id, status,
-                            subtotal, discount, tax_amount, total, cogs_total, client_ref)
+                            subtotal, discount, tax_amount, total, cogs_total, client_ref, created_at)
   VALUES (v_tx_id, p_tenant_id, p_outlet_id, v_number, p_customer_id, p_cashier_id, 'paid',
-          0, COALESCE(p_discount,0), 0, 0, 0, p_client_ref);
+          0, COALESCE(p_discount,0), 0, 0, 0, p_client_ref, v_created);
 
   -- proses tiap item
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
@@ -87,6 +101,17 @@ BEGIN
     END IF;
     IF (v_item->>'unit_price')::numeric < 0 THEN
       RAISE EXCEPTION 'Harga item tidak valid';
+    END IF;
+
+    -- Isolasi tenant: produk (& varian, jika ada) WAJIB milik tenant ini,
+    -- supaya sale tak bisa mengurangi stok/menyentuh data tenant lain.
+    IF NOT EXISTS (SELECT 1 FROM products WHERE id = v_product_id AND tenant_id = p_tenant_id) THEN
+      RAISE EXCEPTION 'Produk bukan milik tenant ini';
+    END IF;
+    IF v_variant_id IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM product_variants pv WHERE pv.id = v_variant_id AND pv.product_id = v_product_id
+    ) THEN
+      RAISE EXCEPTION 'Varian tidak cocok dengan produk';
     END IF;
 
     v_line_total := (v_item->>'unit_price')::numeric * v_qty;
@@ -120,9 +145,9 @@ BEGIN
     -- potong stok barang jadi (hanya kalau dilacak / stock IS NOT NULL). Varian
     -- diutamakan; kalau tak ada varian, potong stok produk. Overselling dibiarkan.
     IF v_variant_id IS NOT NULL THEN
-      UPDATE product_variants SET stock = stock - v_qty WHERE id = v_variant_id AND stock IS NOT NULL;
+      UPDATE product_variants SET stock = stock - v_qty WHERE id = v_variant_id AND tenant_id = p_tenant_id AND stock IS NOT NULL;
     ELSE
-      UPDATE products SET stock = stock - v_qty WHERE id = v_product_id AND stock IS NOT NULL;
+      UPDATE products SET stock = stock - v_qty WHERE id = v_product_id AND tenant_id = p_tenant_id AND stock IS NOT NULL;
     END IF;
 
     -- potong stok bahan sesuai resep × qty, catat movement
@@ -134,7 +159,7 @@ BEGIN
     LOOP
       UPDATE ingredients
         SET current_stock = current_stock - (r_recipe.quantity * v_qty)
-        WHERE id = r_recipe.ingredient_id
+        WHERE id = r_recipe.ingredient_id AND tenant_id = p_tenant_id
         RETURNING current_stock INTO v_new_balance;
 
       INSERT INTO stock_movements (tenant_id, ingredient_id, type, qty_change,
