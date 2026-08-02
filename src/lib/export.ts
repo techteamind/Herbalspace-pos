@@ -1,4 +1,6 @@
+import { Capacitor } from "@capacitor/core";
 import { formatRupiah, escapeHtml as escHtml } from "./utils";
+import { shareTextFile } from "./native-share";
 
 // Cegah CSV formula injection: nama produk/outlet (dikontrol user) yang diawali
 // = + - @ tab/CR bisa dieksekusi Excel/Sheets. Prefiks "'" menetralkannya.
@@ -16,7 +18,7 @@ export interface ReportData {
   topProducts: { name: string; value: number }[];
 }
 
-export function exportReportExcel(d: ReportData): void {
+export function exportReportExcel(d: ReportData): Promise<void> {
   const rows = [
     ["Laporan Herbaspace POS"],
     [d.outletName ? `Outlet: ${d.outletName}` : "Semua Outlet"],
@@ -35,16 +37,11 @@ export function exportReportExcel(d: ReportData): void {
 
   const csv = rows.map((r) => r.map(csvCell).join(",")).join("\n");
   const bom = "﻿";
-  const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `laporan-${d.period.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const filename = `laporan-${d.period.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
+  return shareTextFile(filename, bom + csv, "text/csv;charset=utf-8;");
 }
 
-export function exportReportPdf(d: ReportData): void {
+export function exportReportPdf(d: ReportData): Promise<void> {
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Laporan ${d.period}</title>
 <style>
@@ -80,10 +77,17 @@ ${d.topProducts.length > 0 ? `
 </table>` : ""}
 </body></html>`;
 
+  // Native (APK): window.open/print mati di WebView. Bagikan file HTML laporan —
+  // bisa dibuka & di-"print/save PDF" dari browser HP. (PDF asli butuh lib berat.)
+  if (Capacitor.isNativePlatform()) {
+    const filename = `laporan-${d.period.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.html`;
+    return shareTextFile(filename, html, "text/html");
+  }
   const w = window.open("", "_blank", "width=700,height=900");
-  if (!w) return;
+  if (!w) return Promise.resolve();
   w.document.write(html);
   w.document.close();
   w.onafterprint = () => w.close();
   setTimeout(() => w.print(), 300);
+  return Promise.resolve();
 }

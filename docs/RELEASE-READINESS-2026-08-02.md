@@ -28,7 +28,16 @@ semuanya "manual". Menutupnya butuh cap/role-gate pada bagian manual.
 100%. Tak ada perubahan kode. Upgrade path bila dibutuhkan: cap diskon-% dengan bypass
 owner, atau gate diskon manual ke manajer/owner.
 
-**R2. APK: cetak struk, scan barcode, export CSV/PDF mati diam-diam.**
+**R2a. Cetak struk thermal di APK → DIKERJAKAN (2 Agu 2026), perlu test hardware.**
+Plugin `bluetooth-serial` (Capacitor-native, Bluetooth Classic SPP) + patch-package
+(`namespace` untuk AGP 8). `thermal-printer.ts` dapat transport native: pilih printer
+bonded, connect, tulis byte ESC/POS. `encode()` ASCII-fold (byte-exact lewat transport
+UTF-8 + anti-mojibake). Hook `useThermalPrint` + picker printer, dipakai di POS success
+& detail transaksi. Manifest: BLUETOOTH_CONNECT dll. Build APK lulus. **BELUM diuji di
+printer RPP02/C-58BT asli** — tim wajib test-print (pairing → izin → pilih printer → cetak).
+Scan barcode & export CSV/PDF **masih** butuh native plugin (belum dikerjakan).
+
+**R2 (asli). APK: cetak struk, scan barcode, export CSV/PDF mati diam-diam.**
 App hanya pakai `@capacitor/core` (0 native plugin). `Capacitor.isNativePlatform()` cuma
 dipakai untuk unregister SW (`src/main.tsx:9`), tak mem-gate fitur.
 - Cetak "Struk": `window.open` → null di WebView → tak cetak (`src/lib/receipt.ts:32`),

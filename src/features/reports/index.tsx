@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PageHeader, Icon, ListSkeleton } from "@/components/shared";
+import { PageHeader, Icon, ListSkeleton, useToast } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
 import { useReport } from "@/hooks/use-reports";
 import { useOutlets } from "@/hooks/use-outlets";
@@ -28,8 +28,10 @@ export function ReportsPage(): JSX.Element {
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const outletLabel = activeOutlet?.name ?? "Semua Outlet";
 
+  const toast = useToast();
   const [tab, setTab] = useState<Tab>("laba-rugi");
   const [period, setPeriod] = useState<Period>("Bulanan");
+  const onExportErr = (e: unknown) => toast(e instanceof Error ? e.message : "Gagal ekspor laporan", "error");
   const { from, to } = useMemo(() => rangeFor(period), [period]);
 
   const { data: report, isLoading } = useReport(from.toISOString(), to.toISOString());
@@ -159,10 +161,10 @@ export function ReportsPage(): JSX.Element {
 
             {/* Export */}
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => exportReportPdf(reportData)} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-center gap-2 font-body-md text-body-md font-semibold text-on-surface active:scale-95 transition-transform">
+              <button onClick={() => { exportReportPdf(reportData).catch(onExportErr); }} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-center gap-2 font-body-md text-body-md font-semibold text-on-surface active:scale-95 transition-transform">
                 <Icon name="picture_as_pdf" className="text-error" />PDF
               </button>
-              <button onClick={() => exportReportExcel(reportData)} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-center gap-2 font-body-md text-body-md font-semibold text-on-surface active:scale-95 transition-transform">
+              <button onClick={() => { exportReportExcel(reportData).catch(onExportErr); }} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-center gap-2 font-body-md text-body-md font-semibold text-on-surface active:scale-95 transition-transform">
                 <Icon name="table_view" className="text-primary" />Excel
               </button>
             </div>
