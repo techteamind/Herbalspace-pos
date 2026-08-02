@@ -10,8 +10,13 @@ function getDb(): PostgresJsDatabase<typeof schema> {
   if (_db) return _db;
   const connectionString = process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
   if (!connectionString) throw new Error("POSTGRES_URL belum di-set");
-  // `prepare: false` direkomendasikan untuk koneksi pooled Vercel Postgres.
-  const client = postgres(connectionString, { prepare: false });
+  // Serverless (Vercel) + Supabase pooler: `prepare: false` wajib untuk pooler,
+  // dan `max: 1` mencegah tiap instance fungsi menahan banyak koneksi hingga kuota
+  // pool habis (gejala: "Internal server error" saat beberapa kasir jual bersamaan).
+  // Pakai transaction pooler (port 6543) di POSTGRES_URL — create_sale aman karena
+  // pakai pg_advisory_xact_lock (transaction-scoped). ponytail: max:1 aman untuk
+  // serverless; naikkan jika handler paralel (mis. dashboard) terasa lambat.
+  const client = postgres(connectionString, { prepare: false, max: 1, idle_timeout: 20 });
   _db = drizzle(client, { schema });
   return _db;
 }
