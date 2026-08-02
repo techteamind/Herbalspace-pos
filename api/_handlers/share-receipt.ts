@@ -41,16 +41,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     if (!shared) { res.status(404).json({ error: "Link tidak ditemukan" }); return; }
     if (new Date() > shared.expiresAt) { res.status(410).json({ error: "Link sudah kedaluwarsa" }); return; }
 
-    // Proyeksi AMAN: hanya kolom yang tampil di struk pelanggan. TIDAK menyertakan
-    // unit_cogs (HPP/margin), id internal, atau data lintas-tenant lainnya.
+    // Proyeksi AMAN untuk link PUBLIK (tanpa login, bisa diteruskan). TIDAK menyertakan
+    // unit_cogs (HPP/margin), nama pelanggan, maupun nama kasir — itu PII yang tak perlu
+    // ada di URL publik. Hanya isi struk standar (item, total, pembayaran).
     const tx = await db.query.transactions.findFirst({
       where: eq(transactions.id, shared.transactionId),
       columns: { number: true, subtotal: true, discount: true, taxAmount: true, serviceCharge: true, total: true, createdAt: true, status: true },
       with: {
         items: { columns: { productName: true, quantity: true, unitPrice: true, lineTotal: true, note: true } },
         payments: { columns: { method: true, amount: true, amountReceived: true, changeAmount: true } },
-        customer: { columns: { name: true } },
-        cashier: { columns: { fullName: true } },
       },
     });
     if (!tx) { res.status(404).json({ error: "Transaksi tidak ditemukan" }); return; }
@@ -69,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       transaction: {
         number: tx.number, subtotal: tx.subtotal, discount: tx.discount,
         taxAmount: tx.taxAmount, serviceCharge: tx.serviceCharge, total: tx.total, createdAt: tx.createdAt,
-        customer: tx.customer, cashier: tx.cashier, items: tx.items, payments: tx.payments,
+        items: tx.items, payments: tx.payments,
       },
       expiresAt: shared.expiresAt,
     });

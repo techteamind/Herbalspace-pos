@@ -16,8 +16,9 @@ interface SharedReceiptData {
     serviceCharge?: string;
     total: string;
     createdAt: string;
-    customer: { name: string } | null;
-    cashier: { fullName: string } | null;
+    // dihilangkan dari payload publik (PII) — tetap opsional agar aman bila absen
+    customer?: { name: string } | null;
+    cashier?: { fullName: string } | null;
     items: { productName: string; quantity: number; unitPrice: string; lineTotal: string; note?: string | null }[];
     payments: { method: string; amount: string; amountReceived: string | null; changeAmount: string | null }[];
   };
