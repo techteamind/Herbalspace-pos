@@ -18,6 +18,7 @@ import productStock from "./_handlers/product-stock.js";
 import products from "./_handlers/products.js";
 import promos from "./_handlers/promos.js";
 import recipes from "./_handlers/recipes.js";
+import reports from "./_handlers/reports.js";
 import sales from "./_handlers/sales.js";
 import settings from "./_handlers/settings.js";
 import shareReceipt from "./_handlers/share-receipt.js";
@@ -48,6 +49,7 @@ const routes: Record<string, Handler> = {
   products,
   promos,
   recipes,
+  reports,
   sales,
   settings,
   "share-receipt": shareReceipt,

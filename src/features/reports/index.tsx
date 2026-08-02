@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import { PageHeader, Icon, ListSkeleton } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
-import { useTransactions } from "@/hooks/use-transactions";
-import { useExpenses } from "@/hooks/use-expenses";
-import { useIngredients } from "@/hooks/use-ingredients";
-import { useProducts } from "@/hooks/use-products";
+import { useReport } from "@/hooks/use-reports";
 import { useOutlets } from "@/hooks/use-outlets";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportReportExcel, exportReportPdf, type ReportData } from "@/lib/export";
@@ -35,60 +32,26 @@ export function ReportsPage(): JSX.Element {
   const [period, setPeriod] = useState<Period>("Bulanan");
   const { from, to } = useMemo(() => rangeFor(period), [period]);
 
-  const { data: trx, isLoading } = useTransactions({ from: from.toISOString(), to: to.toISOString(), limit: 1000 });
-  const { data: expenses } = useExpenses();
-  const { data: ingredientList } = useIngredients();
-  const { data: productList } = useProducts();
+  const { data: report, isLoading } = useReport(from.toISOString(), to.toISOString());
 
-  const paidTrx = (trx ?? []).filter((t) => t.status === "paid");
-  const omzet = paidTrx.reduce((s, t) => s + Number(t.total), 0);
-  const hpp = paidTrx.reduce((s, t) => s + Number(t.cogsTotal), 0);
-  const totalDiscount = paidTrx.reduce((s, t) => s + Number(t.discount), 0);
+  const omzet = report?.omzet ?? 0;
+  const hpp = report?.hpp ?? 0;
+  const totalDiscount = report?.totalDiscount ?? 0;
+  const trxCount = report?.trxCount ?? 0;
   const labaKotor = omzet - hpp;
-
-  const periodExpenses = (expenses ?? []).filter((e) => {
-    const d = new Date(e.spentAt);
-    return d >= from && d < to;
-  });
-  const expenseTotal = periodExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const expenseTotal = report?.expenseTotal ?? 0;
   const labaBersih = labaKotor - expenseTotal;
 
-  const expenseByCategory = useMemo(() => {
-    const map = new Map<string, number>();
-    periodExpenses.forEach((e) => {
-      const cat = e.category?.name ?? "Lainnya";
-      map.set(cat, (map.get(cat) ?? 0) + Number(e.amount));
-    });
-    return [...map.entries()].sort((a, b) => b[1] - a[1]);
-  }, [periodExpenses]);
-
-  const topProducts = useMemo(() => {
-    const map = new Map<string, number>();
-    paidTrx.forEach((t) => t.items.forEach((it) => {
-      map.set(it.productName, (map.get(it.productName) ?? 0) + Number(it.lineTotal));
-    }));
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [paidTrx]);
-
-  const paymentBreakdown = useMemo(() => {
-    const map = new Map<string, number>();
-    paidTrx.forEach((t) => t.payments?.forEach((p) => {
-      const method = p.method ?? "other";
-      map.set(method, (map.get(method) ?? 0) + Number(p.amount));
-    }));
-    return [...map.entries()].sort((a, b) => b[1] - a[1]);
-  }, [paidTrx]);
+  // JSX di bawah memakai bentuk tuple [label, nilai] — pertahankan agar tak berubah.
+  const expenseByCategory = (report?.expenseByCategory ?? []).map((e) => [e.category, e.total] as [string, number]);
+  const topProducts = (report?.topProducts ?? []).map((t) => [t.name, t.total] as [string, number]);
+  const paymentBreakdown = (report?.paymentBreakdown ?? []).map((p) => [p.method, p.total] as [string, number]);
 
   const METHOD_LABEL: Record<string, string> = { cash: "Tunai", qris: "QRIS", card: "Kartu", transfer: "Transfer" };
 
-  // Neraca
-  const stockValue = (ingredientList ?? []).reduce((s, i) => s + Number(i.currentStock) * Number(i.lastCost), 0);
-  // nilai stok barang jadi = Σ stok × HPP (varian diutamakan, lalu produk)
-  const productStockValue = (productList ?? []).reduce((s, p) => {
-    const vars = p.variants ?? [];
-    if (vars.length > 0) return s + vars.reduce((a, v) => a + (v.stock ?? 0) * Number(v.costPrice ?? 0), 0);
-    return s + (p.stock ?? 0) * Number(p.costPrice ?? 0);
-  }, 0);
+  // Neraca — nilai stok dihitung di server (bahan baku + barang jadi).
+  const stockValue = report?.stockValue ?? 0;
+  const productStockValue = report?.productStockValue ?? 0;
   const totalAset = stockValue + productStockValue;
 
   const reportData: ReportData = {
@@ -133,7 +96,7 @@ export function ReportsPage(): JSX.Element {
               <Row label="Penjualan Kotor" value={formatRupiah(omzet + totalDiscount)} />
               {totalDiscount > 0 && <Row label="Total Diskon" value={`-${formatRupiah(totalDiscount)}`} className="text-error" />}
               <Row label="Pendapatan Bersih" value={formatRupiah(omzet)} bold />
-              <Row label={`Transaksi (${paidTrx.length} struk)`} value="" sub />
+              <Row label={`Transaksi (${trxCount} struk)`} value="" sub />
             </Section>
 
             {/* COGS + Expense */}
