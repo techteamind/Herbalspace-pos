@@ -12,6 +12,7 @@ import { apiFetch } from "@/lib/api-client";
 import { Capacitor } from "@capacitor/core";
 import { printThermal, isThermalSupported } from "@/lib/thermal-printer";
 import { haptic, hapticSuccess } from "@/lib/haptic";
+import { loadBills, saveBills, billCount, billTotal, type OpenBill, type Cart } from "./open-bills";
 import type { ProductWithCategory, ProductVariant } from "@/types";
 
 function getFavKey(outletId: string): string {
@@ -43,6 +44,33 @@ export function PosPage(): JSX.Element {
   const [showScanner, setShowScanner] = useState(false);
   const [variantPicker, setVariantPicker] = useState<ProductWithCategory | null>(null);
   const [favIds, setFavIds] = useState<string[]>(() => loadFavorites(outletId ?? ""));
+  const [bills, setBills] = useState<OpenBill[]>(() => loadBills(outletId ?? ""));
+  const [showBills, setShowBills] = useState(false);
+  const [holdName, setHoldName] = useState<string | null>(null); // non-null = prompt terbuka
+
+  function persistBills(next: OpenBill[]): void {
+    setBills(next);
+    saveBills(outletId ?? "", next);
+  }
+  function holdBill(name: string): void {
+    if (Object.keys(cart).length === 0) return;
+    const bill: OpenBill = { id: crypto.randomUUID(), name: name.trim() || `Bon ${bills.length + 1}`, createdAt: Date.now(), cart: cart as Cart };
+    persistBills([bill, ...bills]);
+    setCart({});
+    setHoldName(null);
+    hapticSuccess();
+    toast("Bon disimpan", "success");
+  }
+  function openBill(b: OpenBill): void {
+    if (Object.keys(cart).length > 0) { toast("Selesaikan/tahan cart aktif dulu", "error"); return; }
+    setCart(b.cart);
+    persistBills(bills.filter((x) => x.id !== b.id));
+    setShowBills(false);
+    haptic();
+  }
+  function deleteBill(id: string): void {
+    persistBills(bills.filter((x) => x.id !== id));
+  }
 
   const toggleFavorite = useCallback((productId: string) => {
     setFavIds((prev) => {
@@ -164,6 +192,13 @@ export function PosPage(): JSX.Element {
             className="h-touch-target-min w-12 rounded-2xl bg-surface-container-low flex items-center justify-center shrink-0 active:scale-90 transition-transform">
             <Icon name="qr_code_scanner" className="text-on-surface-variant" />
           </button>
+          <button onClick={() => setShowBills(true)}
+            className="relative h-touch-target-min w-12 rounded-2xl bg-surface-container-low flex items-center justify-center shrink-0 active:scale-90 transition-transform">
+            <Icon name="receipt_long" className="text-on-surface-variant" />
+            {bills.length > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center">{bills.length}</span>
+            )}
+          </button>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {categories.map((c) => (
@@ -247,9 +282,13 @@ export function PosPage(): JSX.Element {
       </div>
 
       {count > 0 && !showPayment && (
-        <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 w-full max-w-3xl z-50 px-5">
+        <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 w-full max-w-3xl z-50 px-5 flex gap-2">
+          <button onClick={() => setHoldName("")}
+            className="h-14 w-16 shrink-0 bg-surface-container text-on-surface rounded-2xl flex flex-col items-center justify-center shadow-elevation-2 active:scale-[0.98] transition-transform">
+            <Icon name="pause_circle" className="text-[20px]" /><span className="text-[10px] font-semibold">Tahan</span>
+          </button>
           <button onClick={() => outletId ? setShowPayment(true) : toast("Pilih outlet dulu untuk mulai menjual", "error")}
-            className="w-full bg-primary text-on-primary rounded-2xl h-14 flex items-center justify-between px-5 shadow-elevation-3 active:scale-[0.98] transition-transform">
+            className="flex-1 bg-primary text-on-primary rounded-2xl h-14 flex items-center justify-between px-5 shadow-elevation-3 active:scale-[0.98] transition-transform">
             <div className="flex items-center gap-3"><Icon name="shopping_cart" filled /><span className="text-[14px] font-semibold">{count} Item</span></div>
             <div className="flex items-center gap-2"><span className="text-[14px] font-bold">{formatRupiah(total)}</span><Icon name="arrow_forward" /></div>
           </button>
@@ -270,7 +309,60 @@ export function PosPage(): JSX.Element {
         />
       )}
       {success && <SuccessOverlay receipt={success} onNew={() => setSuccess(null)} />}
+
+      {holdName !== null && (
+        <HoldPrompt defaultName={`Bon ${bills.length + 1}`} onCancel={() => setHoldName(null)} onSave={holdBill} />
+      )}
+      {showBills && (
+        <OpenBillsSheet bills={bills} onClose={() => setShowBills(false)} onOpen={openBill} onDelete={deleteBill} />
+      )}
     </>
+  );
+}
+
+function HoldPrompt({ defaultName, onCancel, onSave }: { defaultName: string; onCancel: () => void; onSave: (name: string) => void }): JSX.Element {
+  const [name, setName] = useState("");
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-6" onClick={onCancel}>
+      <div className="w-full max-w-sm bg-surface-container-lowest rounded-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-h2 text-h2 text-on-surface">Tahan Bon</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant">Beri nama bon (mis. nama pelanggan) supaya mudah dilanjutkan nanti.</p>
+        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={defaultName}
+          onKeyDown={(e) => { if (e.key === "Enter") onSave(name || defaultName); }}
+          className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low focus:outline-none focus:border-primary font-body-md text-body-md" />
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 h-12 rounded-xl border border-outline-variant font-body-md text-body-md font-semibold text-on-surface">Batal</button>
+          <button onClick={() => onSave(name || defaultName)} className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold">Simpan Bon</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OpenBillsSheet({ bills, onClose, onOpen, onDelete }: { bills: OpenBill[]; onClose: () => void; onOpen: (b: OpenBill) => void; onDelete: (id: string) => void }): JSX.Element {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40" onClick={onClose}>
+      <div className="w-full max-w-3xl bg-surface-container-lowest rounded-t-[24px] p-5 pb-safe space-y-3 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center">
+          <h2 className="font-h2 text-h2 text-on-surface">Bon Terbuka</h2>
+          <button onClick={onClose} className="text-on-surface-variant"><Icon name="close" /></button>
+        </div>
+        {bills.length === 0 ? (
+          <p className="font-body-md text-body-md text-on-surface-variant py-6 text-center">Belum ada bon tertahan. Tekan “Tahan” di keranjang untuk menyimpan bon.</p>
+        ) : bills.map((b) => (
+          <div key={b.id} className="flex items-center gap-3 bg-surface-container-low rounded-xl p-3">
+            <button onClick={() => onOpen(b)} className="flex-1 min-w-0 text-left active:scale-[0.98] transition-transform">
+              <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{b.name}</p>
+              <p className="font-label-caps text-label-caps text-on-surface-variant">
+                {billCount(b)} item · {formatRupiah(billTotal(b))} · {new Date(b.createdAt).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+              </p>
+            </button>
+            <button onClick={() => onOpen(b)} className="h-9 px-3 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps font-semibold shrink-0">Lanjutkan</button>
+            <button onClick={() => onDelete(b.id)} className="text-error p-1 shrink-0"><Icon name="delete" /></button>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
