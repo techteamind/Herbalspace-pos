@@ -1,12 +1,14 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { createHandler } from "../_lib/handler.js";
+import { requireRole } from "../_lib/auth.js";
 
 // Agregasi laporan di SERVER (SUM/GROUP BY) — menggantikan hitung di klien atas
 // daftar transaksi yang di-cap 1000 & pengeluaran 100 (omzet/laba jadi salah saat
 // periode ramai). Scope: tenant + (outlet aktif ATAU null) sesuai dashboard.
 export default createHandler({
   async GET(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return; // laporan keuangan: manager+
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
     if (!from || !to) { res.status(400).json({ error: "from & to (ISO) wajib" }); return; }

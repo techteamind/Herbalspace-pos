@@ -6,6 +6,7 @@ import { requireRole, outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return; // modul keuangan: manager+
     const section = req.query.section as string | undefined;
     if (section === "categories") {
       const catConditions = [eq(expenseCategories.tenantId, auth.tenantId)];

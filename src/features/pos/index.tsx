@@ -48,6 +48,9 @@ export function PosPage(): JSX.Element {
   const [bills, setBills] = useState<OpenBill[]>(() => loadBills(outletId ?? ""));
   const [showBills, setShowBills] = useState(false);
   const [holdName, setHoldName] = useState<string | null>(null); // non-null = prompt terbuka
+  // Bon yang sedang dilanjutkan (dimuat ke keranjang). TETAP tersimpan sampai dibayar/
+  // ditahan ulang — supaya tak hilang kalau kasir pindah layar sebelum bayar.
+  const [resumedBillId, setResumedBillId] = useState<string | null>(null);
 
   function persistBills(next: OpenBill[]): void {
     setBills(next);
@@ -56,21 +59,30 @@ export function PosPage(): JSX.Element {
   function holdBill(name: string): void {
     if (Object.keys(cart).length === 0) return;
     const bill: OpenBill = { id: crypto.randomUUID(), name: name.trim() || `Bon ${bills.length + 1}`, createdAt: Date.now(), cart: cart as Cart };
-    persistBills([bill, ...bills]);
+    // Kalau ini kelanjutan bon lama, ganti bon itu (jangan duplikat).
+    persistBills([bill, ...bills.filter((x) => x.id !== resumedBillId)]);
+    setResumedBillId(null);
     setCart({});
     setHoldName(null);
     hapticSuccess();
     toast("Bon disimpan", "success");
   }
   function openBill(b: OpenBill): void {
-    if (Object.keys(cart).length > 0) { toast("Selesaikan/tahan cart aktif dulu", "error"); return; }
+    if (Object.keys(cart).length > 0) { toast("Selesaikan/tahan keranjang aktif dulu", "error"); return; }
     setCart(b.cart);
-    persistBills(bills.filter((x) => x.id !== b.id));
+    setResumedBillId(b.id);   // biarkan bon tetap tersimpan sampai dibayar
     setShowBills(false);
     haptic();
   }
   function deleteBill(id: string): void {
+    if (id === resumedBillId) setResumedBillId(null);
     persistBills(bills.filter((x) => x.id !== id));
+  }
+  // Setelah transaksi selesai/diantre, buang bon yang dilanjutkan.
+  function consumeResumedBill(): void {
+    if (!resumedBillId) return;
+    persistBills(bills.filter((x) => x.id !== resumedBillId));
+    setResumedBillId(null);
   }
 
   // Cetak tiket internal (dapur/barista) — dari keranjang aktif atau dari open bill.
@@ -179,6 +191,7 @@ export function PosPage(): JSX.Element {
     hapticSuccess();
     setShowPayment(false);
     setCart({});
+    consumeResumedBill();
     setSuccess({
       ...data,
       storeName: settings?.storeName ?? "Herbaspace",
@@ -196,6 +209,7 @@ export function PosPage(): JSX.Element {
     hapticSuccess();
     setShowPayment(false);
     setCart({});
+    consumeResumedBill();
     toast("Transaksi tersimpan offline — akan disinkronkan otomatis saat online", "info");
   }
 
@@ -586,7 +600,7 @@ const CONFETTI_COLORS = ["#1a6b4a", "#d4f5e4", "#956316", "#fff0d6", "#82d8aa", 
 function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => void }): JSX.Element {
   const toast = useToast();
   const [sharing, setSharing] = useState(false);
-  const { supported: thermalOk, printing, triggerPrint, picker } = useThermalPrint();
+  const { supported: thermalOk, printing, triggerPrint, changePrinter, hasPrinter, picker } = useThermalPrint();
   const hasPhone = !!receipt.customerPhone;
   // Web: browser print + thermal Web Serial. APK: cetak thermal in-app (plugin BT).
   const showBrowserPrint = !Capacitor.isNativePlatform();
@@ -686,6 +700,9 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
           </button>
         </div>
         <button onClick={onNew} className="w-full h-12 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold shadow-elevation-2">Transaksi Baru</button>
+        {hasPrinter && (
+          <button onClick={changePrinter} className="w-full text-center text-[12px] text-on-surface-variant/70 py-1">Ganti Printer</button>
+        )}
       </div>
       {picker}
     </div>

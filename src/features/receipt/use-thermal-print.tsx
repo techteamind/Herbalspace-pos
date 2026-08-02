@@ -18,6 +18,8 @@ export function useThermalPrint(): {
   supported: boolean;
   printing: boolean;
   triggerPrint: (job: PrintJob) => Promise<void>;
+  changePrinter: () => void;
+  hasPrinter: boolean;
   picker: JSX.Element | null;
 } {
   const toast = useToast();
@@ -31,7 +33,8 @@ export function useThermalPrint(): {
       await job(address);
       toast("Terkirim ke printer", "success");
     } catch (e) {
-      setSavedPrinterAddress(null);
+      // Jangan buang printer tersimpan pada error transien (BT mati, printer tidur,
+      // di luar jangkauan) — cukup beri tahu. Ganti printer via tombol "Ganti Printer".
       toast(e instanceof Error ? e.message : "Gagal mencetak", "error");
     }
     setPrinting(false);
@@ -91,5 +94,17 @@ export function useThermalPrint(): {
     </div>
   ) : null;
 
-  return { supported: isThermalSupported(), printing, triggerPrint, picker };
+  const changePrinter = useCallback((): void => {
+    setSavedPrinterAddress(null);
+    toast("Printer direset — pilih printer lagi saat cetak berikutnya", "info");
+  }, [toast]);
+
+  return {
+    supported: isThermalSupported(),
+    printing,
+    triggerPrint,
+    changePrinter,
+    hasPrinter: getSavedPrinterAddress() !== null,
+    picker,
+  };
 }

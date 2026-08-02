@@ -6,6 +6,7 @@ import { requireRole, outletFilter } from "../_lib/auth.js";
 
 export default createHandler({
   async GET(_req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return; // bahan baku (inventori): manager+
     const conditions = [eq(ingredients.tenantId, auth.tenantId), eq(ingredients.isActive, true)];
     const of = outletFilter(ingredients.outletId, auth.outletId);
     if (of) conditions.push(of);

@@ -105,7 +105,8 @@ public class ThermalPrinterPlugin extends Plugin {
                 if (adapter == null || !adapter.isEnabled()) { call.reject("Bluetooth belum aktif"); return; }
                 BluetoothDevice device = adapter.getRemoteDevice(address);
                 socket = device.createRfcommSocketToServiceRecord(SPP);
-                adapter.cancelDiscovery(); // discovery memperlambat koneksi
+                // JANGAN panggil adapter.cancelDiscovery() — di Android 12+ butuh izin
+                // BLUETOOTH_SCAN (tak kita minta) → SecurityException → cetak gagal total.
                 socket.connect();
                 OutputStream out = socket.getOutputStream();
                 byte[] bytes = Base64.decode(dataB64, Base64.DEFAULT);

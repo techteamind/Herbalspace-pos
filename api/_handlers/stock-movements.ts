@@ -45,6 +45,7 @@ export default createHandler({
   },
 
   async GET(req, res, auth) {
+    if (!requireRole(auth, "manager", res)) return; // modul inventori: manager+
     const { from, to, type, limit: limitStr } = req.query;
     const limit = Math.min(Number(limitStr) || 100, 300);
 
