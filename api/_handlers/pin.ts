@@ -22,7 +22,10 @@ export default createHandler({
     });
     if (!target) { res.status(404).json({ error: "Karyawan tidak ditemukan" }); return; }
     // Cegah eskalasi: tak boleh atur PIN untuk role setara/lebih tinggi dari diri sendiri.
-    if (targetId !== auth.userId && LEVEL[target.role] >= LEVEL[auth.role]) {
+    // Gagal-aman: target tak dikenal dianggap tinggi (blok), caller tak dikenal dianggap rendah.
+    const targetLevel = LEVEL[target.role] ?? 99;
+    const callerLevel = LEVEL[auth.role] ?? -1;
+    if (targetId !== auth.userId && targetLevel >= callerLevel) {
       res.status(403).json({ error: "Tidak bisa mengatur PIN untuk role setara atau lebih tinggi" });
       return;
     }
