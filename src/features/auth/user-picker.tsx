@@ -131,10 +131,17 @@ export function UserPickerGate(): JSX.Element {
           ))}
         </div>
       )}
-      {deviceStaff && (
-        <button onClick={enterAsBase} className="w-full h-11 rounded-xl border border-outline-variant text-on-surface font-body-md text-body-md font-semibold">
-          Masuk sebagai {deviceStaff.fullName} (tanpa PIN)
-        </button>
+      {/* Jalan pintas "tanpa PIN" HANYA untuk setup awal: begitu akun device
+          punya PIN, tombol hilang → owner pun wajib PIN (tak ada bypass). */}
+      {deviceStaff && !deviceStaff.hasPin && (
+        <div className="space-y-1">
+          <button onClick={enterAsBase} className="w-full h-11 rounded-xl border border-outline-variant text-on-surface font-body-md text-body-md font-semibold">
+            Masuk sebagai {deviceStaff.fullName} (tanpa PIN)
+          </button>
+          <p className="text-[11px] text-on-surface-variant/80 text-center px-2">
+            Atur PIN Anda di menu Karyawan agar tombol ini hilang & akses owner terkunci.
+          </p>
+        </div>
       )}
       <button onClick={() => void logout()} className="w-full text-center text-[12px] text-on-surface-variant/70 py-1">Ganti akun / keluar device</button>
     </Shell>
