@@ -11,6 +11,8 @@ import health from "./_handlers/health.js";
 import ingredients from "./_handlers/ingredients.js";
 import me from "./_handlers/me.js";
 import modifiers from "./_handlers/modifiers.js";
+import pin from "./_handlers/pin.js";
+import pinLogin from "./_handlers/pin-login.js";
 import outlets from "./_handlers/outlets.js";
 import priceHistory from "./_handlers/price-history.js";
 import productModifiers from "./_handlers/product-modifiers.js";
@@ -43,6 +45,8 @@ const routes: Record<string, Handler> = {
   me,
   modifiers,
   outlets,
+  pin,
+  "pin-login": pinLogin,
   "price-history": priceHistory,
   "product-modifiers": productModifiers,
   "product-stock": productStock,

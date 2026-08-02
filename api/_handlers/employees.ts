@@ -23,11 +23,13 @@ export default createHandler({
         orderBy: desc(profiles.createdAt),
         with: { outlet: true },
       });
-      res.json(rows);
+      // JANGAN bocorkan pin_hash ke klien; ekspos hanya flag hasPin.
+      res.json(rows.map(({ pinHash, pinFailedAttempts, pinLockedUntil, ...r }) => ({ ...r, hasPin: !!pinHash })));
     } catch {
       const rows = await db.execute(sql`
         SELECT id, tenant_id AS "tenantId", full_name AS "fullName", email, role,
-               is_active AS "isActive", created_at AS "createdAt"
+               is_active AS "isActive", created_at AS "createdAt",
+               (pin_hash IS NOT NULL) AS "hasPin"
         FROM profiles WHERE tenant_id = ${auth.tenantId}::uuid
         ORDER BY created_at DESC
       `);

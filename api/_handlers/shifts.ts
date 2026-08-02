@@ -1,9 +1,43 @@
 import { eq, and, desc, gte, sql, isNull } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { shifts, transactions, payments } from "../../db/schema.js";
+import { shifts, transactions, payments, settings } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
 import { outletFilter } from "../_lib/auth.js";
+
+type OpenShift = typeof shifts.$inferSelect;
+
+// Batas "shift kadaluarsa" = kemunculan jam tutup toko (WIB) paling akhir. Shift
+// yang dibuka sebelum batas ini berarti lupa ditutup semalam → auto-tutup.
+// closingTime "HH:MM"; kalau null pakai tengah malam WIB (awal hari ini).
+function mostRecentClosingBoundary(closingTime: string | null): Date {
+  const WIB = 7 * 3600_000;
+  const nowWib = new Date(Date.now() + WIB);
+  const [h, m] = (closingTime && /^\d{1,2}:\d{2}$/.test(closingTime))
+    ? closingTime.split(":").map(Number) : [0, 0];
+  const todayClose = new Date(Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate(), h, m));
+  const boundaryWib = nowWib >= todayClose ? todayClose : new Date(todayClose.getTime() - 86400_000);
+  return new Date(boundaryWib.getTime() - WIB); // kembali ke UTC
+}
+
+// Tutup shift secara sistem (pergantian kasir / lupa tutup). closingCash = expected
+// (tak ada yang hitung manual), ditandai supaya owner tahu.
+async function autoCloseShift(shift: OpenShift, reason: string): Promise<void> {
+  const [sales] = await db.select({ total: sql<string>`coalesce(sum(${transactions.total}),0)`, count: sql<number>`count(*)::int` })
+    .from(transactions)
+    .where(and(eq(transactions.tenantId, shift.tenantId), eq(transactions.status, "paid"),
+      gte(transactions.createdAt, shift.openedAt), ...(shift.outletId ? [eq(transactions.outletId, shift.outletId)] : [])));
+  const [cash] = await db.select({ total: sql<string>`coalesce(sum(${payments.amount}),0)` })
+    .from(payments).innerJoin(transactions, eq(payments.transactionId, transactions.id))
+    .where(and(eq(transactions.tenantId, shift.tenantId), eq(transactions.status, "paid"), eq(payments.method, "cash"),
+      gte(transactions.createdAt, shift.openedAt), ...(shift.outletId ? [eq(transactions.outletId, shift.outletId)] : [])));
+  const expected = Number(shift.openingCash) + Number(cash?.total ?? 0);
+  await db.update(shifts).set({
+    closedAt: new Date(), closingCash: String(expected), expectedCash: String(expected),
+    totalSales: sales?.total ?? "0", totalTransactions: sales?.count ?? 0,
+    note: `Ditutup otomatis (${reason})`,
+  }).where(eq(shifts.id, shift.id));
+}
 
 export default createHandler({
   async GET(req, res, auth) {
@@ -44,7 +78,17 @@ export default createHandler({
     const existing = await db.query.shifts.findFirst({
       where: and(...existConds),
     });
-    if (existing) { res.status(400).json({ error: "Sudah ada shift aktif. Tutup dulu sebelum buka baru." }); return; }
+    if (existing) {
+      const st = await db.query.settings.findFirst({ where: eq(settings.tenantId, auth.tenantId), columns: { closingTime: true } });
+      const stale = existing.openedAt < mostRecentClosingBoundary(st?.closingTime ?? null);
+      if (existing.cashierId === auth.userId && !stale) {
+        // Shift sendiri masih aktif hari ini → lanjutkan (jangan buat duplikat).
+        res.status(200).json(existing);
+        return;
+      }
+      // Shift kasir lain / lupa ditutup semalam → tutup otomatis, lalu buka baru.
+      await autoCloseShift(existing, stale ? "lupa ditutup" : "pergantian kasir");
+    }
 
     const { openingCash } = req.body;
     let row;

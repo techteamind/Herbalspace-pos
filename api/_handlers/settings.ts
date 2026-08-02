@@ -30,6 +30,7 @@ export default createHandler({
     if (data.receiptHeader !== undefined) updates.receiptHeader = data.receiptHeader || null;
     if (data.receiptFooter !== undefined) updates.receiptFooter = data.receiptFooter || null;
     if (data.enabledPaymentMethods !== undefined) updates.enabledPaymentMethods = data.enabledPaymentMethods;
+    if (data.closingTime !== undefined) updates.closingTime = data.closingTime || null;
 
     const [row] = await db.update(settings)
       .set(updates)

@@ -33,6 +33,10 @@ export const profiles = pgTable("profiles", {
   email: text("email").notNull(),
   role: userRole("role").notNull().default("cashier"),
   isActive: boolean("is_active").notNull().default(true),
+  // PIN cepat untuk ganti kasir di device bersama (di-hash scrypt; null = belum set).
+  pinHash: text("pin_hash"),
+  pinFailedAttempts: integer("pin_failed_attempts").notNull().default(0),
+  pinLockedUntil: timestamp("pin_locked_until", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
@@ -422,6 +426,8 @@ export const settings = pgTable("settings", {
   receiptHeader: text("receipt_header"),
   receiptFooter: text("receipt_footer"),
   enabledPaymentMethods: jsonb("enabled_payment_methods").$type<string[]>().notNull().default(["cash", "qris"]),
+  // Jam tutup toko "HH:MM" (WIB) — shift yang lupa ditutup auto-tutup setelah jam ini.
+  closingTime: text("closing_time"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
