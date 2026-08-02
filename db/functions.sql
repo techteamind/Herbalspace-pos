@@ -98,6 +98,16 @@ BEGIN
     JOIN ingredients i ON i.id = ri.ingredient_id
     WHERE ri.product_id = v_product_id;
 
+    -- Retail barang jadi (tanpa resep): pakai HPP/harga modal yang diisi langsung
+    -- di produk (atau varian). Kalau ada resep, HPP dari resep tetap dipakai.
+    IF NOT EXISTS (SELECT 1 FROM recipe_items ri WHERE ri.product_id = v_product_id) THEN
+      SELECT COALESCE(NULLIF(pv.cost_price, 0), p.cost_price, 0)::numeric(14,2)
+        INTO v_unit_cogs
+      FROM products p
+      LEFT JOIN product_variants pv ON pv.id = v_variant_id
+      WHERE p.id = v_product_id;
+    END IF;
+
     INSERT INTO transaction_items (tenant_id, transaction_id, product_id, variant_id, product_name,
                                    quantity, unit_price, unit_cogs, line_total, note)
     VALUES (p_tenant_id, v_tx_id, v_product_id, v_variant_id, v_item->>'product_name',

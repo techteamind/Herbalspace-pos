@@ -25,6 +25,7 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
 
   const [name, setName] = useState(initial?.name ?? "");
   const [price, setPrice] = useState(initial ? String(Number(initial.price)) : "");
+  const [costPrice, setCostPrice] = useState(initial?.costPrice != null ? String(Number(initial.costPrice)) : "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [sku, setSku] = useState(initial?.sku ?? "");
   const [stock, setStock] = useState(initial?.stock != null ? String(initial.stock) : "");
@@ -103,10 +104,10 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
         // Kirim nilai apa adanya (termasuk "") supaya mengosongkan kategori/SKU/foto
         // tersimpan — backend menulis null saat field ada tapi kosong. Pakai `|| undefined`
         // dulu membuang field yang dikosongkan, jadi nilai lama bertahan.
-        await update.mutateAsync({ id: initial.id, name, price: Number(price), categoryId, sku, imageUrl, stock: stockVal });
+        await update.mutateAsync({ id: initial.id, name, price: Number(price), costPrice: Number(costPrice) || 0, categoryId, sku, imageUrl, stock: stockVal });
         productId = initial.id;
       } else {
-        const created = await create.mutateAsync({ name, price: Number(price) || 0, categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined, stock: stockVal });
+        const created = await create.mutateAsync({ name, price: Number(price) || 0, costPrice: Number(costPrice) || 0, categoryId: categoryId || undefined, sku: sku || undefined, imageUrl: imageUrl || undefined, stock: stockVal });
         productId = (created as { id: string }).id;
       }
       if (variantGroups.length > 0 && variants.length > 0) {
@@ -196,6 +197,18 @@ export function ProductForm({ initial, onClose }: { initial?: ProductWithCategor
             {(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="HPP / Harga Modal">
+          <input className={inputCls} inputMode="numeric" value={costPrice} onChange={(e) => setCostPrice(e.target.value.replace(/[^0-9]/g, ""))} placeholder="mis. 80000" />
+        </Field>
+        <div className="flex items-end pb-2.5">
+          {Number(price) > 0 && Number(costPrice) > 0 && (
+            <p className="font-label-caps text-label-caps text-on-surface-variant">
+              Margin {Math.round((Number(price) - Number(costPrice)) / Number(price) * 100)}%
+            </p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Field label="SKU (opsional)"><input className={inputCls} value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SLV-030" /></Field>

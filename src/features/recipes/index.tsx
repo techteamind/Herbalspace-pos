@@ -62,6 +62,16 @@ export function RecipeEditorPage(): JSX.Element {
 
       <div className="px-container-padding py-3 space-y-2">
         {isLoading && <ListSkeleton rows={3} />}
+        {!isLoading && (ingredients ?? []).length === 0 && lines.length === 0 && (
+          <div className="bg-surface-container-lowest rounded-xl p-4 shadow-card border border-outline-variant/40 space-y-2 text-center">
+            <Icon name="info" className="text-primary text-[28px]" />
+            <p className="font-body-md text-body-md text-on-surface">Belum ada bahan baku untuk dijadikan resep.</p>
+            <p className="font-label-caps text-label-caps text-on-surface-variant">
+              Untuk produk retail (beli jadi), tak perlu resep — isi <b>HPP / Harga Modal</b> langsung
+              saat edit produk. Resep hanya untuk produk yang dibuat dari bahan baku.
+            </p>
+          </div>
+        )}
         {!isLoading && lines.map((l) => {
           const ing = ingMap.get(l.ingredientId);
           return (
