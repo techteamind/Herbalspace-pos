@@ -113,76 +113,11 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
   return result;
 }
 
-import { Capacitor } from "@capacitor/core";
-
-export interface BondedPrinter { address: string; name: string }
-
-const SAVED_KEY = "thermalPrinterAddress";
-export function getSavedPrinterAddress(): string | null { return localStorage.getItem(SAVED_KEY); }
-export function setSavedPrinterAddress(addr: string | null): void {
-  if (addr) localStorage.setItem(SAVED_KEY, addr); else localStorage.removeItem(SAVED_KEY);
-}
-
-function isNative(): boolean { return Capacitor.isNativePlatform(); }
-
-// Native: cetak lewat Bluetooth Classic (SPP) memakai perangkat yang SUDAH dipasangkan.
-// Plugin `bluetooth-serial` di-import dinamis supaya tak masuk bundle web.
-async function bt() { return (await import("bluetooth-serial")).BluetoothSerial; }
-
-async function ensureBtReady(): Promise<void> {
-  const BluetoothSerial = await bt();
-  // Tipe plugin mendeklarasikan PermissionStatus[] (keliru); runtime = objek beralias
-  // (mekanisme izin bawaan Capacitor), mis. { connect: "granted" }.
-  const asStatus = (v: unknown) => v as { connect?: string };
-  const status = asStatus(await BluetoothSerial.checkPermissions());
-  if (status.connect !== "granted") {
-    const req = asStatus(await BluetoothSerial.requestPermissions({ permissions: ["connect"] }));
-    if (req.connect !== "granted") throw new Error("Izin Bluetooth ditolak");
-  }
-  const { isEnabled } = await BluetoothSerial.isEnabled();
-  if (!isEnabled) {
-    const res = await BluetoothSerial.enable();
-    if (!res.isEnabled) throw new Error("Bluetooth belum aktif");
-  }
-}
-
-/** Daftar printer yang sudah dipasangkan (bonded) di Pengaturan Bluetooth HP. */
-export async function listBondedPrinters(): Promise<BondedPrinter[]> {
-  await ensureBtReady();
-  const BluetoothSerial = await bt();
-  const { devices } = await BluetoothSerial.list();
-  return devices.map((d) => ({ address: d.address, name: d.name ?? d.address }));
-}
-
-// Semua byte payload < 0x80 (lihat encode), jadi String.fromCharCode + getBytes(UTF-8)
-// di sisi native menghasilkan byte identik.
-function bytesToBinaryString(bytes: Uint8Array): string {
-  let s = "";
-  for (const b of bytes) s += String.fromCharCode(b);
-  return s;
-}
-
-/** Cetak struk. Native: butuh alamat printer (argumen atau tersimpan). Web: Web Serial. */
-export async function printThermal(data: ThermalReceiptData, address?: string): Promise<void> {
+// Cetak thermal HANYA via Web Serial (Chrome/Edge desktop). Plugin Bluetooth Classic
+// untuk APK dicopot: `bluetooth-serial` (Capacitor 4) gagal load di Capacitor 8 dan
+// membuat aplikasi crash saat launch. Thermal di APK menunggu plugin yang kompatibel.
+export async function printThermal(data: ThermalReceiptData): Promise<void> {
   const bytes = buildReceiptBytes(data);
-
-  if (isNative()) {
-    const addr = address ?? getSavedPrinterAddress();
-    if (!addr) throw new Error("Printer belum dipilih");
-    await ensureBtReady();
-    const BluetoothSerial = await bt();
-    await BluetoothSerial.connect({ address: addr });
-    try {
-      await BluetoothSerial.write({ data: bytesToBinaryString(bytes) });
-      // beri jeda agar buffer printer selesai sebelum socket ditutup
-      await new Promise((r) => setTimeout(r, 400));
-    } finally {
-      await BluetoothSerial.disconnect();
-    }
-    return;
-  }
-
-  // Web (Chrome/Edge desktop): Web Serial
   if (!("serial" in navigator)) throw new Error("Perangkat ini tak mendukung cetak thermal.");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const port = await (navigator as any).serial.requestPort();
@@ -198,5 +133,5 @@ export async function printThermal(data: ThermalReceiptData, address?: string): 
 }
 
 export function isThermalSupported(): boolean {
-  return isNative() || "serial" in navigator;
+  return "serial" in navigator;
 }

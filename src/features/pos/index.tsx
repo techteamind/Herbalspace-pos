@@ -10,7 +10,7 @@ import { BarcodeScanner } from "./barcode-scanner";
 import { printReceipt, type Receipt } from "@/lib/receipt";
 import { apiFetch } from "@/lib/api-client";
 import { Capacitor } from "@capacitor/core";
-import { useThermalPrint } from "@/features/receipt/use-thermal-print";
+import { printThermal, isThermalSupported } from "@/lib/thermal-printer";
 import { haptic, hapticSuccess } from "@/lib/haptic";
 import type { ProductWithCategory, ProductVariant } from "@/types";
 
@@ -466,12 +466,13 @@ const CONFETTI_COLORS = ["#1a6b4a", "#d4f5e4", "#956316", "#fff0d6", "#82d8aa", 
 function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => void }): JSX.Element {
   const toast = useToast();
   const [sharing, setSharing] = useState(false);
-  const { supported: thermalOk, printing, triggerPrint, picker } = useThermalPrint();
+  const [printing, setPrinting] = useState(false);
   const hasPhone = !!receipt.customerPhone;
+  // Cetak hanya di web (browser print + thermal Web Serial). Di APK tak ada cetak
+  // on-device (thermal Bluetooth dicopot; browser print buka Chrome) → struk via WA.
   const showBrowserPrint = !Capacitor.isNativePlatform();
-  // 1 tombol cetak (browser di web / thermal di native) + tombol Thermal ekstra hanya
-  // saat web+serial + tombol WA.
-  const printCols = 1 + (showBrowserPrint && thermalOk ? 1 : 0) + 1;
+  const thermalOk = isThermalSupported();
+  const printCols = (showBrowserPrint ? 1 : 0) + (thermalOk ? 1 : 0) + 1;
 
   const confetti = useMemo(() =>
     Array.from({ length: 24 }, (_, i) => ({
@@ -484,27 +485,33 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
       shape: i % 3,
     })), []);
 
-  function handleThermalPrint(): void {
-    void triggerPrint({
-      storeName: receipt.storeName,
-      address: receipt.address,
-      phone: receipt.phone,
-      header: receipt.receiptHeader,
-      footer: receipt.receiptFooter,
-      cashierName: receipt.cashierName,
-      number: receipt.number,
-      datetime: receipt.datetime,
-      lines: receipt.lines,
-      subtotal: receipt.subtotal,
-      discount: receipt.discount ?? 0,
-      tax: receipt.tax,
-      serviceCharge: receipt.serviceCharge,
-      total: receipt.total,
-      method: receipt.method,
-      received: receipt.received,
-      change: receipt.change,
-      customerName: receipt.customerName,
-    });
+  async function handleThermalPrint(): Promise<void> {
+    setPrinting(true);
+    try {
+      await printThermal({
+        storeName: receipt.storeName,
+        address: receipt.address,
+        phone: receipt.phone,
+        header: receipt.receiptHeader,
+        footer: receipt.receiptFooter,
+        cashierName: receipt.cashierName,
+        number: receipt.number,
+        datetime: receipt.datetime,
+        lines: receipt.lines,
+        subtotal: receipt.subtotal,
+        discount: receipt.discount ?? 0,
+        tax: receipt.tax,
+        serviceCharge: receipt.serviceCharge,
+        total: receipt.total,
+        method: receipt.method,
+        received: receipt.received,
+        change: receipt.change,
+        customerName: receipt.customerName,
+      });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Gagal mencetak struk", "error");
+    }
+    setPrinting(false);
   }
 
   async function shareWA(): Promise<void> {
@@ -547,20 +554,15 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
       <p className="font-body-md text-body-md text-on-surface-variant mt-1 animate-celebration-pop" style={{ animationDelay: "0.15s", opacity: 0 }}>{receipt.number}</p>
       <p className="font-display-price-mobile text-display-price-mobile text-primary mt-4 animate-celebration-pop" style={{ animationDelay: "0.2s", opacity: 0 }}>{formatRupiah(receipt.total)}</p>
       <div className="w-full space-y-3 mt-8 animate-celebration-pop" style={{ animationDelay: "0.3s", opacity: 0 }}>
-        {/* Di APK (native) cetak browser (window.open) mati & malah buka Chrome —
-            jadi tombol "Struk" native = cetak thermal. Browser print hanya di web. */}
+        {/* Di APK cetak on-device tak tersedia (thermal Bluetooth dicopot; browser
+            print buka Chrome) → struk via WhatsApp. Cetak hanya muncul di web. */}
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${printCols}, minmax(0, 1fr))` }}>
-          {showBrowserPrint ? (
+          {showBrowserPrint && (
             <button onClick={() => printReceipt(receipt)} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-1 shadow-elevation-1">
               <Icon name="print" />Struk
             </button>
-          ) : (
-            <button onClick={handleThermalPrint} disabled={printing}
-              className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-1 shadow-elevation-1 disabled:opacity-50">
-              <Icon name="print" />{printing ? "..." : "Struk"}
-            </button>
           )}
-          {showBrowserPrint && thermalOk && (
+          {thermalOk && (
             <button onClick={handleThermalPrint} disabled={printing}
               className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-1 shadow-elevation-1 disabled:opacity-50">
               <Icon name="receipt_long" />{printing ? "..." : "Thermal"}
@@ -573,7 +575,6 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
         </div>
         <button onClick={onNew} className="w-full h-12 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold shadow-elevation-2">Transaksi Baru</button>
       </div>
-      {picker}
     </div>
   );
 }
