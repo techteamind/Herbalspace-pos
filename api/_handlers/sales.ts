@@ -65,8 +65,8 @@ export default createHandler({
         ${customerId ?? null}::uuid,
         ${safeDiscount}::numeric,
         ${safeTax}::numeric,
-        ${JSON.stringify(items)}::jsonb,
-        ${JSON.stringify(payments ?? [])}::jsonb,
+        ${JSON.stringify(items)}::text::jsonb,
+        ${JSON.stringify(payments ?? [])}::text::jsonb,
         ${auth.outletId ?? null}::uuid,
         ${clientRef ?? null}::uuid,
         ${safeService}::numeric
