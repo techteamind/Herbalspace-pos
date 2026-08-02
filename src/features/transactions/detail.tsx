@@ -5,6 +5,7 @@ import { formatRupiah, publicBaseUrl } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
 import { printReceipt } from "@/lib/receipt";
 import { printThermal, type ThermalReceiptData } from "@/lib/thermal-printer";
+import { useThermalPrint } from "@/features/receipt/use-thermal-print";
 import { useSettings } from "@/hooks/use-settings";
 import { useVoidTransaction } from "@/hooks/use-transactions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,7 +29,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
   const outletName = (outlets ?? []).find((o) => o.id === (txn.outletId ?? outletId))?.name;
   const canVoid = role === "owner" || role === "manager";
   const [sharing, setSharing] = useState(false);
-  const [printing, setPrinting] = useState(false);
+  const { printing, triggerPrint, picker } = useThermalPrint();
   const native = Capacitor.isNativePlatform();
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const [voidReason, setVoidReason] = useState("");
@@ -59,8 +60,8 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
     });
   }
 
-  // APK: cetak thermal via RawBT (Bluetooth ke printer). Web: cetak browser.
-  async function handleThermalPrint(): Promise<void> {
+  // APK: cetak thermal in-app (plugin Bluetooth). Web: cetak browser.
+  function handleThermalPrint(): void {
     const data: ThermalReceiptData = {
       storeName: settings?.storeName ?? "Herbaspace",
       address: settings?.address ?? undefined,
@@ -81,10 +82,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
       change: payment?.changeAmount ? Number(payment.changeAmount) : undefined,
       customerName: txn.customer?.name,
     };
-    setPrinting(true);
-    try { await printThermal(data); }
-    catch (e) { toast(e instanceof Error ? e.message : "Gagal mencetak", "error"); }
-    setPrinting(false);
+    void triggerPrint((addr) => printThermal(data, addr));
   }
 
   async function shareWA(): Promise<void> {
@@ -186,6 +184,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
             </button>
           </div>
         )}
+        {picker}
 
         {!isVoid && !showVoidConfirm && canVoid && (
           <button onClick={() => setShowVoidConfirm(true)}

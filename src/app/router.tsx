@@ -2,7 +2,11 @@ import { lazy, Suspense } from "react";
 import { Navigate, useRoutes } from "react-router-dom";
 import { AppLayout } from "./app-layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
+import type { UserRole } from "@/types/auth";
 import LoginPage from "@/pages/auth/login";
+
+const ROLE_LEVEL: Record<UserRole, number> = { cashier: 0, manager: 1, owner: 2 };
 
 const DashboardPage = lazy(() => import("@/features/dashboard").then(m => ({ default: m.DashboardPage })));
 const PosPage = lazy(() => import("@/features/pos").then(m => ({ default: m.PosPage })));
@@ -44,6 +48,15 @@ function L({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
+// Guard rute per-role. Kasir tak boleh modul inventori/keuangan/manajemen —
+// diarahkan ke /kasir. Saat role masih dimuat, tampilkan loader (jangan salah redirect).
+function R({ min, children }: { min: UserRole; children: React.ReactNode }) {
+  const { role } = useAuth();
+  if (role == null) return <PageLoader />;
+  if (ROLE_LEVEL[role] < ROLE_LEVEL[min]) return <Navigate to="/kasir" replace />;
+  return <L>{children}</L>;
+}
+
 export function AppRoutes() {
   return useRoutes([
     { path: "/auth/login", element: <LoginPage /> },
@@ -60,22 +73,22 @@ export function AppRoutes() {
         { index: true, element: <Navigate to="/dashboard" replace /> },
         { path: "dashboard", element: <L><DashboardPage /></L> },
         { path: "kasir", element: <L><PosPage /></L> },
-        { path: "produk", element: <L><ProductsPage /></L> },
-        { path: "produk/:id/resep", element: <L><RecipeEditorPage /></L> },
-        { path: "inventori", element: <L><InventoryPage /></L> },
-        { path: "stock-movement", element: <L><StockMovementsPage /></L> },
+        { path: "produk", element: <R min="manager"><ProductsPage /></R> },
+        { path: "produk/:id/resep", element: <R min="manager"><RecipeEditorPage /></R> },
+        { path: "inventori", element: <R min="manager"><InventoryPage /></R> },
+        { path: "stock-movement", element: <R min="manager"><StockMovementsPage /></R> },
         { path: "pelanggan", element: <L><CustomersPage /></L> },
         { path: "pelanggan/:id", element: <L><CustomerDetailPage /></L> },
         { path: "riwayat-transaksi", element: <L><TransactionsPage /></L> },
-        { path: "pengeluaran", element: <L><ExpensesPage /></L> },
-        { path: "laporan", element: <L><ReportsPage /></L> },
-        { path: "pengaturan", element: <L><SettingsPage /></L> },
+        { path: "pengeluaran", element: <R min="manager"><ExpensesPage /></R> },
+        { path: "laporan", element: <R min="manager"><ReportsPage /></R> },
+        { path: "pengaturan", element: <R min="manager"><SettingsPage /></R> },
         { path: "shift", element: <L><ShiftsPage /></L> },
-        { path: "promo", element: <L><PromosPage /></L> },
-        { path: "outlet", element: <L><OutletsPage /></L> },
-        { path: "audit-log", element: <L><AuditLogPage /></L> },
-        { path: "karyawan", element: <L><EmployeesPage /></L> },
-        { path: "modifier", element: <L><ModifiersPage /></L> },
+        { path: "promo", element: <R min="manager"><PromosPage /></R> },
+        { path: "outlet", element: <R min="owner"><OutletsPage /></R> },
+        { path: "audit-log", element: <R min="owner"><AuditLogPage /></R> },
+        { path: "karyawan", element: <R min="owner"><EmployeesPage /></R> },
+        { path: "modifier", element: <R min="manager"><ModifiersPage /></R> },
         { path: "lainnya", element: <L><MorePage /></L> },
       ],
     },

@@ -10,7 +10,8 @@ import { BarcodeScanner } from "./barcode-scanner";
 import { printReceipt, type Receipt } from "@/lib/receipt";
 import { apiFetch } from "@/lib/api-client";
 import { Capacitor } from "@capacitor/core";
-import { printThermal, isThermalSupported } from "@/lib/thermal-printer";
+import { useThermalPrint } from "@/features/receipt/use-thermal-print";
+import { printThermal, printTicket, type ThermalTicketData } from "@/lib/thermal-printer";
 import { haptic, hapticSuccess } from "@/lib/haptic";
 import { loadBills, saveBills, billCount, billTotal, type OpenBill, type Cart } from "./open-bills";
 import type { ProductWithCategory, ProductVariant } from "@/types";
@@ -70,6 +71,26 @@ export function PosPage(): JSX.Element {
   }
   function deleteBill(id: string): void {
     persistBills(bills.filter((x) => x.id !== id));
+  }
+
+  // Cetak tiket internal (dapur/barista) — dari keranjang aktif atau dari open bill.
+  const { triggerPrint: triggerTicket, picker: ticketPicker } = useThermalPrint();
+  function ticketFromCart(c: Cart, billName?: string): ThermalTicketData {
+    return {
+      billName,
+      datetime: new Date().toLocaleString("id-ID"),
+      cashierName: profileName ?? undefined,
+      lines: Object.values(c).map((it) => ({
+        name: it.variantLabel ? `${it.product.name} (${it.variantLabel})` : it.product.name,
+        qty: it.qty,
+        note: it.note || undefined,
+        modifiers: it.modifiers?.map((m) => m.name),
+      })),
+    };
+  }
+  function printCartTicket(c: Cart, billName?: string): void {
+    if (Object.keys(c).length === 0) return;
+    void triggerTicket((addr) => printTicket(ticketFromCart(c, billName), addr));
   }
 
   const toggleFavorite = useCallback((productId: string) => {
@@ -287,6 +308,10 @@ export function PosPage(): JSX.Element {
             className="h-14 w-16 shrink-0 bg-surface-container text-on-surface rounded-2xl flex flex-col items-center justify-center shadow-elevation-2 active:scale-[0.98] transition-transform">
             <Icon name="pause_circle" className="text-[20px]" /><span className="text-[10px] font-semibold">Tahan</span>
           </button>
+          <button onClick={() => printCartTicket(cart as Cart)}
+            className="h-14 w-16 shrink-0 bg-surface-container text-on-surface rounded-2xl flex flex-col items-center justify-center shadow-elevation-2 active:scale-[0.98] transition-transform">
+            <Icon name="receipt" className="text-[20px]" /><span className="text-[10px] font-semibold">Tiket</span>
+          </button>
           <button onClick={() => outletId ? setShowPayment(true) : toast("Pilih outlet dulu untuk mulai menjual", "error")}
             className="flex-1 bg-primary text-on-primary rounded-2xl h-14 flex items-center justify-between px-5 shadow-elevation-3 active:scale-[0.98] transition-transform">
             <div className="flex items-center gap-3"><Icon name="shopping_cart" filled /><span className="text-[14px] font-semibold">{count} Item</span></div>
@@ -314,8 +339,10 @@ export function PosPage(): JSX.Element {
         <HoldPrompt defaultName={`Bon ${bills.length + 1}`} onCancel={() => setHoldName(null)} onSave={holdBill} />
       )}
       {showBills && (
-        <OpenBillsSheet bills={bills} onClose={() => setShowBills(false)} onOpen={openBill} onDelete={deleteBill} />
+        <OpenBillsSheet bills={bills} onClose={() => setShowBills(false)} onOpen={openBill} onDelete={deleteBill}
+          onTicket={(b) => printCartTicket(b.cart, b.name)} />
       )}
+      {ticketPicker}
     </>
   );
 }
@@ -339,7 +366,7 @@ function HoldPrompt({ defaultName, onCancel, onSave }: { defaultName: string; on
   );
 }
 
-function OpenBillsSheet({ bills, onClose, onOpen, onDelete }: { bills: OpenBill[]; onClose: () => void; onOpen: (b: OpenBill) => void; onDelete: (id: string) => void }): JSX.Element {
+function OpenBillsSheet({ bills, onClose, onOpen, onDelete, onTicket }: { bills: OpenBill[]; onClose: () => void; onOpen: (b: OpenBill) => void; onDelete: (id: string) => void; onTicket: (b: OpenBill) => void }): JSX.Element {
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40" onClick={onClose}>
       <div className="w-full max-w-3xl bg-surface-container-lowest rounded-t-[24px] p-5 pb-safe space-y-3 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -357,6 +384,7 @@ function OpenBillsSheet({ bills, onClose, onOpen, onDelete }: { bills: OpenBill[
                 {billCount(b)} item · {formatRupiah(billTotal(b))} · {new Date(b.createdAt).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
               </p>
             </button>
+            <button onClick={() => onTicket(b)} className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface font-label-caps text-label-caps font-semibold shrink-0 flex items-center gap-1"><Icon name="receipt" className="text-[16px]" />Tiket</button>
             <button onClick={() => onOpen(b)} className="h-9 px-3 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps font-semibold shrink-0">Lanjutkan</button>
             <button onClick={() => onDelete(b.id)} className="text-error p-1 shrink-0"><Icon name="delete" /></button>
           </div>
@@ -558,12 +586,10 @@ const CONFETTI_COLORS = ["#1a6b4a", "#d4f5e4", "#956316", "#fff0d6", "#82d8aa", 
 function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => void }): JSX.Element {
   const toast = useToast();
   const [sharing, setSharing] = useState(false);
-  const [printing, setPrinting] = useState(false);
+  const { supported: thermalOk, printing, triggerPrint, picker } = useThermalPrint();
   const hasPhone = !!receipt.customerPhone;
-  // Cetak hanya di web (browser print + thermal Web Serial). Di APK tak ada cetak
-  // on-device (thermal Bluetooth dicopot; browser print buka Chrome) → struk via WA.
+  // Web: browser print + thermal Web Serial. APK: cetak thermal in-app (plugin BT).
   const showBrowserPrint = !Capacitor.isNativePlatform();
-  const thermalOk = isThermalSupported();
   const printCols = (showBrowserPrint ? 1 : 0) + (thermalOk ? 1 : 0) + 1;
 
   const confetti = useMemo(() =>
@@ -577,33 +603,27 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
       shape: i % 3,
     })), []);
 
-  async function handleThermalPrint(): Promise<void> {
-    setPrinting(true);
-    try {
-      await printThermal({
-        storeName: receipt.storeName,
-        address: receipt.address,
-        phone: receipt.phone,
-        header: receipt.receiptHeader,
-        footer: receipt.receiptFooter,
-        cashierName: receipt.cashierName,
-        number: receipt.number,
-        datetime: receipt.datetime,
-        lines: receipt.lines,
-        subtotal: receipt.subtotal,
-        discount: receipt.discount ?? 0,
-        tax: receipt.tax,
-        serviceCharge: receipt.serviceCharge,
-        total: receipt.total,
-        method: receipt.method,
-        received: receipt.received,
-        change: receipt.change,
-        customerName: receipt.customerName,
-      });
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Gagal mencetak struk", "error");
-    }
-    setPrinting(false);
+  function handleThermalPrint(): void {
+    void triggerPrint((addr) => printThermal({
+      storeName: receipt.storeName,
+      address: receipt.address,
+      phone: receipt.phone,
+      header: receipt.receiptHeader,
+      footer: receipt.receiptFooter,
+      cashierName: receipt.cashierName,
+      number: receipt.number,
+      datetime: receipt.datetime,
+      lines: receipt.lines,
+      subtotal: receipt.subtotal,
+      discount: receipt.discount ?? 0,
+      tax: receipt.tax,
+      serviceCharge: receipt.serviceCharge,
+      total: receipt.total,
+      method: receipt.method,
+      received: receipt.received,
+      change: receipt.change,
+      customerName: receipt.customerName,
+    }, addr));
   }
 
   async function shareWA(): Promise<void> {
@@ -667,6 +687,7 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
         </div>
         <button onClick={onNew} className="w-full h-12 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold shadow-elevation-2">Transaksi Baru</button>
       </div>
+      {picker}
     </div>
   );
 }

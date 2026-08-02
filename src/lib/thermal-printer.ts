@@ -113,7 +113,61 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
   return result;
 }
 
+// ---- Tiket internal (dapur/barista): item + jumlah + catatan, TANPA harga ----
+export interface ThermalTicketLine { name: string; qty: number; note?: string; modifiers?: string[] }
+export interface ThermalTicketData {
+  title?: string;       // default "TIKET PESANAN"
+  billName?: string;    // nama bon / pelanggan
+  datetime: string;
+  cashierName?: string;
+  lines: ThermalTicketLine[];
+}
+
+function concat(parts: Uint8Array[]): Uint8Array {
+  const total = parts.reduce((s, p) => s + p.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of parts) { out.set(p, off); off += p.length; }
+  return out;
+}
+
+function buildTicketBytes(d: ThermalTicketData): Uint8Array {
+  const parts: Uint8Array[] = [];
+  const push = (...xs: Uint8Array[]) => parts.push(...xs);
+  const big = () => push(cmd(ESC, 0x21, 0x30));   // double width+height
+  const normal = () => push(cmd(ESC, 0x21, 0x00));
+
+  push(cmd(ESC, 0x40));            // reset
+  push(cmd(ESC, 0x61, 1));         // center
+  push(cmd(ESC, 0x45, 1)); big();  // bold + besar
+  push(encode((d.title ?? "TIKET PESANAN") + "\n"));
+  normal(); push(cmd(ESC, 0x45, 0));
+  push(encode("================================\n"));
+
+  push(cmd(ESC, 0x61, 0));         // left
+  if (d.billName) { push(cmd(ESC, 0x45, 1)); push(encode(`Bon: ${d.billName}\n`)); push(cmd(ESC, 0x45, 0)); }
+  push(encode(`${d.datetime}\n`));
+  if (d.cashierName) push(encode(`Kasir: ${d.cashierName}\n`));
+  push(encode("--------------------------------\n"));
+
+  for (const l of d.lines) {
+    push(cmd(ESC, 0x45, 1)); big();
+    push(encode(`${l.qty}x ${l.name}\n`));
+    normal(); push(cmd(ESC, 0x45, 0));
+    if (l.modifiers && l.modifiers.length) push(encode(`   + ${l.modifiers.join(", ")}\n`));
+    if (l.note) push(encode(`   * ${l.note}\n`));
+  }
+
+  push(encode("--------------------------------\n\n\n"));
+  push(cmd(GS, 0x56, 0x42, 3));    // partial cut
+  push(cmd(LF, LF, LF));
+  return concat(parts);
+}
+
 import { Capacitor } from "@capacitor/core";
+import type { BondedPrinter } from "./thermal-plugin";
+
+export type { BondedPrinter };
 
 function bytesToBase64(bytes: Uint8Array): string {
   let bin = "";
@@ -121,21 +175,31 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-/**
- * Cetak struk.
- * - APK (native): kirim ESC/POS ke app **RawBT** (rawbt:base64,...). RawBT yang
- *   pegang koneksi Bluetooth ke printer (POS58B/RPP02) — tak ada kode native yang
- *   bisa crash, tak perlu picker. Tim harus install "RawBT Print Service" + pair
- *   printer di app itu.
- * - Web (Chrome/Edge desktop): Web Serial langsung.
- */
-export async function printThermal(data: ThermalReceiptData): Promise<void> {
-  const bytes = buildReceiptBytes(data);
+const SAVED_KEY = "thermalPrinterAddress";
+export function getSavedPrinterAddress(): string | null { return localStorage.getItem(SAVED_KEY); }
+export function setSavedPrinterAddress(addr: string | null): void {
+  if (addr) localStorage.setItem(SAVED_KEY, addr); else localStorage.removeItem(SAVED_KEY);
+}
 
+/** Daftar printer yang sudah dipasangkan (bonded) di Pengaturan Bluetooth HP. Native saja. */
+export async function listPrinters(): Promise<BondedPrinter[]> {
+  const { ThermalPrinter } = await import("./thermal-plugin");
+  const { devices } = await ThermalPrinter.list();
+  return devices;
+}
+
+/**
+ * Kirim byte ESC/POS ke printer.
+ * - APK (native): plugin Bluetooth Classic (SPP) custom → connect ke printer bonded
+ *   (POS58B/RPP02). Butuh alamat printer (argumen/tersimpan).
+ * - Web (Chrome/Edge desktop): Web Serial.
+ */
+async function sendBytes(bytes: Uint8Array, address?: string): Promise<void> {
   if (Capacitor.isNativePlatform()) {
-    const a = document.createElement("a");
-    a.href = "rawbt:base64," + bytesToBase64(bytes);
-    a.click();
+    const addr = address ?? getSavedPrinterAddress();
+    if (!addr) throw new Error("Printer belum dipilih");
+    const { ThermalPrinter } = await import("./thermal-plugin");
+    await ThermalPrinter.print({ address: addr, data: bytesToBase64(bytes) });
     return;
   }
 
@@ -151,6 +215,16 @@ export async function printThermal(data: ThermalReceiptData): Promise<void> {
     writer.releaseLock();
     await port.close();
   }
+}
+
+/** Cetak struk pelanggan. */
+export function printThermal(data: ThermalReceiptData, address?: string): Promise<void> {
+  return sendBytes(buildReceiptBytes(data), address);
+}
+
+/** Cetak tiket internal (dapur/barista). */
+export function printTicket(data: ThermalTicketData, address?: string): Promise<void> {
+  return sendBytes(buildTicketBytes(data), address);
 }
 
 export function isThermalSupported(): boolean {

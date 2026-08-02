@@ -18,11 +18,22 @@ function toAuthUser(session: Session | null): AuthUser | null {
   return { id: session.user.id, email: session.user.email ?? "" };
 }
 
+// Cache role terakhir agar nav/guard punya role langsung saat app dibuka (sebelum
+// /me selesai) → tak ada kedip nav ter-restriksi utk manager/owner.
+const ROLE_KEY = "cachedRole";
+function getCachedRole(): UserRole | null {
+  const r = localStorage.getItem(ROLE_KEY);
+  return r === "owner" || r === "manager" || r === "cashier" ? r : null;
+}
+function setCachedRole(r: UserRole | null): void {
+  if (r) localStorage.setItem(ROLE_KEY, r); else localStorage.removeItem(ROLE_KEY);
+}
+
 export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [role, setRole] = useState<UserRole | null>(getCachedRole());
   const [profileName, setProfileName] = useState<string | null>(null);
   const [outletId, setOutletIdState] = useState<string | null>(getActiveOutletId());
   const [assignedOutletId, setAssignedOutletId] = useState<string | null>(null);
@@ -51,7 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   }, []);
 
   useEffect(() => {
-    if (!session) { setRole(null); setProfileName(null); setAssignedOutletId(null); return; }
+    if (!session) { setRole(null); setCachedRole(null); setProfileName(null); setAssignedOutletId(null); return; }
     let cancelled = false;
     let timer: number | undefined;
     let attempt = 0;
@@ -62,6 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         if (cancelled) return;
         attempt = 0;
         setRole(data.role);
+        setCachedRole(data.role);
         setProfileName(data.profileName);
         setAssignedOutletId(data.outletId ?? null);
         if (data.outletId && data.role !== "owner") setOutletId(data.outletId);

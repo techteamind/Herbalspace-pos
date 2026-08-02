@@ -22,17 +22,17 @@ const SECTIONS: MenuSection[] = [
   {
     title: "Inventori", icon: "inventory_2",
     items: [
-      { to: "/produk", icon: "inventory_2", label: "Produk & Kategori" },
+      { to: "/produk", icon: "inventory_2", label: "Produk & Kategori", minRole: "manager" },
       { to: "/modifier", icon: "add_circle", label: "Add-ons / Modifier", minRole: "manager" },
-      { to: "/inventori", icon: "science", label: "Bahan Baku" },
-      { to: "/stock-movement", icon: "swap_vert", label: "Pergerakan Stok" },
+      { to: "/inventori", icon: "science", label: "Bahan Baku", minRole: "manager" },
+      { to: "/stock-movement", icon: "swap_vert", label: "Pergerakan Stok", minRole: "manager" },
     ],
   },
   {
     title: "Keuangan", icon: "account_balance",
     items: [
       { to: "/pengeluaran", icon: "receipt_long", label: "Pengeluaran", minRole: "manager" },
-      { to: "/laporan", icon: "analytics", label: "Laporan" },
+      { to: "/laporan", icon: "analytics", label: "Laporan", minRole: "manager" },
     ],
   },
   {

@@ -4,17 +4,26 @@ import { Icon } from "./icon";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptic";
 import { useLowStock } from "@/hooks/use-dashboard";
+import { useAuth } from "@/contexts/AuthContext";
+import type { UserRole } from "@/types/auth";
 
-const tabs = [
+// Kasir hanya boleh: Dashboard, Kasir, Lainnya. Produk (inventori) & Laporan
+// (keuangan) butuh manager+.
+const allTabs: { to: string; label: string; icon: string; minRole?: UserRole }[] = [
   { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { to: "/kasir", label: "Kasir", icon: "point_of_sale" },
-  { to: "/produk", label: "Produk", icon: "inventory_2" },
-  { to: "/laporan", label: "Laporan", icon: "analytics" },
+  { to: "/produk", label: "Produk", icon: "inventory_2", minRole: "manager" },
+  { to: "/laporan", label: "Laporan", icon: "analytics", minRole: "manager" },
   { to: "/lainnya", label: "Lainnya", icon: "menu" },
 ];
+const ROLE_LEVEL: Record<UserRole, number> = { cashier: 0, manager: 1, owner: 2 };
 
 export function BottomNav(): JSX.Element {
   const { pathname } = useLocation();
+  const { role } = useAuth();
+  // Saat role belum diketahui (null), tampilkan semua (jangan salah-restriksi manager);
+  // sembunyikan hanya bila role diketahui & kurang. Rute tetap dijaga RoleRoute.
+  const tabs = allTabs.filter((t) => !t.minRole || role == null || ROLE_LEVEL[role] >= ROLE_LEVEL[t.minRole]);
   const activeIdx = tabs.findIndex((t) => pathname.startsWith(t.to));
   const { data: lowStock } = useLowStock();
   const lowCount = (lowStock ?? []).length;
