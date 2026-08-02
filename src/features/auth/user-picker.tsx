@@ -20,6 +20,7 @@ export function UserPickerGate(): JSX.Element {
   const [cashStep, setCashStep] = useState(false);   // langkah modal kas
   const [openingCash, setOpeningCash] = useState("");
   const [loggedInUser, setLoggedInUser] = useState<PinUser | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   useEffect(() => {
     apiFetch<Staff[]>("employees")
@@ -143,7 +144,19 @@ export function UserPickerGate(): JSX.Element {
           </p>
         </div>
       )}
-      <button onClick={() => void logout()} className="w-full text-center text-[12px] text-on-surface-variant/70 py-1">Ganti akun / keluar device</button>
+      <button onClick={() => setConfirmLogout(true)} className="w-full text-center text-[12px] text-on-surface-variant/70 py-1">Ganti akun / keluar device</button>
+      {confirmLogout && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-6" onClick={() => setConfirmLogout(false)}>
+          <div className="w-full max-w-sm bg-surface-container-lowest rounded-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-h2 text-h2 text-on-surface">Keluar dari device?</h2>
+            <p className="font-body-md text-body-md text-on-surface-variant">Semua staf tak bisa memakai kasir ini sampai owner login ulang pakai <b>email &amp; password</b>. Lanjutkan?</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmLogout(false)} className="flex-1 h-12 rounded-xl border border-outline-variant font-body-md text-body-md font-semibold text-on-surface">Batal</button>
+              <button onClick={() => void logout()} className="flex-1 h-12 rounded-xl bg-error text-on-error font-body-md text-body-md font-semibold">Keluar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }
