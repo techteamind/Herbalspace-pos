@@ -113,11 +113,32 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
   return result;
 }
 
-// Cetak thermal HANYA via Web Serial (Chrome/Edge desktop). Plugin Bluetooth Classic
-// untuk APK dicopot: `bluetooth-serial` (Capacitor 4) gagal load di Capacitor 8 dan
-// membuat aplikasi crash saat launch. Thermal di APK menunggu plugin yang kompatibel.
+import { Capacitor } from "@capacitor/core";
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+/**
+ * Cetak struk.
+ * - APK (native): kirim ESC/POS ke app **RawBT** (rawbt:base64,...). RawBT yang
+ *   pegang koneksi Bluetooth ke printer (POS58B/RPP02) — tak ada kode native yang
+ *   bisa crash, tak perlu picker. Tim harus install "RawBT Print Service" + pair
+ *   printer di app itu.
+ * - Web (Chrome/Edge desktop): Web Serial langsung.
+ */
 export async function printThermal(data: ThermalReceiptData): Promise<void> {
   const bytes = buildReceiptBytes(data);
+
+  if (Capacitor.isNativePlatform()) {
+    const a = document.createElement("a");
+    a.href = "rawbt:base64," + bytesToBase64(bytes);
+    a.click();
+    return;
+  }
+
   if (!("serial" in navigator)) throw new Error("Perangkat ini tak mendukung cetak thermal.");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const port = await (navigator as any).serial.requestPort();
@@ -133,5 +154,5 @@ export async function printThermal(data: ThermalReceiptData): Promise<void> {
 }
 
 export function isThermalSupported(): boolean {
-  return "serial" in navigator;
+  return Capacitor.isNativePlatform() || "serial" in navigator;
 }

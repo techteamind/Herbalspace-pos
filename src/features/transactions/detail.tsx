@@ -4,6 +4,7 @@ import { Icon, useToast } from "@/components/shared";
 import { formatRupiah, publicBaseUrl } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
 import { printReceipt } from "@/lib/receipt";
+import { printThermal, type ThermalReceiptData } from "@/lib/thermal-printer";
 import { useSettings } from "@/hooks/use-settings";
 import { useVoidTransaction } from "@/hooks/use-transactions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +28,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
   const outletName = (outlets ?? []).find((o) => o.id === (txn.outletId ?? outletId))?.name;
   const canVoid = role === "owner" || role === "manager";
   const [sharing, setSharing] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const native = Capacitor.isNativePlatform();
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const [voidReason, setVoidReason] = useState("");
@@ -55,6 +57,34 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
       change: payment?.changeAmount ? Number(payment.changeAmount) : undefined,
       customerName: txn.customer?.name,
     });
+  }
+
+  // APK: cetak thermal via RawBT (Bluetooth ke printer). Web: cetak browser.
+  async function handleThermalPrint(): Promise<void> {
+    const data: ThermalReceiptData = {
+      storeName: settings?.storeName ?? "Herbaspace",
+      address: settings?.address ?? undefined,
+      phone: settings?.phone ?? undefined,
+      header: settings?.receiptHeader ?? undefined,
+      footer: settings?.receiptFooter ?? undefined,
+      cashierName: txn.cashier?.fullName ?? undefined,
+      number: txn.number,
+      datetime: new Date(txn.createdAt).toLocaleString("id-ID"),
+      lines: txn.items.map((i) => ({ name: i.productName, qty: i.quantity, price: Number(i.unitPrice), note: i.note ?? undefined })),
+      subtotal,
+      discount: discount || 0,
+      tax,
+      serviceCharge: serviceCharge || undefined,
+      total: Number(txn.total),
+      method: payment?.method ?? "cash",
+      received: payment?.amountReceived ? Number(payment.amountReceived) : undefined,
+      change: payment?.changeAmount ? Number(payment.changeAmount) : undefined,
+      customerName: txn.customer?.name,
+    };
+    setPrinting(true);
+    try { await printThermal(data); }
+    catch (e) { toast(e instanceof Error ? e.message : "Gagal mencetak", "error"); }
+    setPrinting(false);
   }
 
   async function shareWA(): Promise<void> {
@@ -144,15 +174,12 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
         </div>
 
         {!isVoid && (
-          <div className={`grid ${native ? "grid-cols-1" : "grid-cols-2"} gap-3`}>
-            {/* Di APK cetak on-device tak tersedia → struk via WhatsApp. Cetak browser
-                hanya di web. */}
-            {!native && (
-              <button onClick={handlePrint}
-                className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-                <Icon name="print" />Cetak Struk
-              </button>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            {/* APK: cetak via RawBT (Bluetooth). Web: cetak browser. */}
+            <button onClick={native ? handleThermalPrint : handlePrint} disabled={printing}
+              className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50">
+              <Icon name="print" />{printing ? "Mencetak..." : "Cetak Struk"}
+            </button>
             <button onClick={shareWA} disabled={sharing}
               className="h-12 rounded-xl bg-[#25D366] text-white font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50">
               <Icon name="share" />{sharing ? "..." : "WhatsApp"}

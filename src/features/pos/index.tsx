@@ -646,8 +646,8 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
       <p className="font-body-md text-body-md text-on-surface-variant mt-1 animate-celebration-pop" style={{ animationDelay: "0.15s", opacity: 0 }}>{receipt.number}</p>
       <p className="font-display-price-mobile text-display-price-mobile text-primary mt-4 animate-celebration-pop" style={{ animationDelay: "0.2s", opacity: 0 }}>{formatRupiah(receipt.total)}</p>
       <div className="w-full space-y-3 mt-8 animate-celebration-pop" style={{ animationDelay: "0.3s", opacity: 0 }}>
-        {/* Di APK cetak on-device tak tersedia (thermal Bluetooth dicopot; browser
-            print buka Chrome) → struk via WhatsApp. Cetak hanya muncul di web. */}
+        {/* APK: "Cetak" kirim struk ke app RawBT (Bluetooth ke printer). Web: cetak
+            browser + Web Serial. */}
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${printCols}, minmax(0, 1fr))` }}>
           {showBrowserPrint && (
             <button onClick={() => printReceipt(receipt)} className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-1 shadow-elevation-1">
@@ -657,7 +657,7 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
           {thermalOk && (
             <button onClick={handleThermalPrint} disabled={printing}
               className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-1 shadow-elevation-1 disabled:opacity-50">
-              <Icon name="receipt_long" />{printing ? "..." : "Thermal"}
+              <Icon name="print" />{printing ? "..." : "Cetak"}
             </button>
           )}
           <button onClick={shareWA} disabled={sharing || !hasPhone}
