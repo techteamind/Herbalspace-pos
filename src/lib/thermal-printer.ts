@@ -2,9 +2,15 @@ const ESC = 0x1b;
 const GS = 0x1d;
 const LF = 0x0a;
 
+// ESC/POS payload harus ASCII (byte < 0x80): (1) printer 58mm murah tak set code-page
+// UTF-8 default → karakter non-ASCII jadi mojibake; (2) transport Bluetooth mengirim
+// string via getBytes(UTF-8), byte-exact HANYA untuk < 0x80. NFKD melipat aksen (é→e),
+// sisanya dibuang.
 function encode(text: string): Uint8Array {
-  const encoder = new TextEncoder();
-  return encoder.encode(text);
+  const ascii = text.normalize("NFKD").replace(/[^\x00-\x7F]/g, "");
+  const out = new Uint8Array(ascii.length);
+  for (let i = 0; i < ascii.length; i++) out[i] = ascii.charCodeAt(i) & 0x7f;
+  return out;
 }
 
 function cmd(...bytes: number[]): Uint8Array {
@@ -107,35 +113,90 @@ function buildReceiptBytes(data: ThermalReceiptData): Uint8Array {
   return result;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedPort: any = null;
+import { Capacitor } from "@capacitor/core";
 
-export async function connectThermalPrinter(): Promise<any> {
-  if (cachedPort) {
-    try {
-      if (cachedPort.readable) return cachedPort;
-    } catch { /* reconnect */ }
-  }
+export interface BondedPrinter { address: string; name: string }
 
-  if (!("serial" in navigator)) throw new Error("Browser tidak mendukung Web Serial API. Gunakan Chrome/Edge.");
-
-  const port = await (navigator as any).serial.requestPort();
-  await port.open({ baudRate: 9600 });
-  cachedPort = port;
-  return port;
+const SAVED_KEY = "thermalPrinterAddress";
+export function getSavedPrinterAddress(): string | null { return localStorage.getItem(SAVED_KEY); }
+export function setSavedPrinterAddress(addr: string | null): void {
+  if (addr) localStorage.setItem(SAVED_KEY, addr); else localStorage.removeItem(SAVED_KEY);
 }
 
-export async function printThermal(data: ThermalReceiptData): Promise<void> {
-  const port = await connectThermalPrinter();
+function isNative(): boolean { return Capacitor.isNativePlatform(); }
+
+// Native: cetak lewat Bluetooth Classic (SPP) memakai perangkat yang SUDAH dipasangkan.
+// Plugin `bluetooth-serial` di-import dinamis supaya tak masuk bundle web.
+async function bt() { return (await import("bluetooth-serial")).BluetoothSerial; }
+
+async function ensureBtReady(): Promise<void> {
+  const BluetoothSerial = await bt();
+  // Tipe plugin mendeklarasikan PermissionStatus[] (keliru); runtime = objek beralias
+  // (mekanisme izin bawaan Capacitor), mis. { connect: "granted" }.
+  const asStatus = (v: unknown) => v as { connect?: string };
+  const status = asStatus(await BluetoothSerial.checkPermissions());
+  if (status.connect !== "granted") {
+    const req = asStatus(await BluetoothSerial.requestPermissions({ permissions: ["connect"] }));
+    if (req.connect !== "granted") throw new Error("Izin Bluetooth ditolak");
+  }
+  const { isEnabled } = await BluetoothSerial.isEnabled();
+  if (!isEnabled) {
+    const res = await BluetoothSerial.enable();
+    if (!res.isEnabled) throw new Error("Bluetooth belum aktif");
+  }
+}
+
+/** Daftar printer yang sudah dipasangkan (bonded) di Pengaturan Bluetooth HP. */
+export async function listBondedPrinters(): Promise<BondedPrinter[]> {
+  await ensureBtReady();
+  const BluetoothSerial = await bt();
+  const { devices } = await BluetoothSerial.list();
+  return devices.map((d) => ({ address: d.address, name: d.name ?? d.address }));
+}
+
+// Semua byte payload < 0x80 (lihat encode), jadi String.fromCharCode + getBytes(UTF-8)
+// di sisi native menghasilkan byte identik.
+function bytesToBinaryString(bytes: Uint8Array): string {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return s;
+}
+
+/** Cetak struk. Native: butuh alamat printer (argumen atau tersimpan). Web: Web Serial. */
+export async function printThermal(data: ThermalReceiptData, address?: string): Promise<void> {
   const bytes = buildReceiptBytes(data);
-  const writer = port.writable!.getWriter();
+
+  if (isNative()) {
+    const addr = address ?? getSavedPrinterAddress();
+    if (!addr) throw new Error("Printer belum dipilih");
+    await ensureBtReady();
+    const BluetoothSerial = await bt();
+    await BluetoothSerial.connect({ address: addr });
+    try {
+      await BluetoothSerial.write({ data: bytesToBinaryString(bytes) });
+      // beri jeda agar buffer printer selesai sebelum socket ditutup
+      await new Promise((r) => setTimeout(r, 400));
+    } finally {
+      await BluetoothSerial.disconnect();
+    }
+    return;
+  }
+
+  // Web (Chrome/Edge desktop): Web Serial
+  if (!("serial" in navigator)) throw new Error("Perangkat ini tak mendukung cetak thermal.");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const port = await (navigator as any).serial.requestPort();
+  await port.open({ baudRate: 9600 });
+  const writer = port.writable.getWriter();
   try {
     await writer.write(bytes);
+    await new Promise((r) => setTimeout(r, 400));
   } finally {
     writer.releaseLock();
+    await port.close();
   }
 }
 
 export function isThermalSupported(): boolean {
-  return "serial" in navigator;
+  return isNative() || "serial" in navigator;
 }

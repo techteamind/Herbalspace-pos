@@ -9,7 +9,7 @@ import { PaymentSheet, type CartLine } from "./payment-sheet";
 import { BarcodeScanner } from "./barcode-scanner";
 import { printReceipt, type Receipt } from "@/lib/receipt";
 import { apiFetch } from "@/lib/api-client";
-import { printThermal, isThermalSupported } from "@/lib/thermal-printer";
+import { useThermalPrint } from "@/features/receipt/use-thermal-print";
 import { haptic, hapticSuccess } from "@/lib/haptic";
 import type { ProductWithCategory, ProductVariant } from "@/types";
 
@@ -465,8 +465,7 @@ const CONFETTI_COLORS = ["#1a6b4a", "#d4f5e4", "#956316", "#fff0d6", "#82d8aa", 
 function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => void }): JSX.Element {
   const toast = useToast();
   const [sharing, setSharing] = useState(false);
-  const [printing, setPrinting] = useState(false);
-  const thermalOk = isThermalSupported();
+  const { supported: thermalOk, printing, triggerPrint, picker } = useThermalPrint();
   const hasPhone = !!receipt.customerPhone;
 
   const confetti = useMemo(() =>
@@ -480,33 +479,27 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
       shape: i % 3,
     })), []);
 
-  async function handleThermalPrint(): Promise<void> {
-    setPrinting(true);
-    try {
-      await printThermal({
-        storeName: receipt.storeName,
-        address: receipt.address,
-        phone: receipt.phone,
-        header: receipt.receiptHeader,
-        footer: receipt.receiptFooter,
-        cashierName: receipt.cashierName,
-        number: receipt.number,
-        datetime: receipt.datetime,
-        lines: receipt.lines,
-        subtotal: receipt.subtotal,
-        discount: receipt.discount ?? 0,
-        tax: receipt.tax,
-        serviceCharge: receipt.serviceCharge,
-        total: receipt.total,
-        method: receipt.method,
-        received: receipt.received,
-        change: receipt.change,
-        customerName: receipt.customerName,
-      });
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Gagal mencetak struk", "error");
-    }
-    setPrinting(false);
+  function handleThermalPrint(): void {
+    void triggerPrint({
+      storeName: receipt.storeName,
+      address: receipt.address,
+      phone: receipt.phone,
+      header: receipt.receiptHeader,
+      footer: receipt.receiptFooter,
+      cashierName: receipt.cashierName,
+      number: receipt.number,
+      datetime: receipt.datetime,
+      lines: receipt.lines,
+      subtotal: receipt.subtotal,
+      discount: receipt.discount ?? 0,
+      tax: receipt.tax,
+      serviceCharge: receipt.serviceCharge,
+      total: receipt.total,
+      method: receipt.method,
+      received: receipt.received,
+      change: receipt.change,
+      customerName: receipt.customerName,
+    });
   }
 
   async function shareWA(): Promise<void> {
@@ -566,6 +559,7 @@ function SuccessOverlay({ receipt, onNew }: { receipt: Receipt; onNew: () => voi
         </div>
         <button onClick={onNew} className="w-full h-12 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold shadow-elevation-2">Transaksi Baru</button>
       </div>
+      {picker}
     </div>
   );
 }

@@ -2,7 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Icon, useToast } from "@/components/shared";
 import { formatRupiah, publicBaseUrl } from "@/lib/utils";
+import { Capacitor } from "@capacitor/core";
 import { printReceipt } from "@/lib/receipt";
+import { useThermalPrint } from "@/features/receipt/use-thermal-print";
+import type { ThermalReceiptData } from "@/lib/thermal-printer";
 import { useSettings } from "@/hooks/use-settings";
 import { useVoidTransaction } from "@/hooks/use-transactions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +29,8 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
   const outletName = (outlets ?? []).find((o) => o.id === (txn.outletId ?? outletId))?.name;
   const canVoid = role === "owner" || role === "manager";
   const [sharing, setSharing] = useState(false);
+  const native = Capacitor.isNativePlatform();
+  const { printing, triggerPrint, picker } = useThermalPrint();
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const subtotal = Number(txn.subtotal);
@@ -53,6 +58,29 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
       change: payment?.changeAmount ? Number(payment.changeAmount) : undefined,
       customerName: txn.customer?.name,
     });
+  }
+
+  function thermalData(): ThermalReceiptData {
+    return {
+      storeName: settings?.storeName ?? "Herbaspace",
+      address: settings?.address ?? undefined,
+      phone: settings?.phone ?? undefined,
+      header: settings?.receiptHeader ?? undefined,
+      footer: settings?.receiptFooter ?? undefined,
+      cashierName: txn.cashier?.fullName ?? undefined,
+      number: txn.number,
+      datetime: new Date(txn.createdAt).toLocaleString("id-ID"),
+      lines: txn.items.map((i) => ({ name: i.productName, qty: i.quantity, price: Number(i.unitPrice), note: i.note ?? undefined })),
+      subtotal,
+      discount: discount || 0,
+      tax,
+      serviceCharge: serviceCharge || undefined,
+      total: Number(txn.total),
+      method: payment?.method ?? "cash",
+      received: payment?.amountReceived ? Number(payment.amountReceived) : undefined,
+      change: payment?.changeAmount ? Number(payment.changeAmount) : undefined,
+      customerName: txn.customer?.name,
+    };
   }
 
   async function shareWA(): Promise<void> {
@@ -143,9 +171,9 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
 
         {!isVoid && (
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={handlePrint}
-              className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-              <Icon name="print" />Cetak Struk
+            <button onClick={native ? () => void triggerPrint(thermalData()) : handlePrint} disabled={printing}
+              className="h-12 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md font-semibold text-on-surface flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50">
+              <Icon name="print" />{printing ? "Mencetak..." : "Cetak Struk"}
             </button>
             <button onClick={shareWA} disabled={sharing}
               className="h-12 rounded-xl bg-[#25D366] text-white font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50">
@@ -153,6 +181,7 @@ export function TransactionDetail({ txn, onClose }: Props): JSX.Element {
             </button>
           </div>
         )}
+        {picker}
 
         {!isVoid && !showVoidConfirm && canVoid && (
           <button onClick={() => setShowVoidConfirm(true)}
