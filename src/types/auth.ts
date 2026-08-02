@@ -13,6 +13,17 @@ export interface AuthUser {
   email: string;
 }
 
+export interface PinUser {
+  id: string;
+  name: string;
+  role: UserRole;
+  outletId: string | null;
+}
+
+// mode: null = di layar pilih-user (picker); "pin" = kasir aktif via PIN;
+// "base" = user device (owner) masuk langsung tanpa PIN.
+export type ActiveMode = "pin" | "base" | null;
+
 export interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
@@ -25,6 +36,13 @@ export interface AuthContextValue {
   outletId: string | null;
   setOutletId: (id: string | null) => void;
   needsOutletSelection: boolean;
+  // Sesi PIN (device bersama)
+  mode: ActiveMode;
+  pinUser: PinUser | null;
+  pinLogin: (userId: string, pin: string) => Promise<PinUser>;
+  commitActive: () => void;
+  enterAsBase: () => void;
+  exitToPicker: () => void;
 }
 
 export interface LoginRequest {

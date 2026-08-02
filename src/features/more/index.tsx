@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader, Icon } from "@/components/shared";
 import { useAuth } from "@/contexts/AuthContext";
+import { EndShiftFlow } from "@/features/shifts/end-shift";
 import { useOutlets } from "@/hooks/use-outlets";
 import type { UserRole } from "@/types/auth";
 
@@ -56,6 +57,7 @@ export function MorePage(): JSX.Element {
   const canSwitch = role === "owner";
   const qc = useQueryClient();
   const [showOutletSwitch, setShowOutletSwitch] = useState(false);
+  const [showEndShift, setShowEndShift] = useState(false);
 
   return (
     <>
@@ -104,14 +106,22 @@ export function MorePage(): JSX.Element {
           );
         })}
 
-        {/* Logout button */}
+        {/* Akhiri shift & kembali ke daftar user */}
         <button
-          onClick={() => void logout().catch(() => {})}
+          onClick={() => setShowEndShift(true)}
           className="w-full h-12 rounded-xl border border-error/40 text-error font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
-          <Icon name="logout" />Keluar
+          <Icon name="logout" />Akhiri Shift & Keluar
+        </button>
+        {/* Logout device penuh (kembali ke login email) — untuk owner/setup. */}
+        <button
+          onClick={() => void logout().catch(() => {})}
+          className="w-full text-center text-[12px] text-on-surface-variant/70 py-1"
+        >
+          Logout device (login email)
         </button>
       </div>
+      {showEndShift && <EndShiftFlow onClose={() => setShowEndShift(false)} />}
 
       {/* Outlet switcher bottom sheet */}
       {showOutletSwitch && (

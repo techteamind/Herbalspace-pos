@@ -10,13 +10,26 @@ export function setActiveOutletId(id: string | null): void {
   else localStorage.removeItem("activeOutletId");
 }
 
+// Sesi PIN (kasir aktif di device bersama). Kalau ada, request pakai token ini
+// (backend memperlakukan sebagai user itu) — bukan token Supabase device/owner.
+export function getPinToken(): string | null {
+  return localStorage.getItem("pinToken");
+}
+export function setPinToken(token: string | null): void {
+  if (token) localStorage.setItem("pinToken", token);
+  else localStorage.removeItem("pinToken");
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
 const OFFLINE_QUEUABLE = ["POST", "PUT", "DELETE"];
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  let token = getPinToken();
+  if (!token) {
+    const { data } = await supabase.auth.getSession();
+    token = data.session?.access_token ?? null;
+  }
   const outletId = getActiveOutletId();
   const method = (init.method ?? "GET").toUpperCase();
 

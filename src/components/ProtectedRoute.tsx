@@ -1,13 +1,14 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { OutletPicker } from "@/features/outlets/outlet-picker";
+import { UserPickerGate } from "@/features/auth/user-picker";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, needsOutletSelection } = useAuth();
+  const { isAuthenticated, loading, needsOutletSelection, mode } = useAuth();
 
   if (loading) {
     return (
@@ -22,6 +23,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" replace />;
+  }
+
+  // Device sudah login tapi belum ada user aktif → gerbang pilih-user + PIN.
+  if (mode === null) {
+    return <UserPickerGate />;
   }
 
   if (needsOutletSelection) {

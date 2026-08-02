@@ -1,8 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import type { AuthContextValue, AuthUser, UserRole } from "@/types/auth";
-import { apiFetch, getActiveOutletId, setActiveOutletId } from "@/lib/api-client";
+import type { AuthContextValue, AuthUser, UserRole, PinUser, ActiveMode } from "@/types/auth";
+import { apiFetch, getActiveOutletId, setActiveOutletId, setPinToken } from "@/lib/api-client";
 import { queryClient, clearPersistedCache } from "@/lib/query-client";
 import { clearQueue, getQueueCount } from "@/lib/offline-db";
 import { syncQueue } from "@/lib/offline-sync";
@@ -29,6 +29,20 @@ function setCachedRole(r: UserRole | null): void {
   if (r) localStorage.setItem(ROLE_KEY, r); else localStorage.removeItem(ROLE_KEY);
 }
 
+function getMode(): ActiveMode {
+  const m = localStorage.getItem("activeMode");
+  return m === "pin" || m === "base" ? m : null;
+}
+function setModeLS(m: ActiveMode): void {
+  if (m) localStorage.setItem("activeMode", m); else localStorage.removeItem("activeMode");
+}
+function getPinUserLS(): PinUser | null {
+  try { const v = JSON.parse(localStorage.getItem("pinUser") || "null"); return v && v.id ? v : null; } catch { return null; }
+}
+function setPinUserLS(u: PinUser | null): void {
+  if (u) localStorage.setItem("pinUser", JSON.stringify(u)); else localStorage.removeItem("pinUser");
+}
+
 export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +51,8 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [profileName, setProfileName] = useState<string | null>(null);
   const [outletId, setOutletIdState] = useState<string | null>(getActiveOutletId());
   const [assignedOutletId, setAssignedOutletId] = useState<string | null>(null);
+  const [mode, setModeState] = useState<ActiveMode>(getMode());
+  const [pinUser, setPinUserState] = useState<PinUser | null>(getPinUserLS());
 
   const setOutletId = useCallback((id: string | null) => {
     setActiveOutletId(id);
@@ -94,7 +110,42 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       if (timer) clearTimeout(timer);
       window.removeEventListener("online", onOnline);
     };
-  }, [session, setOutletId]);
+    // `mode` ikut dep: saat ganti user via PIN, token efektif berubah → /me muat
+    // ulang jadi identitas user aktif.
+  }, [session, setOutletId, mode]);
+
+  // Verifikasi PIN → dapatkan token user itu (dipanggil dari picker; masih di picker
+  // sampai commitActive dipanggil setelah shift dibuka).
+  const pinLogin = useCallback(async (userId: string, pin: string): Promise<PinUser> => {
+    setPinToken(null); // verifikasi pakai token device
+    const res = await apiFetch("pin-login", { method: "POST", body: JSON.stringify({ userId, pin }) }) as { token: string; user: PinUser };
+    setPinToken(res.token);
+    setPinUserLS(res.user);
+    setPinUserState(res.user);
+    setOutletId(res.user.outletId ?? null);
+    return res.user;
+  }, [setOutletId]);
+
+  const commitActive = useCallback((): void => {
+    setPinUserState((u) => {
+      if (u) { setRole(u.role); setCachedRole(u.role); setProfileName(u.name); }
+      return u;
+    });
+    setModeLS("pin");
+    setModeState("pin");
+  }, []);
+
+  const enterAsBase = useCallback((): void => {
+    setPinToken(null); setPinUserLS(null); setPinUserState(null);
+    setModeLS("base"); setModeState("base");
+  }, []);
+
+  const exitToPicker = useCallback((): void => {
+    setPinToken(null); setPinUserLS(null); setPinUserState(null);
+    setModeLS(null); setModeState(null);
+    setRole(null); setCachedRole(null); setProfileName(null);
+    setOutletId(null);
+  }, [setOutletId]);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
     setError(null);
@@ -129,6 +180,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     queryClient.clear();
     clearPersistedCache();
     if (pending === 0) await clearQueue().catch(() => {});
+    setPinToken(null); setPinUserLS(null); setPinUserState(null); setModeLS(null); setModeState(null);
     setSession(null);
     setOutletId(null);
   }, [setOutletId]);
@@ -149,8 +201,14 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       outletId: effectiveOutletId,
       setOutletId,
       needsOutletSelection,
+      mode,
+      pinUser,
+      pinLogin,
+      commitActive,
+      enterAsBase,
+      exitToPicker,
     }),
-    [session, loading, error, login, logout, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection],
+    [session, loading, error, login, logout, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection, mode, pinUser, pinLogin, commitActive, enterAsBase, exitToPicker],
   );
 
   return (
@@ -172,6 +230,12 @@ const defaultAuthValue: AuthContextValue = {
   outletId: null,
   setOutletId: () => {},
   needsOutletSelection: false,
+  mode: null,
+  pinUser: null,
+  pinLogin: async () => ({ id: "", name: "", role: "cashier", outletId: null }),
+  commitActive: () => {},
+  enterAsBase: () => {},
+  exitToPicker: () => {},
 };
 
 export function useAuth(): AuthContextValue {

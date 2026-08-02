@@ -178,6 +178,33 @@ export default createHandler({
       return;
     }
 
+    if (action === "reopen") {
+      // Recovery "buka lagi shift barusan" — batal-tutup dalam 30 menit, kasir sendiri
+      // / privileged, dan tak boleh ada shift lain yang terbuka untuk outlet itu.
+      const shift = await db.query.shifts.findFirst({ where: and(eq(shifts.id, id), eq(shifts.tenantId, auth.tenantId)) });
+      if (!shift) { res.status(404).json({ error: "Shift tidak ditemukan" }); return; }
+      if (!shift.closedAt) { res.json(shift); return; }
+      if ((Date.now() - shift.closedAt.getTime()) / 60000 > 30) {
+        res.status(400).json({ error: "Shift sudah lama ditutup. Mulai shift baru saja." }); return;
+      }
+      const isPriv = auth.role === "manager" || auth.role === "owner";
+      if (shift.cashierId !== auth.userId && !isPriv) { res.status(403).json({ error: "Bukan shift Anda" }); return; }
+      try {
+        const [updated] = await db.update(shifts)
+          .set({ closedAt: null, closingCash: null, expectedCash: null, totalSales: null, totalTransactions: null, note: null })
+          .where(eq(shifts.id, id)).returning();
+        await logAudit(auth, "reopen", "shift", id, {});
+        res.json(updated);
+      } catch (err) {
+        if (err instanceof Error && /shifts_open_unq|duplicate key/.test(err.message)) {
+          res.status(409).json({ error: "Sudah ada shift lain yang terbuka untuk outlet ini." });
+          return;
+        }
+        throw err;
+      }
+      return;
+    }
+
     res.status(400).json({ error: "Action tidak valid" });
   },
 });
