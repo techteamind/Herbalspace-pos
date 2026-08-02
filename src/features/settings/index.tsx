@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-type Sheet = null | "profile" | "account" | "password" | "tax" | "payment" | "receipt";
+type Sheet = null | "profile" | "account" | "password" | "tax" | "payment" | "receipt" | "closing";
 
 function Section({ title, children }: { title: string; children: ReactNode }): JSX.Element {
   return (
@@ -65,6 +65,7 @@ export function SettingsPage(): JSX.Element {
   const [payMethods, setPayMethods] = useState<string[]>([]);
   const [receiptHeader, setReceiptHeader] = useState("");
   const [receiptFooter, setReceiptFooter] = useState("");
+  const [closingTime, setClosingTime] = useState("");
 
   function openSheet(which: Sheet) {
     if (!s) return;
@@ -84,6 +85,8 @@ export function SettingsPage(): JSX.Element {
     } else if (which === "receipt") {
       setReceiptHeader(s.receiptHeader ?? "");
       setReceiptFooter(s.receiptFooter ?? "");
+    } else if (which === "closing") {
+      setClosingTime(s.closingTime ?? "");
     }
     setSheet(which);
   }
@@ -109,6 +112,10 @@ export function SettingsPage(): JSX.Element {
   }
   async function saveReceipt() {
     await update.mutateAsync({ receiptHeader, receiptFooter });
+    setSheet(null);
+  }
+  async function saveClosing() {
+    await update.mutateAsync({ closingTime: closingTime || null });
     setSheet(null);
   }
 
@@ -142,6 +149,9 @@ export function SettingsPage(): JSX.Element {
         </Section>
         <Section title="Struk">
           <Row icon="receipt_long" label="Header & Footer" onClick={() => openSheet("receipt")} />
+        </Section>
+        <Section title="Operasional">
+          <Row icon="schedule" label="Jam Tutup Toko" value={s?.closingTime ? s.closingTime : "Tengah malam"} onClick={() => openSheet("closing")} />
         </Section>
         <Section title="Tampilan">
           <DarkModeToggle />
@@ -260,6 +270,21 @@ export function SettingsPage(): JSX.Element {
               placeholder="Barang yang sudah dibeli tidak dapat dikembalikan." />
           </Field>
           <button onClick={saveReceipt} disabled={update.isPending}
+            className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
+            {update.isPending ? "Menyimpan..." : "Simpan"}
+          </button>
+        </FormSheet>
+      )}
+
+      {sheet === "closing" && (
+        <FormSheet title="Jam Tutup Toko" onClose={() => setSheet(null)}>
+          <Field label="Jam Tutup">
+            <input className={inputCls} type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} />
+          </Field>
+          <p className="font-label-caps text-label-caps text-on-surface-variant">
+            Shift kasir yang lupa ditutup akan otomatis tertutup di jam ini. Kosongkan = tengah malam.
+          </p>
+          <button onClick={saveClosing} disabled={update.isPending}
             className="w-full h-touch-target-min bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform">
             {update.isPending ? "Menyimpan..." : "Simpan"}
           </button>

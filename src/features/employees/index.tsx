@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader, Icon, FormSheet, Field, inputCls, ListSkeleton, EmptyState, ErrorState } from "@/components/shared";
 import { useEmployees, useCreateEmployee, useUpdateEmployee, type Employee } from "@/hooks/use-employees";
 import { useOutlets } from "@/hooks/use-outlets";
@@ -47,6 +47,9 @@ export function EmployeesPage(): JSX.Element {
                       <Icon name="store" className="text-[12px]" />{emp.outlet.name}
                     </span>
                   )}
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 ${emp.hasPin ? "bg-primary-container text-on-primary-container" : "bg-surface-container text-on-surface-variant"}`}>
+                    <Icon name={emp.hasPin ? "lock" : "lock_open"} className="text-[12px]" />{emp.hasPin ? "PIN aktif" : "Tanpa PIN"}
+                  </span>
                 </div>
               </div>
               <Icon name="chevron_right" className="text-on-surface-variant opacity-50 mt-1" />
@@ -124,8 +127,18 @@ function EmployeeCreateSheet({ onClose }: { onClose: () => void }): JSX.Element 
 
 function EmployeeEditSheet({ employee, onClose }: { employee: Employee; onClose: () => void }): JSX.Element {
   const update = useUpdateEmployee();
+  const qc = useQueryClient();
   const { data: outlets } = useOutlets();
   const [role, setRole] = useState(employee.role);
+  const [showPin, setShowPin] = useState(false);
+  const [pinVal, setPinVal] = useState("");
+  const [pinErr, setPinErr] = useState("");
+  const [pinOk, setPinOk] = useState(false);
+  const setPin = useMutation({
+    mutationFn: (data: { userId: string; pin: string }) => apiFetch("pin", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => { setPinOk(true); setPinVal(""); setPinErr(""); qc.invalidateQueries({ queryKey: ["employees"] }); },
+    onError: (err: Error) => setPinErr(err.message),
+  });
   const [outletId, setOutletId] = useState(employee.outletId ?? "");
   const [isActive, setIsActive] = useState(employee.isActive);
   const [showResetPw, setShowResetPw] = useState(false);
@@ -189,6 +202,35 @@ function EmployeeEditSheet({ employee, onClose }: { employee: Employee; onClose:
         className="w-full bg-primary text-on-primary rounded-xl h-14 font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
         {update.isPending ? "Menyimpan..." : "Simpan"}
       </button>
+
+      {/* PIN login (semua role — biar muncul & bisa login di daftar user) */}
+      <div className="border-t border-outline-variant/30 pt-4 space-y-3">
+        {!showPin ? (
+          <button onClick={() => { setShowPin(true); setPinOk(false); }}
+            className="w-full h-12 rounded-xl border border-outline-variant text-on-surface font-body-md text-body-md font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+            <Icon name={employee.hasPin ? "pin" : "lock"} /> {employee.hasPin ? "Ganti PIN" : "Atur PIN Login"}
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="font-body-md text-body-md text-on-surface-variant">PIN 4–8 angka untuk {employee.fullName} (login cepat di daftar user):</p>
+            <input className={inputCls} type="password" inputMode="numeric" value={pinVal}
+              onChange={(e) => setPinVal(e.target.value.replace(/[^0-9]/g, "").slice(0, 8))}
+              placeholder="Contoh: 1234" autoFocus />
+            {pinErr && <p className="text-error text-sm">{pinErr}</p>}
+            {pinOk && <p className="text-primary text-sm">PIN berhasil disimpan!</p>}
+            <button
+              onClick={() => {
+                if (pinVal.length < 4) { setPinErr("PIN minimal 4 angka"); return; }
+                setPinErr(""); setPinOk(false);
+                setPin.mutate({ userId: employee.id, pin: pinVal });
+              }}
+              disabled={setPin.isPending || pinVal.length < 4}
+              className="w-full h-12 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold active:scale-[0.98] transition-transform disabled:opacity-50">
+              {setPin.isPending ? "Menyimpan..." : "Simpan PIN"}
+            </button>
+          </div>
+        )}
+      </div>
 
       {!isOwner && (
         <div className="border-t border-outline-variant/30 pt-4 space-y-3">

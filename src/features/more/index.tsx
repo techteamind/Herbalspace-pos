@@ -50,7 +50,8 @@ const SECTIONS: MenuSection[] = [
 const ROLE_LEVEL: Record<UserRole, number> = { cashier: 0, manager: 1, owner: 2 };
 
 export function MorePage(): JSX.Element {
-  const { role, outletId, setOutletId, profileName, user, logout } = useAuth();
+  const { role, outletId, setOutletId, profileName, user, logout, mode } = useAuth();
+  const ROLE_LABEL: Record<UserRole, string> = { cashier: "Kasir", manager: "Manajer", owner: "Owner" };
   const { data: outlets } = useOutlets();
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const userLevel = ROLE_LEVEL[role ?? "cashier"];
@@ -70,7 +71,7 @@ export function MorePage(): JSX.Element {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-semibold text-on-surface truncate">{profileName ?? "User"}</p>
-            <p className="text-[12px] text-on-surface-variant truncate">{user?.email ?? ""}</p>
+            <p className="text-[12px] text-on-surface-variant truncate">{mode === "pin" ? ROLE_LABEL[role ?? "cashier"] : (user?.email ?? "")}</p>
           </div>
           {canSwitch && (
             <button onClick={() => setShowOutletSwitch(true)}

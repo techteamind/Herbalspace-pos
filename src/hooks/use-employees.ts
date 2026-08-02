@@ -9,6 +9,7 @@ export interface Employee {
   isActive: boolean;
   outletId: string | null;
   outlet?: { id: string; name: string } | null;
+  hasPin?: boolean;
   createdAt: string;
 }
 
