@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { recipeItems, products } from "../../db/schema.js";
+import { recipeItems, products, ingredients } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { requireRole } from "../_lib/auth.js";
 
@@ -25,6 +25,25 @@ export default createHandler({
     };
     if (!productId) { res.status(400).json({ error: "productId wajib" }); return; }
     if (!Array.isArray(items)) { res.status(400).json({ error: "items wajib berupa array" }); return; }
+    // Validasi: qty > 0 (qty negatif bisa MENAMBAH stok saat jual) & bahan valid.
+    for (const it of items) {
+      if (!it.ingredientId || !(Number(it.quantity) > 0)) {
+        res.status(400).json({ error: "Item resep tidak valid: qty harus lebih dari 0" });
+        return;
+      }
+    }
+    // Bahan wajib milik tenant ini (cegah resep merujuk bahan tenant lain → HPP bocor).
+    const ingIds = [...new Set(items.map((it) => it.ingredientId))];
+    if (ingIds.length > 0) {
+      const owned = await db.query.ingredients.findMany({
+        where: and(inArray(ingredients.id, ingIds), eq(ingredients.tenantId, auth.tenantId)),
+        columns: { id: true },
+      });
+      if (owned.length !== ingIds.length) {
+        res.status(400).json({ error: "Ada bahan yang tidak ditemukan di outlet Anda" });
+        return;
+      }
+    }
 
     const result = await db.transaction(async (tx) => {
       await tx.delete(recipeItems).where(

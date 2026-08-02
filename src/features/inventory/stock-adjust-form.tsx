@@ -18,6 +18,7 @@ export function StockAdjustForm({ onClose, preselectedId }: Props): JSX.Element 
   const [ingredientId, setIngredientId] = useState(preselectedId ?? "");
   const [type, setType] = useState<typeof TYPES[number]["key"]>("purchase");
   const [qty, setQty] = useState("");
+  const [unitCost, setUnitCost] = useState("");
   const [note, setNote] = useState("");
 
   const selected = (ingredients ?? []).find((i) => i.id === ingredientId);
@@ -27,8 +28,12 @@ export function StockAdjustForm({ onClose, preselectedId }: Props): JSX.Element 
   const newBalance = selected ? Number(selected.currentStock) + qtyChange : 0;
   const valid = ingredientId && qtyNum !== 0;
 
+  const costNum = Number(unitCost) || 0;
   async function handleSubmit(): Promise<void> {
-    await mutation.mutateAsync({ ingredientId, type, qtyChange, note: note || undefined });
+    await mutation.mutateAsync({
+      ingredientId, type, qtyChange, note: note || undefined,
+      unitCost: type === "purchase" && costNum > 0 ? costNum : undefined,
+    });
     onClose();
   }
 
@@ -62,6 +67,22 @@ export function StockAdjustForm({ onClose, preselectedId }: Props): JSX.Element 
           {selected && <span className="font-body-md text-body-md text-on-surface-variant shrink-0">{selected.unit.code}</span>}
         </div>
       </Field>
+
+      {type === "purchase" && (
+        <Field label={`Harga beli / ${selected?.unit.code ?? "satuan"} (opsional)`}>
+          <div className="flex items-center gap-2">
+            <span className="text-on-surface-variant">Rp</span>
+            <input type="number" inputMode="numeric" value={unitCost}
+              onChange={(e) => setUnitCost(e.target.value)}
+              placeholder="Perbarui HPP bahan" className={inputCls} />
+          </div>
+          {selected && (
+            <p className="font-label-caps text-label-caps text-on-surface-variant mt-1">
+              HPP sekarang: Rp {Number(selected.lastCost).toLocaleString("id-ID")}/{selected.unit.code}. Isi untuk memperbarui.
+            </p>
+          )}
+        </Field>
+      )}
 
       {selected && qtyNum !== 0 && (
         <div className="bg-surface-container rounded-lg p-3 space-y-1">

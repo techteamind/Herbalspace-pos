@@ -1,8 +1,18 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { createClient } from "@supabase/supabase-js";
 import { db } from "../../db/index.js";
-import { profiles } from "../../db/schema.js";
+import { profiles, outlets } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
+
+// Outlet (kalau diisi) wajib milik tenant ini — cegah assign ke outlet tenant lain.
+async function outletValid(outletId: unknown, tenantId: string): Promise<boolean> {
+  if (!outletId) return true;
+  const row = await db.query.outlets.findFirst({
+    where: and(eq(outlets.id, String(outletId)), eq(outlets.tenantId, tenantId)),
+    columns: { id: true },
+  });
+  return !!row;
+}
 
 function getAdminClient() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
@@ -50,6 +60,9 @@ export default createHandler({
     if (password.length < 6) {
       res.status(400).json({ error: "Password minimal 6 karakter" });
       return;
+    }
+    if (!(await outletValid(outletId, auth.tenantId))) {
+      res.status(400).json({ error: "Outlet tidak ditemukan" }); return;
     }
 
     try {
@@ -101,6 +114,9 @@ export default createHandler({
       where: and(eq(profiles.id, id), eq(profiles.tenantId, auth.tenantId)),
     });
     if (!target) { res.status(404).json({ error: "Karyawan tidak ditemukan" }); return; }
+    if (outletId !== undefined && !(await outletValid(outletId, auth.tenantId))) {
+      res.status(400).json({ error: "Outlet tidak ditemukan" }); return;
+    }
 
     // Guard: jangan sampai owner AKTIF terakhir di-demote / dinonaktifkan → tenant
     // terkunci permanen (tak ada yang bisa kelola karyawan/outlet lagi).

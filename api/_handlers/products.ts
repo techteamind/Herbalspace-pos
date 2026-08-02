@@ -24,6 +24,8 @@ export default createHandler({
     const { name, price, costPrice, categoryId, sku, imageUrl, stock } = req.body;
     if (!name || typeof name !== "string") { res.status(400).json({ error: "name wajib" }); return; }
     if (price === undefined || isNaN(Number(price))) { res.status(400).json({ error: "price wajib dan harus angka" }); return; }
+    if (Number(price) < 0 || Number(costPrice ?? 0) < 0) { res.status(400).json({ error: "Harga & modal tidak boleh negatif" }); return; }
+    if (stock !== undefined && stock !== null && stock !== "" && Number(stock) < 0) { res.status(400).json({ error: "Stok tidak boleh negatif" }); return; }
     const [row] = await db.insert(products).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId,
@@ -42,6 +44,12 @@ export default createHandler({
     if (!requireRole(auth, "manager", res)) return;
     const { id, ...data } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
+    if ((data.price !== undefined && Number(data.price) < 0) || (data.costPrice !== undefined && Number(data.costPrice) < 0)) {
+      res.status(400).json({ error: "Harga & modal tidak boleh negatif" }); return;
+    }
+    if (data.stock !== undefined && data.stock !== null && data.stock !== "" && Number(data.stock) < 0) {
+      res.status(400).json({ error: "Stok tidak boleh negatif" }); return;
+    }
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updates.name = data.name;
     if (data.price !== undefined) updates.price = String(data.price);

@@ -18,8 +18,9 @@ export default createHandler({
         limit: 50,
         with: { items: true, payments: true, customer: true, cashier: true },
       });
-      const totalSpend = history.filter((t) => t.status === "paid").reduce((s, t) => s + Number(t.total), 0);
-      res.json({ ...customer, transactions: history, totalSpend });
+      // totalSpend dari kolom tersimpan (dijaga atomik saat jual & void), BUKAN
+      // dihitung ulang dari history yang di-cap 50 → akurat utk pelanggan >50 trx.
+      res.json({ ...customer, transactions: history, totalSpend: Number(customer.totalSpent) });
       return;
     }
 
@@ -36,16 +37,25 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
-    const { name, phone, email, note } = req.body;
+    const { id, name, phone, email, note } = req.body;
     if (!name || typeof name !== "string" || !name.trim()) { res.status(400).json({ error: "Nama pelanggan wajib diisi" }); return; }
     try {
       const [row] = await db.insert(customers).values({
+        // id opsional dari klien: sale offline pakai id ini agar link pelanggan terjaga.
+        ...(id ? { id: String(id) } : {}),
         tenantId: auth.tenantId, outletId: auth.outletId ?? undefined, name, phone: phone || null, email: email || null, note: note || null,
       }).returning();
       res.status(201).json(row);
     } catch (err) {
-      // nomor HP sudah terdaftar → kembalikan pelanggan yang ada, bukan 500
-      if (phone && err instanceof Error && /customers_tenant_phone_unq|duplicate key/.test(err.message)) {
+      const dup = err instanceof Error && /customers_tenant_phone_unq|duplicate key/.test(err.message);
+      // Replay (id sama) atau HP sudah terdaftar → kembalikan yang ada, bukan 500.
+      if (dup && id) {
+        const existing = await db.query.customers.findFirst({
+          where: and(eq(customers.id, String(id)), eq(customers.tenantId, auth.tenantId)),
+        });
+        if (existing) { res.status(200).json(existing); return; }
+      }
+      if (dup && phone) {
         const existing = await db.query.customers.findFirst({
           where: and(eq(customers.tenantId, auth.tenantId), eq(customers.phone, phone)),
         });

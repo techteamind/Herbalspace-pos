@@ -7,25 +7,40 @@ import { requireRole, outletFilter } from "../_lib/auth.js";
 export default createHandler({
   async POST(req, res, auth) {
     if (!requireRole(auth, "manager", res)) return;
-    const { ingredientId, type, qtyChange, note } = req.body as {
+    const { ingredientId, type, qtyChange, unitCost, note } = req.body as {
       ingredientId: string;
       type: "adjustment" | "waste" | "purchase" | "return";
       qtyChange: number;
+      unitCost?: number;
       note?: string;
     };
+    const TYPES = ["adjustment", "waste", "purchase", "return"] as const;
     if (!ingredientId || !type || qtyChange === undefined) {
       res.status(400).json({ error: "ingredientId, type, dan qtyChange wajib" });
       return;
     }
-    if (typeof qtyChange !== "number" || isNaN(qtyChange)) {
-      res.status(400).json({ error: "qtyChange harus berupa angka" });
+    if (!TYPES.includes(type)) { res.status(400).json({ error: "Jenis tidak valid" }); return; }
+    if (typeof qtyChange !== "number" || isNaN(qtyChange) || qtyChange === 0) {
+      res.status(400).json({ error: "qtyChange harus angka bukan 0" });
       return;
     }
+
+    // Tanda DITURUNKAN server (jangan percaya tanda dari klien): purchase selalu
+    // menambah, waste/return selalu mengurangi, adjustment = selisih apa adanya.
+    const mag = Math.abs(qtyChange);
+    const delta = type === "adjustment" ? qtyChange : type === "purchase" ? mag : -mag;
+    // Pembelian boleh membawa harga satuan → perbarui HPP bahan (metode last-cost)
+    // supaya COGS tak basi saat harga bahan berubah.
+    const setCost = type === "purchase" && typeof unitCost === "number" && unitCost > 0;
 
     // Atomik: hitung stok baru DI DB (bukan read-modify-write) agar penyesuaian
     // bersamaan tidak saling menimpa. RETURNING sekaligus jadi cek keberadaan.
     const [updated] = await db.update(ingredients)
-      .set({ currentStock: sql`${ingredients.currentStock} + ${qtyChange}`, updatedAt: new Date() })
+      .set({
+        currentStock: sql`${ingredients.currentStock} + ${delta}`,
+        ...(setCost ? { lastCost: String(unitCost) } : {}),
+        updatedAt: new Date(),
+      })
       .where(and(eq(ingredients.id, ingredientId), eq(ingredients.tenantId, auth.tenantId)))
       .returning({ currentStock: ingredients.currentStock, lastCost: ingredients.lastCost });
     if (!updated) { res.status(404).json({ error: "Bahan tidak ditemukan" }); return; }
@@ -34,7 +49,7 @@ export default createHandler({
       tenantId: auth.tenantId,
       ingredientId,
       type,
-      qtyChange: String(qtyChange),
+      qtyChange: String(delta),
       balanceAfter: updated.currentStock,
       unitCost: updated.lastCost,
       note: note || null,

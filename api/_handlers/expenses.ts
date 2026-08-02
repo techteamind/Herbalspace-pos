@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { expenses, expenseCategories } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
@@ -18,15 +18,29 @@ export default createHandler({
       res.json(rows);
       return;
     }
+    // Filter rentang tanggal opsional (from/to ISO). Halaman Pengeluaran mengirim
+    // batas bulan WIB agar total & daftar konsisten (bukan cap client-side).
+    const from = req.query.from as string | undefined;
+    const to = req.query.to as string | undefined;
     const expOf = outletFilter(expenses.outletId, auth.outletId);
-    const expWhere = expOf
-      ? and(eq(expenses.tenantId, auth.tenantId), expOf)
-      : eq(expenses.tenantId, auth.tenantId);
-    // ponytail: cap 1000 baris; jika data melebihi ini, laporan butuh agregasi di server
+    const conds = [eq(expenses.tenantId, auth.tenantId)];
+    if (expOf) conds.push(expOf);
+    if (from) conds.push(gte(expenses.spentAt, new Date(from)));
+    if (to) conds.push(lt(expenses.spentAt, new Date(to)));
+    const expWhere = and(...conds);
+
+    // section=summary → total server-side (SUM), tak terpengaruh cap baris.
+    if (section === "summary") {
+      const [row] = await db.select({ total: sql<string>`COALESCE(SUM(${expenses.amount}::numeric), 0)` })
+        .from(expenses).where(expWhere);
+      res.json({ total: Number(row?.total ?? 0) });
+      return;
+    }
+
     const rows = await db.query.expenses.findMany({
       where: expWhere,
       orderBy: desc(expenses.spentAt),
-      limit: Math.min(Number(req.query.limit) || 100, 1000),
+      limit: Math.min(Number(req.query.limit) || 500, 2000),
       with: { category: true, createdByProfile: true },
     });
     res.json(rows);

@@ -13,7 +13,7 @@ export function useCustomers(search?: string) {
 export function useCreateCustomer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; phone?: string; email?: string; note?: string }) =>
+    mutationFn: (data: { id?: string; name: string; phone?: string; email?: string; note?: string }) =>
       apiFetch("customers", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["customers"] }),
   });

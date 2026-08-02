@@ -10,15 +10,19 @@ type Tab = "laba-rugi" | "neraca";
 type Period = "Harian" | "Mingguan" | "Bulanan" | "Tahunan";
 const PERIODS: Period[] = ["Harian", "Mingguan", "Bulanan", "Tahunan"];
 
+// Batas hari dihitung dalam WIB (bukan zona device) supaya konsisten dgn dashboard
+// & penomoran struk — sale jam 23:30 WIB tak bocor ke hari lain kalau device UTC.
+// Indonesia tanpa DST → offset tetap +7 jam, aman dipakai aritmetika hari.
 function rangeFor(period: Period): { from: Date; to: Date } {
-  const now = new Date();
-  const to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const WIB_MS = 7 * 3600_000;
+  const wibNow = new Date(Date.now() + WIB_MS);
+  // instan UTC dari tengah malam WIB "besok" (batas atas eksklusif hari ini)
+  const to = new Date(Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate() + 1) - WIB_MS);
   const from = new Date(to);
-  if (period === "Harian") from.setDate(to.getDate() - 1);
-  else if (period === "Mingguan") from.setDate(to.getDate() - 7);
-  // 30 hari flat: setMonth(-1) di tanggal 29-31 overflow dan menyusutkan window
-  else if (period === "Bulanan") from.setDate(to.getDate() - 30);
-  else from.setFullYear(to.getFullYear() - 1);
+  if (period === "Harian") from.setUTCDate(from.getUTCDate() - 1);
+  else if (period === "Mingguan") from.setUTCDate(from.getUTCDate() - 7);
+  else if (period === "Bulanan") from.setUTCDate(from.getUTCDate() - 30);
+  else from.setUTCFullYear(from.getUTCFullYear() - 1);
   return { from, to };
 }
 
@@ -39,8 +43,11 @@ export function ReportsPage(): JSX.Element {
   const omzet = report?.omzet ?? 0;
   const hpp = report?.hpp ?? 0;
   const totalDiscount = report?.totalDiscount ?? 0;
+  const taxService = report?.taxService ?? 0;
   const trxCount = report?.trxCount ?? 0;
-  const labaKotor = omzet - hpp;
+  // Pajak & service charge = titipan (bukan pendapatan toko) → keluarkan dari laba.
+  const netSales = omzet - taxService;
+  const labaKotor = netSales - hpp;
   const expenseTotal = report?.expenseTotal ?? 0;
   const labaBersih = labaKotor - expenseTotal;
 
@@ -59,7 +66,7 @@ export function ReportsPage(): JSX.Element {
   const reportData: ReportData = {
     period,
     outletName: activeOutlet?.name,
-    summary: { omzet, hpp, labaKotor, pengeluaran: expenseTotal, labaBersih },
+    summary: { omzet: netSales, hpp, labaKotor, pengeluaran: expenseTotal, labaBersih },
     topProducts: topProducts.map(([name, value]) => ({ name, value })),
   };
 
@@ -95,9 +102,10 @@ export function ReportsPage(): JSX.Element {
             <div className="grid md:grid-cols-2 gap-4">
             {/* Revenue section */}
             <Section title="Pendapatan">
-              <Row label="Penjualan Kotor" value={formatRupiah(omzet + totalDiscount)} />
+              <Row label="Penjualan Kotor" value={formatRupiah(netSales + totalDiscount)} />
               {totalDiscount > 0 && <Row label="Total Diskon" value={`-${formatRupiah(totalDiscount)}`} className="text-error" />}
-              <Row label="Pendapatan Bersih" value={formatRupiah(omzet)} bold />
+              <Row label="Pendapatan Bersih" value={formatRupiah(netSales)} bold />
+              {taxService > 0 && <Row label="Pajak & Service (titipan, di luar laba)" value={formatRupiah(taxService)} sub />}
               <Row label={`Transaksi (${trxCount} struk)`} value="" sub />
             </Section>
 
@@ -129,7 +137,7 @@ export function ReportsPage(): JSX.Element {
               <p className={`font-label-caps text-label-caps uppercase ${labaBersih >= 0 ? "text-primary" : "text-error"}`}>Laba Bersih</p>
               <p className="font-display-price-mobile text-display-price-mobile mt-1">{formatRupiah(labaBersih)}</p>
               <p className="font-body-md text-body-md mt-1 opacity-80">
-                Margin: {omzet > 0 ? `${Math.round(labaBersih / omzet * 100)}%` : "—"}
+                Margin: {netSales > 0 ? `${Math.round(labaBersih / netSales * 100)}%` : "—"}
               </p>
             </div>
 

@@ -68,6 +68,12 @@ export default createHandler({
       options: { name: string; price: number }[];
     };
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
+    // Grup wajib milik tenant ini (cegah tulis/baca-balik grup tenant lain).
+    const owned = await db.query.modifierGroups.findFirst({
+      where: and(eq(modifierGroups.id, id), eq(modifierGroups.tenantId, auth.tenantId)),
+      columns: { id: true },
+    });
+    if (!owned) { res.status(404).json({ error: "Grup modifier tidak ditemukan" }); return; }
 
     await db.transaction(async (tx) => {
       await tx.update(modifierGroups)
@@ -88,7 +94,7 @@ export default createHandler({
     });
 
     const full = await db.query.modifierGroups.findFirst({
-      where: eq(modifierGroups.id, id),
+      where: and(eq(modifierGroups.id, id), eq(modifierGroups.tenantId, auth.tenantId)),
       with: { options: true },
     });
     res.json(full);

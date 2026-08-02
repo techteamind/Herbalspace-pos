@@ -6,6 +6,7 @@ export interface ReportSummary {
   omzet: number;
   hpp: number;
   totalDiscount: number;
+  taxService: number;
   trxCount: number;
   expenseTotal: number;
   expenseByCategory: { category: string; total: number }[];

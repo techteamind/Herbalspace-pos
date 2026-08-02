@@ -16,7 +16,7 @@ export interface StockMovementRow {
 export function useCreateStockAdjustment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { ingredientId: string; type: "adjustment" | "waste" | "purchase" | "return"; qtyChange: number; note?: string }) =>
+    mutationFn: (data: { ingredientId: string; type: "adjustment" | "waste" | "purchase" | "return"; qtyChange: number; unitCost?: number; note?: string }) =>
       apiFetch("stock-movements", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-movements"] });

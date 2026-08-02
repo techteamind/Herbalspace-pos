@@ -138,8 +138,11 @@ export function PaymentSheet({ lines, taxPercent, serviceChargePercent = 0, enab
       const finalPhone = custPhone.trim();
 
       if (!customerId && finalPhone && finalName) {
-        const newCust = await createCustomer.mutateAsync({ name: finalName, phone: finalPhone }) as Customer;
-        customerId = newCust.id;
+        // id dibuat di klien lalu dipakai untuk pelanggan DAN transaksi, jadi link
+        // (poin/total belanja) tetap terjaga meski offline & di-sync belakangan.
+        const newId = crypto.randomUUID();
+        await createCustomer.mutateAsync({ id: newId, name: finalName, phone: finalPhone });
+        customerId = newId;
       }
 
       const result = await createSale.mutateAsync({

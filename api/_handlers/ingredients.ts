@@ -23,6 +23,9 @@ export default createHandler({
     const { name, unitId, currentStock, minStock, lastCost } = req.body;
     if (!name || typeof name !== "string") { res.status(400).json({ error: "name wajib" }); return; }
     if (!unitId) { res.status(400).json({ error: "unitId wajib" }); return; }
+    if (Number(currentStock ?? 0) < 0 || Number(minStock ?? 0) < 0 || Number(lastCost ?? 0) < 0) {
+      res.status(400).json({ error: "Stok/HPP tidak boleh negatif" }); return;
+    }
     const [row] = await db.insert(ingredients).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId ?? undefined,
@@ -52,6 +55,11 @@ export default createHandler({
       }
     }
 
+    if ((data.currentStock !== undefined && Number(data.currentStock) < 0)
+      || (data.minStock !== undefined && Number(data.minStock) < 0)
+      || (data.lastCost !== undefined && Number(data.lastCost) < 0)) {
+      res.status(400).json({ error: "Stok/HPP tidak boleh negatif" }); return;
+    }
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updates.name = data.name;
     if (data.minStock !== undefined) updates.minStock = String(data.minStock);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { PageHeader, Icon, ListSkeleton, EmptyState, ErrorState } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
-import { useExpenses } from "@/hooks/use-expenses";
+import { useExpenses, useExpenseTotal } from "@/hooks/use-expenses";
 import { ExpenseForm } from "./expense-form";
 
 const ICON_BY_CAT: Record<string, string> = {
@@ -20,16 +20,21 @@ const COLOR_BY_CAT: Record<string, string> = {
 };
 
 export function ExpensesPage(): JSX.Element {
-  const { data, isLoading, isError, error } = useExpenses();
+  // Batas bulan berjalan dalam WIB (bukan zona device) → server memfilter & men-total.
+  const { from, to, monthStart } = (() => {
+    const WIB = 7 * 3600_000;
+    const w = new Date(Date.now() + WIB);
+    const start = Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), 1);
+    const next = Date.UTC(w.getUTCFullYear(), w.getUTCMonth() + 1, 1);
+    return { from: new Date(start - WIB).toISOString(), to: new Date(next - WIB).toISOString(), monthStart: new Date(start) };
+  })();
+  const { data, isLoading, isError, error } = useExpenses(from, to);
+  const { data: totalRes } = useExpenseTotal(from, to);
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<typeof list[number] | null>(null);
-  const now = new Date();
-  const list = (data ?? []).filter((e) => {
-    const d = new Date(e.spentAt);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const total = list.reduce((s, e) => s + Number(e.amount), 0);
-  const month = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const [editing, setEditing] = useState<NonNullable<typeof data>[number] | null>(null);
+  const list = data ?? [];                       // sudah difilter server ke bulan WIB
+  const total = totalRes?.total ?? list.reduce((s, e) => s + Number(e.amount), 0);
+  const month = monthStart.toLocaleDateString("id-ID", { month: "long", year: "numeric", timeZone: "UTC" });
 
   return (
     <>

@@ -25,6 +25,7 @@ export default createHandler({
         COALESCE(SUM(t.total::numeric), 0)       AS omzet,
         COALESCE(SUM(t.cogs_total::numeric), 0)  AS hpp,
         COALESCE(SUM(t.discount::numeric), 0)    AS discount,
+        COALESCE(SUM(t.tax_amount::numeric + t.service_charge::numeric), 0) AS tax_service,
         COUNT(*)::int                            AS trx_count
       FROM transactions t
       WHERE t.tenant_id = ${auth.tenantId}::uuid AND t.status = 'paid'
@@ -94,6 +95,7 @@ export default createHandler({
       omzet: num(s.omzet),
       hpp: num(s.hpp),
       totalDiscount: num(s.discount),
+      taxService: num(s.tax_service),
       trxCount: num(s.trx_count),
       expenseTotal: num((expRow as Record<string, unknown>).total),
       expenseByCategory: rowsOf(expenseByCategory).map((r) => ({ category: String(r.category), total: num(r.total) })),
