@@ -29,6 +29,7 @@ interface SalePayload {
     quantity: number;
     unit_price: number;
     note?: string;
+    modifier_option_ids?: string[];
   }[];
   payments: {
     method: "cash" | "qris" | "card" | "transfer";

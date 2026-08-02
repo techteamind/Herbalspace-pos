@@ -388,6 +388,19 @@ export const modifierOptions = pgTable("modifier_options", {
   byGroup: index("modifier_options_group_idx").on(t.groupId),
 }));
 
+// Bahan yang dikonsumsi tiap add-on/modifier (mis. "Extra shot" = 9g kopi).
+// Dipakai create_sale untuk memotong stok bahan saat opsi ini dipilih.
+export const modifierOptionIngredients = pgTable("modifier_option_ingredients", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  optionId: uuid("option_id").notNull().references(() => modifierOptions.id, { onDelete: "cascade" }),
+  ingredientId: uuid("ingredient_id").notNull().references(() => ingredients.id, { onDelete: "restrict" }),
+  quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull(),
+}, (t) => ({
+  byOption: index("modifier_option_ingredients_option_idx").on(t.optionId),
+  optIngUnq: uniqueIndex("modifier_option_ingredients_opt_ing_unq").on(t.optionId, t.ingredientId),
+}));
+
 export const productModifiers = pgTable("product_modifiers", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
@@ -573,9 +586,16 @@ export const modifierGroupsRelations = relations(modifierGroups, ({ one, many })
   productModifiers: many(productModifiers),
 }));
 
-export const modifierOptionsRelations = relations(modifierOptions, ({ one }) => ({
+export const modifierOptionsRelations = relations(modifierOptions, ({ one, many }) => ({
   tenant: one(tenants, { fields: [modifierOptions.tenantId], references: [tenants.id] }),
   group: one(modifierGroups, { fields: [modifierOptions.groupId], references: [modifierGroups.id] }),
+  ingredients: many(modifierOptionIngredients),
+}));
+
+export const modifierOptionIngredientsRelations = relations(modifierOptionIngredients, ({ one }) => ({
+  tenant: one(tenants, { fields: [modifierOptionIngredients.tenantId], references: [tenants.id] }),
+  option: one(modifierOptions, { fields: [modifierOptionIngredients.optionId], references: [modifierOptions.id] }),
+  ingredient: one(ingredients, { fields: [modifierOptionIngredients.ingredientId], references: [ingredients.id] }),
 }));
 
 export const productModifiersRelations = relations(productModifiers, ({ one }) => ({

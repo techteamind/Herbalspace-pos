@@ -34,8 +34,12 @@ export type VariantGroupWithOptions = VariantGroup & {
   options: VariantOption[];
 };
 
+export type ModifierOptionIngredient = InferSelectModel<typeof schema.modifierOptionIngredients>;
+
 export type ModifierGroupWithOptions = ModifierGroup & {
-  options: ModifierOption[];
+  options: (ModifierOption & {
+    ingredients?: (ModifierOptionIngredient & { ingredient?: IngredientWithUnit })[];
+  })[];
 };
 
 export type ProductModifierWithGroup = ProductModifier & {

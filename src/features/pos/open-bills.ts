@@ -9,7 +9,7 @@ export interface CartItem {
   variantLabel?: string;
   variantPrice?: number;
   note?: string;
-  modifiers?: { name: string; price: number }[];
+  modifiers?: { id?: string; name: string; price: number }[];
 }
 export type Cart = Record<string, CartItem>;
 

@@ -12,7 +12,7 @@ export function useModifiers() {
 export function useCreateModifier() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; isRequired?: boolean; maxSelect?: number; options: { name: string; price: number }[] }) =>
+    mutationFn: (data: { name: string; isRequired?: boolean; maxSelect?: number; options: { name: string; price: number; ingredients?: { ingredientId: string; quantity: number }[] }[] }) =>
       apiFetch("modifiers", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["modifiers"] }),
   });
@@ -21,7 +21,7 @@ export function useCreateModifier() {
 export function useUpdateModifier() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { id: string; name: string; isRequired?: boolean; maxSelect?: number; options: { name: string; price: number }[] }) =>
+    mutationFn: (data: { id: string; name: string; isRequired?: boolean; maxSelect?: number; options: { name: string; price: number; ingredients?: { ingredientId: string; quantity: number }[] }[] }) =>
       apiFetch("modifiers", { method: "PUT", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["modifiers"] }),
   });

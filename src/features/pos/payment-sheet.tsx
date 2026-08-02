@@ -7,7 +7,7 @@ import { useActivePromos, type Promo } from "@/hooks/use-promos";
 import { haptic } from "@/lib/haptic";
 import type { ProductWithCategory, Customer } from "@/types";
 
-export interface CartLine { product: ProductWithCategory; qty: number; variantId?: string; variantLabel?: string; variantPrice?: number; note?: string; modifiers?: { name: string; price: number }[]; }
+export interface CartLine { product: ProductWithCategory; qty: number; variantId?: string; variantLabel?: string; variantPrice?: number; note?: string; modifiers?: { id?: string; name: string; price: number }[]; }
 type Method = "cash" | "qris" | "card" | "transfer";
 const METHODS: { key: Method; label: string }[] = [
   { key: "cash", label: "Tunai" }, { key: "qris", label: "QRIS" }, { key: "card", label: "Kartu" }, { key: "transfer", label: "Transfer" },
@@ -161,6 +161,7 @@ export function PaymentSheet({ lines, taxPercent, serviceChargePercent = 0, enab
             quantity: l.qty,
             unit_price: (l.variantPrice ?? Number(l.product.price)) + modTotal,
             note: l.note || undefined,
+            modifier_option_ids: (l.modifiers ?? []).map((m) => m.id).filter((x): x is string => !!x),
           };
         }),
         payments: [{

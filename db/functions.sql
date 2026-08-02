@@ -49,6 +49,7 @@ DECLARE
   v_item         jsonb;
   v_pay          jsonb;
   v_unit_cogs    numeric(14,2);
+  v_mod_cogs     numeric(14,2);
   v_line_total   numeric(14,2);
   v_qty          int;
   v_product_id   uuid;
@@ -133,6 +134,14 @@ BEGIN
       WHERE p.id = v_product_id;
     END IF;
 
+    -- Biaya bahan add-on/modifier per unit (dari modifier_option_ids yang dipilih)
+    -- ditambahkan ke HPP baris supaya margin item bermodifier tidak overstated.
+    SELECT COALESCE(SUM(moi.quantity * i.last_cost), 0)::numeric(14,2) INTO v_mod_cogs
+    FROM jsonb_array_elements_text(COALESCE(v_item->'modifier_option_ids', '[]'::jsonb)) opt(id)
+    JOIN modifier_option_ingredients moi ON moi.option_id = opt.id::uuid AND moi.tenant_id = p_tenant_id
+    JOIN ingredients i ON i.id = moi.ingredient_id AND i.tenant_id = p_tenant_id;
+    v_unit_cogs := v_unit_cogs + COALESCE(v_mod_cogs, 0);
+
     INSERT INTO transaction_items (tenant_id, transaction_id, product_id, variant_id, product_name,
                                    quantity, unit_price, unit_cogs, line_total, note)
     VALUES (p_tenant_id, v_tx_id, v_product_id, v_variant_id, v_item->>'product_name',
@@ -156,6 +165,27 @@ BEGIN
       FROM recipe_items ri
       JOIN ingredients i ON i.id = ri.ingredient_id
       WHERE ri.product_id = v_product_id
+    LOOP
+      UPDATE ingredients
+        SET current_stock = current_stock - (r_recipe.quantity * v_qty)
+        WHERE id = r_recipe.ingredient_id AND tenant_id = p_tenant_id
+        RETURNING current_stock INTO v_new_balance;
+
+      INSERT INTO stock_movements (tenant_id, ingredient_id, type, qty_change,
+                                   balance_after, unit_cost, ref_type, reference_id,
+                                   created_by)
+      VALUES (p_tenant_id, r_recipe.ingredient_id, 'sale',
+              -(r_recipe.quantity * v_qty), v_new_balance, r_recipe.last_cost,
+              'transaction'::reference_type, v_tx_id, p_cashier_id);
+    END LOOP;
+
+    -- potong stok bahan untuk tiap add-on/modifier yang dipilih (× qty item).
+    -- Biaya sudah masuk COGS (v_mod_cogs di atas); loop ini murni stok + ledger.
+    FOR r_recipe IN
+      SELECT moi.ingredient_id, moi.quantity, i.last_cost
+      FROM jsonb_array_elements_text(COALESCE(v_item->'modifier_option_ids', '[]'::jsonb)) opt(id)
+      JOIN modifier_option_ingredients moi ON moi.option_id = opt.id::uuid AND moi.tenant_id = p_tenant_id
+      JOIN ingredients i ON i.id = moi.ingredient_id AND i.tenant_id = p_tenant_id
     LOOP
       UPDATE ingredients
         SET current_stock = current_stock - (r_recipe.quantity * v_qty)

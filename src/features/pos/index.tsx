@@ -39,7 +39,7 @@ export function PosPage(): JSX.Element {
   const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
   const [activeCat, setActiveCat] = useState("Semua");
   const [search, setSearch] = useState("");
-  const [cart, setCart] = useState<Record<string, { qty: number; product: ProductWithCategory; variantId?: string; variantLabel?: string; variantPrice?: number; note?: string; modifiers?: { name: string; price: number }[] }>>({});
+  const [cart, setCart] = useState<Record<string, { qty: number; product: ProductWithCategory; variantId?: string; variantLabel?: string; variantPrice?: number; note?: string; modifiers?: { id?: string; name: string; price: number }[] }>>({});
   const [showPayment, setShowPayment] = useState(false);
   const [success, setSuccess] = useState<Receipt | null>(null);
   const [showScanner, setShowScanner] = useState(false);
@@ -134,7 +134,7 @@ export function PosPage(): JSX.Element {
     return s + (base + modTotal) * l.qty;
   }, 0);
 
-  function addItem(product: ProductWithCategory, variant?: ProductVariant, mods?: { name: string; price: number }[]): void {
+  function addItem(product: ProductWithCategory, variant?: ProductVariant, mods?: { id?: string; name: string; price: number }[]): void {
     haptic();
     const modKey = mods?.length ? `:m${mods.map((m) => m.name).sort().join(",")}` : "";
     const key = (variant ? `${product.id}:${variant.id}` : product.id) + modKey;
@@ -408,7 +408,7 @@ function OpenBillsSheet({ bills, onClose, onOpen, onDelete, onTicket }: { bills:
   );
 }
 
-function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWithCategory; onSelect: (variant?: ProductVariant, mods?: { name: string; price: number }[]) => void; onClose: () => void }): JSX.Element {
+function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWithCategory; onSelect: (variant?: ProductVariant, mods?: { id?: string; name: string; price: number }[]) => void; onClose: () => void }): JSX.Element {
   const variants = product.variants ?? [];
   const groups = product.variantGroups ?? [];
   const modifierGroups = (product.modifiers ?? []).map((m) => m.modifierGroup);
@@ -436,13 +436,13 @@ function VariantPickerSheet({ product, onSelect, onClose }: { product: ProductWi
     });
   }
 
-  function getSelectedModifiers(): { name: string; price: number }[] {
-    const result: { name: string; price: number }[] = [];
+  function getSelectedModifiers(): { id: string; name: string; price: number }[] {
+    const result: { id: string; name: string; price: number }[] = [];
     for (const mg of modifierGroups) {
       const sel = selectedMods[mg.id];
       if (!sel) continue;
       for (const opt of mg.options) {
-        if (sel.has(opt.id)) result.push({ name: opt.name, price: Number(opt.price) });
+        if (sel.has(opt.id)) result.push({ id: opt.id, name: opt.name, price: Number(opt.price) });
       }
     }
     return result;

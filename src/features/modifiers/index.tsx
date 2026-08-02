@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { PageHeader, Icon, ListSkeleton, EmptyState, inputCls, Field, FormSheet, ConfirmDialog, useToast } from "@/components/shared";
 import { useModifiers, useCreateModifier, useUpdateModifier, useDeleteModifier } from "@/hooks/use-modifiers";
+import { useIngredients } from "@/hooks/use-ingredients";
 import { formatRupiah } from "@/lib/utils";
 import type { ModifierGroupWithOptions } from "@/types";
+
+interface OptState { name: string; price: string; ingredients: { ingredientId: string; quantity: string }[] }
 
 export function ModifiersPage(): JSX.Element {
   const { data: groups, isLoading } = useModifiers();
@@ -62,15 +65,19 @@ function ModifierForm({ initial, onClose }: { initial: ModifierGroupWithOptions 
   const [name, setName] = useState(initial?.name ?? "");
   const [isRequired, setIsRequired] = useState(initial?.isRequired ?? false);
   const [maxSelect, setMaxSelect] = useState(String(initial?.maxSelect ?? 5));
-  const [options, setOptions] = useState<{ name: string; price: string }[]>(
-    initial?.options.map((o) => ({ name: o.name, price: String(Number(o.price)) })) ?? [{ name: "", price: "0" }]
+  const { data: allIngredients } = useIngredients();
+  const [options, setOptions] = useState<OptState[]>(
+    initial?.options.map((o) => ({
+      name: o.name, price: String(Number(o.price)),
+      ingredients: (o.ingredients ?? []).map((ing) => ({ ingredientId: ing.ingredientId, quantity: String(Number(ing.quantity)) })),
+    })) ?? [{ name: "", price: "0", ingredients: [] }]
   );
   const [showDelete, setShowDelete] = useState(false);
 
   const busy = create.isPending || update.isPending || del.isPending;
 
   function addOption() {
-    setOptions((prev) => [...prev, { name: "", price: "0" }]);
+    setOptions((prev) => [...prev, { name: "", price: "0", ingredients: [] }]);
   }
 
   function removeOption(i: number) {
@@ -81,13 +88,29 @@ function ModifierForm({ initial, onClose }: { initial: ModifierGroupWithOptions 
     setOptions((prev) => prev.map((o, idx) => idx === i ? { ...o, [field]: val } : o));
   }
 
+  function addIngredient(oi: number) {
+    setOptions((prev) => prev.map((o, idx) => idx === oi ? { ...o, ingredients: [...o.ingredients, { ingredientId: "", quantity: "" }] } : o));
+  }
+  function removeIngredient(oi: number, ii: number) {
+    setOptions((prev) => prev.map((o, idx) => idx === oi ? { ...o, ingredients: o.ingredients.filter((_, k) => k !== ii) } : o));
+  }
+  function updateIngredient(oi: number, ii: number, field: "ingredientId" | "quantity", val: string) {
+    setOptions((prev) => prev.map((o, idx) => idx === oi
+      ? { ...o, ingredients: o.ingredients.map((g, k) => k === ii ? { ...g, [field]: val } : g) } : o));
+  }
+
   async function submit() {
     const validOptions = options.filter((o) => o.name.trim());
     const data = {
       name,
       isRequired,
       maxSelect: Number(maxSelect) || 5,
-      options: validOptions.map((o) => ({ name: o.name, price: Number(o.price) || 0 })),
+      options: validOptions.map((o) => ({
+        name: o.name, price: Number(o.price) || 0,
+        ingredients: o.ingredients
+          .filter((g) => g.ingredientId && Number(g.quantity) > 0)
+          .map((g) => ({ ingredientId: g.ingredientId, quantity: Number(g.quantity) })),
+      })),
     };
 
     if (editing) {
@@ -129,18 +152,43 @@ function ModifierForm({ initial, onClose }: { initial: ModifierGroupWithOptions 
       <div className="space-y-2">
         <p className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Opsi</p>
         {options.map((o, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <input className={`${inputCls} flex-1`} value={o.name} onChange={(e) => updateOption(i, "name", e.target.value)} placeholder="Nama opsi" />
-            <div className="relative w-28 shrink-0">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 font-label-caps text-label-caps text-on-surface-variant">+Rp</span>
-              <input className={`${inputCls} pl-10`} inputMode="numeric" value={o.price}
-                onChange={(e) => updateOption(i, "price", e.target.value.replace(/[^0-9]/g, ""))} />
+          <div key={i} className="rounded-xl border border-outline-variant/40 p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <input className={`${inputCls} flex-1`} value={o.name} onChange={(e) => updateOption(i, "name", e.target.value)} placeholder="Nama opsi" />
+              <div className="relative w-28 shrink-0">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 font-label-caps text-label-caps text-on-surface-variant">+Rp</span>
+                <input className={`${inputCls} pl-10`} inputMode="numeric" value={o.price}
+                  onChange={(e) => updateOption(i, "price", e.target.value.replace(/[^0-9]/g, ""))} />
+              </div>
+              {options.length > 1 && (
+                <button type="button" onClick={() => removeOption(i)} className="text-error p-1 shrink-0">
+                  <Icon name="close" className="text-[18px]" />
+                </button>
+              )}
             </div>
-            {options.length > 1 && (
-              <button type="button" onClick={() => removeOption(i)} className="text-error p-1 shrink-0">
-                <Icon name="close" className="text-[18px]" />
-              </button>
-            )}
+            {/* Bahan yang dikonsumsi opsi ini (potong stok saat dijual) */}
+            {o.ingredients.map((g, k) => {
+              const unit = (allIngredients ?? []).find((x) => x.id === g.ingredientId)?.unit.code;
+              return (
+                <div key={k} className="flex items-center gap-2 pl-1">
+                  <Icon name="subdirectory_arrow_right" className="text-[16px] text-on-surface-variant/50 shrink-0" />
+                  <select className={`${inputCls} flex-1`} value={g.ingredientId} onChange={(e) => updateIngredient(i, k, "ingredientId", e.target.value)}>
+                    <option value="">Pilih bahan…</option>
+                    {(allIngredients ?? []).map((ing) => <option key={ing.id} value={ing.id}>{ing.name}</option>)}
+                  </select>
+                  <div className="relative w-24 shrink-0">
+                    <input className={`${inputCls} pr-8`} inputMode="decimal" value={g.quantity} placeholder="Qty"
+                      onChange={(e) => updateIngredient(i, k, "quantity", e.target.value.replace(/[^0-9.]/g, ""))} />
+                    {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 font-label-caps text-[10px] text-on-surface-variant">{unit}</span>}
+                  </div>
+                  <button type="button" onClick={() => removeIngredient(i, k)} className="text-error p-1 shrink-0"><Icon name="close" className="text-[16px]" /></button>
+                </div>
+              );
+            })}
+            <button type="button" onClick={() => addIngredient(i)}
+              className="text-[11px] text-on-surface-variant/80 hover:text-primary flex items-center gap-1 pl-1">
+              <Icon name="add" className="text-[14px]" /> Bahan terpakai (opsional)
+            </button>
           </div>
         ))}
         <button type="button" onClick={addOption}
