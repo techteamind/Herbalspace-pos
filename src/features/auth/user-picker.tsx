@@ -40,6 +40,10 @@ export function UserPickerGate(): JSX.Element {
     setBusy(true); setErr("");
     try {
       const u = await pinLogin(picked.id, pin);
+      // Sudah punya shift terbuka sendiri (mis. lanjut setelah auto-kunci) → langsung
+      // masuk, jangan tanya kas awal lagi. Shift orang lain diabaikan (biar handover).
+      const active = await apiFetch<{ cashierId: string } | null>("shifts?active=true").catch(() => null);
+      if (active && active.cashierId === u.id) { commitActive(); return; }
       setLoggedInUser(u);
       setCashStep(true);            // lanjut ke modal kas
     } catch (e) {

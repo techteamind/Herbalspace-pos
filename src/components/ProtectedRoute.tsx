@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { OutletPicker } from "@/features/outlets/outlet-picker";
@@ -7,8 +8,23 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+// Auto-kunci sesi yang ditinggal idle → balik ke layar PIN. Shift TIDAK ditutup
+// (itu tugas tombol Keluar); re-PIN dgn shift terbuka langsung masuk (lihat picker).
+// Owner/manajer (akses sensitif) dikunci lebih cepat dari kasir yang sedang melayani.
+const IDLE_MS = { privileged: 90_000, cashier: 5 * 60_000 };
+
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, needsOutletSelection, mode } = useAuth();
+  const { isAuthenticated, loading, needsOutletSelection, mode, role, exitToPicker } = useAuth();
+
+  useEffect(() => {
+    if (mode === null) return; // sudah di layar PIN
+    const ms = role === "cashier" ? IDLE_MS.cashier : IDLE_MS.privileged;
+    let timer = window.setTimeout(exitToPicker, ms);
+    const reset = (): void => { clearTimeout(timer); timer = window.setTimeout(exitToPicker, ms); };
+    const events = ["pointerdown", "keydown", "touchstart", "scroll", "wheel"];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    return () => { clearTimeout(timer); events.forEach((e) => window.removeEventListener(e, reset)); };
+  }, [mode, role, exitToPicker]);
 
   if (loading) {
     return (
