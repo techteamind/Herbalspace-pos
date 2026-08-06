@@ -164,6 +164,64 @@ function buildTicketBytes(d: ThermalTicketData): Uint8Array {
   return concat(parts);
 }
 
+// ---- Laporan tutup shift (setoran kas) ----
+export interface ThermalShiftReport {
+  storeName: string;
+  outletName?: string;
+  cashierName?: string;
+  openedAt: string;   // sudah diformat (WIB)
+  closedAt: string;
+  openingCash: number;
+  totalSales: number;
+  txnCount: number;
+  breakdown: { label: string; amount: number }[]; // per metode bayar
+  expectedCash: number;
+  countedCash: number;
+  difference: number;
+}
+
+function buildShiftReportBytes(d: ThermalShiftReport): Uint8Array {
+  const parts: Uint8Array[] = [];
+  const push = (...xs: Uint8Array[]) => parts.push(...xs);
+  const fmt = (n: number) => n.toLocaleString("id-ID");
+  const row = (l: string, r: string) => push(encode(l.padEnd(18) + r.padStart(14) + "\n"));
+
+  push(cmd(ESC, 0x40));            // reset
+  push(cmd(ESC, 0x61, 1));         // center
+  push(cmd(ESC, 0x45, 1));         // bold
+  push(encode(d.storeName + "\n"));
+  push(cmd(ESC, 0x45, 0));
+  if (d.outletName) push(encode(d.outletName + "\n"));
+  push(cmd(ESC, 0x45, 1));
+  push(encode("LAPORAN TUTUP SHIFT\n"));
+  push(cmd(ESC, 0x45, 0));
+  push(encode("================================\n"));
+
+  push(cmd(ESC, 0x61, 0));         // left
+  if (d.cashierName) push(encode(`Kasir : ${d.cashierName}\n`));
+  push(encode(`Buka  : ${d.openedAt}\n`));
+  push(encode(`Tutup : ${d.closedAt}\n`));
+  push(encode("--------------------------------\n"));
+  row("Kas awal", fmt(d.openingCash));
+  row("Total penjualan", fmt(d.totalSales));
+  row("Jml transaksi", String(d.txnCount));
+  push(encode("--------------------------------\n"));
+  push(encode("Rincian metode bayar:\n"));
+  if (d.breakdown.length === 0) push(encode("  (tidak ada)\n"));
+  for (const b of d.breakdown) row("  " + b.label, fmt(b.amount));
+  push(encode("--------------------------------\n"));
+  row("Kas seharusnya", fmt(d.expectedCash));
+  row("Kas dihitung", fmt(d.countedCash));
+  push(cmd(ESC, 0x45, 1));
+  row("Selisih", fmt(d.difference));
+  push(cmd(ESC, 0x45, 0));
+
+  push(encode("\n\n"));
+  push(cmd(GS, 0x56, 0x42, 3));    // partial cut
+  push(cmd(LF, LF, LF));
+  return concat(parts);
+}
+
 import { Capacitor } from "@capacitor/core";
 import type { BondedPrinter } from "./thermal-plugin";
 
@@ -225,6 +283,11 @@ export function printThermal(data: ThermalReceiptData, address?: string): Promis
 /** Cetak tiket internal (dapur/barista). */
 export function printTicket(data: ThermalTicketData, address?: string): Promise<void> {
   return sendBytes(buildTicketBytes(data), address);
+}
+
+/** Cetak laporan tutup shift (setoran kas). */
+export function printShiftReport(data: ThermalShiftReport, address?: string): Promise<void> {
+  return sendBytes(buildShiftReportBytes(data), address);
 }
 
 export function isThermalSupported(): boolean {

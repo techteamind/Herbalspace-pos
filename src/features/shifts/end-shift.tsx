@@ -1,17 +1,34 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Icon, useToast } from "@/components/shared";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/hooks/use-settings";
+import { useOutlets } from "@/hooks/use-outlets";
 import { apiFetch } from "@/lib/api-client";
 import { formatRupiah } from "@/lib/utils";
+import { useThermalPrint } from "@/features/receipt/use-thermal-print";
+import { printShiftReport } from "@/lib/thermal-printer";
 
 interface Shift { id: string; openingCash: string; openedAt: string }
-interface Closed { id: string; closingCash: string; expectedCash: string; totalSales: string }
+interface PayRow { method: string; total: string }
+interface Closed {
+  id: string; closingCash: string; expectedCash: string; totalSales: string;
+  openingCash: string; openedAt: string; closedAt: string;
+  cashierName: string | null; totalTransactions: number | null;
+  paymentBreakdown?: PayRow[];
+}
+
+const METHOD_LABEL: Record<string, string> = { cash: "Tunai", qris: "QRIS", card: "Kartu", transfer: "Transfer" };
+const fmtWib = (iso: string): string =>
+  new Date(iso).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 // Alur "Akhiri Shift & Keluar": hitung kas → tutup → tampil selisih → [Buka lagi]
 // atau [Keluar ke daftar user]. Kalau tak ada shift aktif, langsung ke picker.
 export function EndShiftFlow({ onClose }: { onClose: () => void }): JSX.Element {
-  const { exitToPicker } = useAuth();
+  const { exitToPicker, outletId, profileName } = useAuth();
   const toast = useToast();
+  const { data: settings } = useSettings();
+  const { data: outlets } = useOutlets();
+  const { triggerPrint, supported: thermalOk, printing, picker } = useThermalPrint();
   const [shift, setShift] = useState<Shift | null | undefined>(undefined); // undefined = loading
   const [closingCash, setClosingCash] = useState("");
   const [closed, setClosed] = useState<Closed | null>(null);
@@ -21,12 +38,31 @@ export function EndShiftFlow({ onClose }: { onClose: () => void }): JSX.Element 
     apiFetch<Shift | null>("shifts?active=true").then(setShift).catch(() => setShift(null));
   }, []);
 
+  const printReport = useCallback((c: Closed): void => {
+    const activeOutlet = (outlets ?? []).find((o) => o.id === outletId);
+    void triggerPrint((addr) => printShiftReport({
+      storeName: settings?.storeName ?? "Herbaspace",
+      outletName: activeOutlet?.name,
+      cashierName: c.cashierName ?? profileName ?? undefined,
+      openedAt: fmtWib(c.openedAt),
+      closedAt: fmtWib(c.closedAt),
+      openingCash: Number(c.openingCash),
+      totalSales: Number(c.totalSales),
+      txnCount: c.totalTransactions ?? 0,
+      breakdown: (c.paymentBreakdown ?? []).map((b) => ({ label: METHOD_LABEL[b.method] ?? b.method, amount: Number(b.total) })),
+      expectedCash: Number(c.expectedCash),
+      countedCash: Number(c.closingCash),
+      difference: Number(c.closingCash) - Number(c.expectedCash),
+    }, addr));
+  }, [outlets, outletId, settings, profileName, triggerPrint]);
+
   async function doClose(): Promise<void> {
     if (!shift) return;
     setBusy(true);
     try {
       const res = await apiFetch<Closed>("shifts", { method: "PUT", body: JSON.stringify({ id: shift.id, action: "close", closingCash: Number(closingCash) || 0 }) });
       setClosed(res);
+      if (thermalOk) printReport(res); // auto-cetak laporan tutup shift
     } catch (e) {
       toast(e instanceof Error ? e.message : "Gagal menutup shift", "error");
     }
@@ -47,6 +83,8 @@ export function EndShiftFlow({ onClose }: { onClose: () => void }): JSX.Element 
   }
 
   return (
+    <>
+    {picker}
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-6" onClick={closed ? undefined : onClose}>
       <div className="w-full max-w-sm bg-surface-container-lowest rounded-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         {shift === undefined ? (
@@ -73,6 +111,12 @@ export function EndShiftFlow({ onClose }: { onClose: () => void }): JSX.Element 
                   className={Number(closed.closingCash) - Number(closed.expectedCash) === 0 ? "text-on-surface" : "text-error"} bold />
               </div>
             </div>
+            {thermalOk && (
+              <button onClick={() => printReport(closed)} disabled={printing}
+                className="w-full h-12 rounded-xl border border-outline-variant font-body-md text-body-md font-semibold text-on-surface disabled:opacity-50 flex items-center justify-center gap-2">
+                <Icon name="print" className="text-[20px]" />{printing ? "Mencetak…" : "Cetak Ulang Laporan"}
+              </button>
+            )}
             <div className="flex gap-2">
               <button onClick={reopen} disabled={busy} className="flex-1 h-12 rounded-xl border border-outline-variant font-body-md text-body-md font-semibold text-on-surface disabled:opacity-50">Buka Lagi</button>
               <button onClick={exitToPicker} className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-body-md text-body-md font-semibold">Keluar</button>
@@ -96,6 +140,7 @@ export function EndShiftFlow({ onClose }: { onClose: () => void }): JSX.Element 
         )}
       </div>
     </div>
+    </>
   );
 }
 

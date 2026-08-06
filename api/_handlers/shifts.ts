@@ -160,6 +160,21 @@ export default createHandler({
           ),
         );
 
+      // Rincian per metode bayar untuk laporan tutup shift (setoran kas).
+      const methodBreakdown = await db
+        .select({ method: payments.method, total: sql<string>`coalesce(sum(${payments.amount}), 0)` })
+        .from(payments)
+        .innerJoin(transactions, eq(payments.transactionId, transactions.id))
+        .where(
+          and(
+            eq(transactions.tenantId, auth.tenantId),
+            eq(transactions.status, "paid"),
+            gte(transactions.createdAt, shift.openedAt),
+            ...(shiftOutletId ? [eq(transactions.outletId, shiftOutletId)] : []),
+          ),
+        )
+        .groupBy(payments.method);
+
       const totalSales = salesResult[0]?.total ?? "0";
       const txnCount = salesResult[0]?.count ?? 0;
       const expectedCash = Number(shift.openingCash) + Number(cashPayments[0]?.total ?? 0);
@@ -174,7 +189,7 @@ export default createHandler({
       }).where(and(eq(shifts.id, id), eq(shifts.tenantId, auth.tenantId))).returning();
 
       await logAudit(auth, "close", "shift", id, { closingCash: String(closingCash ?? 0), totalSales, txnCount });
-      res.json(updated);
+      res.json({ ...updated, paymentBreakdown: methodBreakdown });
       return;
     }
 
