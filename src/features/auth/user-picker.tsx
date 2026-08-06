@@ -62,6 +62,8 @@ export function UserPickerGate(): JSX.Element {
 
   // ---- Langkah modal kas ----
   if (cashStep && loggedInUser) {
+    // Owner/manajer bisa masuk hanya untuk lihat laporan — tak wajib buka kasir.
+    const canSkip = loggedInUser.role !== "cashier";
     return (
       <Shell>
         <h2 className="font-h2 text-h2 text-on-surface text-center">Halo, {loggedInUser.name} 👋</h2>
@@ -77,6 +79,12 @@ export function UserPickerGate(): JSX.Element {
           className="w-full h-14 rounded-xl bg-primary text-on-primary font-body-lg text-body-lg font-semibold disabled:opacity-60">
           {busy ? "Membuka shift…" : "Mulai Shift"}
         </button>
+        {canSkip && (
+          <button onClick={commitActive} disabled={busy}
+            className="w-full h-12 rounded-xl border border-outline-variant text-on-surface font-body-md text-body-md font-semibold disabled:opacity-60">
+            Lewati — lihat laporan saja
+          </button>
+        )}
       </Shell>
     );
   }
