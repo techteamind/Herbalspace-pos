@@ -44,8 +44,10 @@ export function UserPickerGate(): JSX.Element {
       // masuk, jangan tanya kas awal lagi. Shift orang lain diabaikan (biar handover).
       const active = await apiFetch<{ cashierId: string } | null>("shifts?active=true").catch(() => null);
       if (active && active.cashierId === u.id) { commitActive(); return; }
+      // Hanya kasir yang buka kasir (isi kas awal). Manajer/owner langsung masuk (lihat laporan).
+      if (u.role !== "cashier") { commitActive(); return; }
       setLoggedInUser(u);
-      setCashStep(true);            // lanjut ke modal kas
+      setCashStep(true);            // kasir → modal kas untuk buka shift
     } catch (e) {
       setErr(e instanceof Error ? e.message : "PIN salah");
       setPin("");
@@ -64,10 +66,8 @@ export function UserPickerGate(): JSX.Element {
     commitActive();               // masuk aplikasi sebagai user itu
   }
 
-  // ---- Langkah modal kas ----
+  // ---- Langkah modal kas (khusus kasir; manajer/owner sudah langsung masuk) ----
   if (cashStep && loggedInUser) {
-    // Owner/manajer bisa masuk hanya untuk lihat laporan — tak wajib buka kasir.
-    const canSkip = loggedInUser.role !== "cashier";
     return (
       <Shell>
         <h2 className="font-h2 text-h2 text-on-surface text-center">Halo, {loggedInUser.name} 👋</h2>
@@ -83,12 +83,6 @@ export function UserPickerGate(): JSX.Element {
           className="w-full h-14 rounded-xl bg-primary text-on-primary font-body-lg text-body-lg font-semibold disabled:opacity-60">
           {busy ? "Membuka shift…" : "Mulai Shift"}
         </button>
-        {canSkip && (
-          <button onClick={commitActive} disabled={busy}
-            className="w-full h-12 rounded-xl border border-outline-variant text-on-surface font-body-md text-body-md font-semibold disabled:opacity-60">
-            Lewati — lihat laporan saja
-          </button>
-        )}
       </Shell>
     );
   }

@@ -2,8 +2,10 @@ import { useState } from "react";
 import { PageHeader, Icon, FormSheet, Field, inputCls, ListSkeleton, EmptyState } from "@/components/shared";
 import { formatRupiah } from "@/lib/utils";
 import { useActiveShift, useShifts, useOpenShift, useCloseShift, type Shift } from "@/hooks/use-shifts";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function ShiftsPage(): JSX.Element {
+  const { role } = useAuth();
   const { data: activeShift, isLoading: loadingActive } = useActiveShift();
   const { data: history, isLoading: loadingHistory } = useShifts();
   const [showOpen, setShowOpen] = useState(false);
@@ -20,10 +22,14 @@ export function ShiftsPage(): JSX.Element {
           <div className="bg-surface-container rounded-xl p-5 text-center space-y-3">
             <Icon name="schedule" className="text-[40px] text-outline" />
             <p className="font-body-md text-body-md text-on-surface-variant">Tidak ada shift aktif</p>
-            <button onClick={() => setShowOpen(true)}
-              className="bg-primary text-on-primary rounded-xl h-12 px-6 font-body-md text-body-md font-semibold active:scale-[0.98] transition-transform">
-              <Icon name="play_arrow" className="mr-1" />Buka Shift
-            </button>
+            {role === "cashier" ? (
+              <button onClick={() => setShowOpen(true)}
+                className="bg-primary text-on-primary rounded-xl h-12 px-6 font-body-md text-body-md font-semibold active:scale-[0.98] transition-transform">
+                <Icon name="play_arrow" className="mr-1" />Buka Shift
+              </button>
+            ) : (
+              <p className="font-label-caps text-label-caps text-on-surface-variant">Hanya kasir yang membuka shift.</p>
+            )}
           </div>
         )}
 
