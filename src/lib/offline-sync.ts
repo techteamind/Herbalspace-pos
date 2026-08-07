@@ -1,6 +1,6 @@
 import { getQueuedRequests, removeQueuedRequest, getQueueCount, moveToFailed, getFailedCount } from "./offline-db";
 import { supabase } from "./supabase";
-import { getActiveOutletId } from "./api-client";
+import { getActiveOutletId, getPinToken } from "./api-client";
 
 let syncing = false;
 const listeners = new Set<(count: number) => void>();
@@ -36,8 +36,10 @@ export async function syncQueue(): Promise<{ synced: number; failed: number }> {
 
   try {
     const queue = await getQueuedRequests();
+    // Atribusi: pakai token PIN kasir aktif kalau ada (biar sale offline tercatat
+    // atas nama kasir, bukan akun device/owner); fallback ke sesi Supabase device.
     const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = getPinToken() ?? data.session?.access_token;
     const outletId = getActiveOutletId();
     const apiBase = import.meta.env.VITE_API_BASE ?? "";
 

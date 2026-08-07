@@ -19,6 +19,11 @@ export default createHandler({
   async POST(req, res, auth) {
     if (!requireRole(auth, "manager", res)) return;
     const { name, type, value, minPurchase, buyQty, getQty, productId, startAt, endAt, startHour, endHour, daysOfWeek } = req.body;
+    if (!name || typeof name !== "string") { res.status(400).json({ error: "Nama promo wajib" }); return; }
+    if (!(Number(value) >= 0)) { res.status(400).json({ error: "Nilai promo harus angka ≥ 0" }); return; }
+    if (minPurchase !== undefined && minPurchase !== null && minPurchase !== "" && !(Number(minPurchase) >= 0)) {
+      res.status(400).json({ error: "Min. pembelian tidak valid" }); return;
+    }
     const [row] = await db.insert(promos).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId ?? undefined,
@@ -43,7 +48,10 @@ export default createHandler({
     for (const key of ["name", "type", "value", "minPurchase", "buyQty", "getQty", "productId", "startAt", "endAt", "startHour", "endHour", "daysOfWeek", "isActive"] as const) {
       if (data[key] !== undefined) updates[key] = data[key];
     }
-    if (updates.value !== undefined) updates.value = String(updates.value);
+    if (updates.value !== undefined) {
+      if (!(Number(updates.value) >= 0)) { res.status(400).json({ error: "Nilai promo harus angka ≥ 0" }); return; }
+      updates.value = String(updates.value);
+    }
     if (updates.minPurchase !== undefined) updates.minPurchase = String(updates.minPurchase);
     if (updates.startAt) updates.startAt = new Date(updates.startAt as string);
     if (updates.endAt) updates.endAt = new Date(updates.endAt as string);

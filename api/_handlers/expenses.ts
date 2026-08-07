@@ -56,6 +56,9 @@ export default createHandler({
       return;
     }
     const { categoryId, description, amount, spentAt } = req.body;
+    if (!(Number(amount) >= 0)) { res.status(400).json({ error: "Jumlah pengeluaran harus angka ≥ 0" }); return; }
+    if (!description || typeof description !== "string") { res.status(400).json({ error: "Deskripsi wajib" }); return; }
+    if (!spentAt || isNaN(new Date(spentAt).getTime())) { res.status(400).json({ error: "Tanggal wajib" }); return; }
     const [row] = await db.insert(expenses).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId,
@@ -72,6 +75,7 @@ export default createHandler({
     if (!requireRole(auth, "manager", res)) return;
     const { id, categoryId, description, amount, spentAt } = req.body;
     if (!id) { res.status(400).json({ error: "id wajib" }); return; }
+    if (amount !== undefined && !(Number(amount) >= 0)) { res.status(400).json({ error: "Jumlah pengeluaran harus angka ≥ 0" }); return; }
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (categoryId !== undefined) updates.categoryId = categoryId || null;
     if (description !== undefined) updates.description = description;

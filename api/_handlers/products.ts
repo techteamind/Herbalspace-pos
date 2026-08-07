@@ -1,9 +1,18 @@
 import { eq, and, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { products, priceHistory } from "../../db/schema.js";
+import { products, priceHistory, categories } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { requireRole, outletFilter } from "../_lib/auth.js";
 import { logAudit } from "../_lib/audit.js";
+
+// Kategori (kalau diisi) wajib milik tenant ini — cegah point/baca-balik kategori tenant lain.
+async function ownedCategory(categoryId: string, tenantId: string): Promise<boolean> {
+  const row = await db.query.categories.findFirst({
+    where: and(eq(categories.id, categoryId), eq(categories.tenantId, tenantId)),
+    columns: { id: true },
+  });
+  return !!row;
+}
 
 export default createHandler({
   async GET(_req, res, auth) {
@@ -26,6 +35,7 @@ export default createHandler({
     if (price === undefined || isNaN(Number(price))) { res.status(400).json({ error: "price wajib dan harus angka" }); return; }
     if (Number(price) < 0 || Number(costPrice ?? 0) < 0) { res.status(400).json({ error: "Harga & modal tidak boleh negatif" }); return; }
     if (stock !== undefined && stock !== null && stock !== "" && Number(stock) < 0) { res.status(400).json({ error: "Stok tidak boleh negatif" }); return; }
+    if (categoryId && !(await ownedCategory(categoryId, auth.tenantId))) { res.status(400).json({ error: "Kategori tidak ditemukan" }); return; }
     const [row] = await db.insert(products).values({
       tenantId: auth.tenantId,
       outletId: auth.outletId,
@@ -50,6 +60,7 @@ export default createHandler({
     if (data.stock !== undefined && data.stock !== null && data.stock !== "" && Number(data.stock) < 0) {
       res.status(400).json({ error: "Stok tidak boleh negatif" }); return;
     }
+    if (data.categoryId && !(await ownedCategory(data.categoryId, auth.tenantId))) { res.status(400).json({ error: "Kategori tidak ditemukan" }); return; }
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updates.name = data.name;
     if (data.price !== undefined) updates.price = String(data.price);

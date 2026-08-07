@@ -71,7 +71,10 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, next) => {
+    } = supabase.auth.onAuthStateChange((event, next) => {
+      // Cegah data tenant/owner sebelumnya bocor ke sesi berikutnya (cache localStorage
+      // ter-persist). Sesi habis / sign-out → buang cache query.
+      if (event === "SIGNED_OUT") { queryClient.clear(); clearPersistedCache(); }
       setSession(next);
     });
 
@@ -155,12 +158,18 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const unlockWithPin = useCallback(async (pin: string): Promise<void> => {
     const uid = pinUser?.id ?? session?.user?.id ?? null;
     if (!uid) throw new Error("Sesi tidak dikenal — silakan login ulang");
-    await pinLogin(uid, pin); // lempar kalau PIN salah / terkunci
+    const wasBase = mode === "base";
+    await pinLogin(uid, pin); // verifikasi PIN (lempar kalau salah / terkunci)
+    // Base (owner/manajer via email): jangan pindah ke token PIN 14 jam yang tak
+    // auto-refresh — verifikasi saja, lalu balik ke sesi Supabase device.
+    if (wasBase) { setPinToken(null); setPinUserLS(null); setPinUserState(null); }
     setLocked(false);
-  }, [pinUser, session, pinLogin]);
+  }, [pinUser, session, mode, pinLogin]);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
     setError(null);
+    // Buang cache identitas sebelumnya sebelum login akun baru (bisa beda tenant).
+    queryClient.clear(); clearPersistedCache();
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,

@@ -25,12 +25,25 @@ export default createHandler({
     if (data.address !== undefined) updates.address = data.address || null;
     if (data.phone !== undefined) updates.phone = data.phone || null;
     if (data.logoUrl !== undefined) updates.logoUrl = data.logoUrl || null;
-    if (data.taxPercent !== undefined) updates.taxPercent = String(data.taxPercent);
-    if (data.serviceChargePercent !== undefined) updates.serviceChargePercent = String(data.serviceChargePercent);
+    if (data.taxPercent !== undefined) {
+      const n = Number(data.taxPercent);
+      if (!Number.isFinite(n) || n < 0 || n > 100) { res.status(400).json({ error: "Pajak harus angka 0–100" }); return; }
+      updates.taxPercent = String(n);
+    }
+    if (data.serviceChargePercent !== undefined) {
+      const n = Number(data.serviceChargePercent);
+      if (!Number.isFinite(n) || n < 0 || n > 100) { res.status(400).json({ error: "Service charge harus angka 0–100" }); return; }
+      updates.serviceChargePercent = String(n);
+    }
     if (data.receiptHeader !== undefined) updates.receiptHeader = data.receiptHeader || null;
     if (data.receiptFooter !== undefined) updates.receiptFooter = data.receiptFooter || null;
     if (data.enabledPaymentMethods !== undefined) updates.enabledPaymentMethods = data.enabledPaymentMethods;
-    if (data.closingTime !== undefined) updates.closingTime = data.closingTime || null;
+    if (data.closingTime !== undefined) {
+      if (data.closingTime && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(data.closingTime)) {
+        res.status(400).json({ error: "Jam tutup harus format HH:MM" }); return;
+      }
+      updates.closingTime = data.closingTime || null;
+    }
 
     const [row] = await db.update(settings)
       .set(updates)

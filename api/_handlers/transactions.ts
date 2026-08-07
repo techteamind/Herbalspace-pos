@@ -104,11 +104,11 @@ export default createHandler({
           if (it.variantId) {
             await tx.update(productVariants)
               .set({ stock: sql`${productVariants.stock} + ${it.quantity}` })
-              .where(and(eq(productVariants.id, it.variantId), sql`${productVariants.stock} IS NOT NULL`));
+              .where(and(eq(productVariants.id, it.variantId), eq(productVariants.tenantId, auth.tenantId), sql`${productVariants.stock} IS NOT NULL`));
           } else if (it.productId) {
             await tx.update(products)
               .set({ stock: sql`${products.stock} + ${it.quantity}` })
-              .where(and(eq(products.id, it.productId), sql`${products.stock} IS NOT NULL`));
+              .where(and(eq(products.id, it.productId), eq(products.tenantId, auth.tenantId), sql`${products.stock} IS NOT NULL`));
           }
         }
       });

@@ -67,6 +67,12 @@ export default createHandler({
   },
 
   async POST(req, res, auth) {
+    // Aturan bisnis: HANYA kasir yang membuka shift (owner/manajer masuk untuk
+    // lihat laporan, tak buka kasir). Gate klien + server (defense-in-depth).
+    if (auth.role !== "cashier") {
+      res.status(403).json({ error: "Hanya kasir yang membuka shift" });
+      return;
+    }
     // Shift wajib terikat outlet: tanpa itu, rekonsiliasi kas saat tutup akan
     // menjumlah SELURUH outlet tenant (angka kas ngawur di bisnis multi-outlet).
     if (!auth.outletId) {

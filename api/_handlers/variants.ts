@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { variantGroups, variantOptions, productVariants } from "../../db/schema.js";
+import { variantGroups, variantOptions, productVariants, products } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { requireRole } from "../_lib/auth.js";
 
@@ -26,6 +26,17 @@ export default createHandler({
       variants: { optionIds: string[]; label: string; sku?: string; price: number; costPrice?: number; stock?: number | null }[];
     };
     if (!productId) { res.status(400).json({ error: "productId wajib" }); return; }
+    // Produk wajib milik tenant ini; harga/modal varian tak boleh negatif.
+    const owned = await db.query.products.findFirst({
+      where: and(eq(products.id, productId), eq(products.tenantId, auth.tenantId)),
+      columns: { id: true },
+    });
+    if (!owned) { res.status(404).json({ error: "Produk tidak ditemukan" }); return; }
+    for (const v of variants ?? []) {
+      if (!(Number(v.price) >= 0) || !(Number(v.costPrice ?? 0) >= 0)) {
+        res.status(400).json({ error: "Harga/modal varian tidak boleh negatif" }); return;
+      }
+    }
 
     const createdVariants = await db.transaction(async (tx) => {
       await tx.delete(productVariants).where(and(eq(productVariants.tenantId, auth.tenantId), eq(productVariants.productId, productId)));

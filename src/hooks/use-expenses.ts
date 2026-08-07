@@ -33,7 +33,7 @@ export function useCreateExpense() {
   return useMutation({
     mutationFn: (data: { categoryId?: string; description: string; amount: number; spentAt: string }) =>
       apiFetch("expenses", { method: "POST", body: JSON.stringify(data) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["expenses-total"] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["expenses-total"] }); qc.invalidateQueries({ queryKey: ["reports"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
   });
 }
 
@@ -51,7 +51,7 @@ export function useUpdateExpense() {
   return useMutation({
     mutationFn: (data: { id: string; categoryId?: string; description?: string; amount?: number; spentAt?: string }) =>
       apiFetch("expenses", { method: "PUT", body: JSON.stringify(data) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["expenses-total"] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["expenses-total"] }); qc.invalidateQueries({ queryKey: ["reports"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
   });
 }
 
@@ -59,6 +59,6 @@ export function useDeleteExpense() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiFetch(`expenses?id=${id}`, { method: "DELETE" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["expenses-total"] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["expenses-total"] }); qc.invalidateQueries({ queryKey: ["reports"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
   });
 }
