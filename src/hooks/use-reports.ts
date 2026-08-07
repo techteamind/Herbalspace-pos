@@ -11,7 +11,8 @@ export interface ReportSummary {
   expenseTotal: number;
   expenseByCategory: { category: string; total: number }[];
   topProducts: { name: string; total: number }[];
-  paymentBreakdown: { method: string; total: number }[];
+  paymentBreakdown: { method: string; trx: number; total: number }[];
+  categoryBreakdown: { category: string; qty: number; total: number; hpp: number }[];
   stockValue: number;
   productStockValue: number;
 }

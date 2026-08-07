@@ -62,12 +62,29 @@ export default createHandler({
     `);
 
     const paymentBreakdown = await db.execute(sql`
-      SELECT pm.method AS method, SUM(pm.amount::numeric) AS total
+      SELECT pm.method AS method, COUNT(DISTINCT t.id)::int AS trx, SUM(pm.amount::numeric) AS total
       FROM payments pm JOIN transactions t ON t.id = pm.transaction_id
       WHERE t.tenant_id = ${auth.tenantId}::uuid AND t.status = 'paid'
         AND t.created_at >= ${from}::timestamptz AND t.created_at < ${to}::timestamptz
         ${tOutlet}
       GROUP BY pm.method ORDER BY total DESC
+    `);
+
+    // Penjualan per kategori (qty terjual, omzet, HPP) untuk laporan detail.
+    const categoryBreakdown = await db.execute(sql`
+      SELECT COALESCE(c.name, 'Tanpa Kategori') AS category,
+             SUM(ti.quantity)::int              AS qty,
+             SUM(ti.line_total::numeric)        AS total,
+             SUM(ti.unit_cogs::numeric * ti.quantity) AS hpp
+      FROM transaction_items ti
+      JOIN transactions t ON t.id = ti.transaction_id
+      LEFT JOIN products p ON p.id = ti.product_id
+      LEFT JOIN categories c ON c.id = p.category_id
+      WHERE t.tenant_id = ${auth.tenantId}::uuid AND t.status = 'paid'
+        AND t.created_at >= ${from}::timestamptz AND t.created_at < ${to}::timestamptz
+        ${tOutlet}
+      GROUP BY COALESCE(c.name, 'Tanpa Kategori')
+      ORDER BY total DESC
     `);
 
     const [ingRow] = await db.execute(sql`
@@ -100,7 +117,8 @@ export default createHandler({
       expenseTotal: num((expRow as Record<string, unknown>).total),
       expenseByCategory: rowsOf(expenseByCategory).map((r) => ({ category: String(r.category), total: num(r.total) })),
       topProducts: rowsOf(topProducts).map((r) => ({ name: String(r.name), total: num(r.total) })),
-      paymentBreakdown: rowsOf(paymentBreakdown).map((r) => ({ method: String(r.method), total: num(r.total) })),
+      paymentBreakdown: rowsOf(paymentBreakdown).map((r) => ({ method: String(r.method), trx: num(r.trx), total: num(r.total) })),
+      categoryBreakdown: rowsOf(categoryBreakdown).map((r) => ({ category: String(r.category), qty: num(r.qty), total: num(r.total), hpp: num(r.hpp) })),
       stockValue: num((ingRow as Record<string, unknown>).value),
       productStockValue: num((prodRow as Record<string, unknown>).value),
     });

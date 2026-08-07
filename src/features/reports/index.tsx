@@ -63,10 +63,24 @@ export function ReportsPage(): JSX.Element {
   const productStockValue = report?.productStockValue ?? 0;
   const totalAset = stockValue + productStockValue;
 
+  const fmtD = (dt: Date) => dt.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric" });
   const reportData: ReportData = {
     period,
+    periodRange: `${fmtD(from)} - ${fmtD(new Date(to.getTime() - 86400_000))}`,
     outletName: activeOutlet?.name,
-    summary: { omzet: netSales, hpp, labaKotor, pengeluaran: expenseTotal, labaBersih },
+    summary: {
+      grossSales: omzet + totalDiscount,
+      discount: totalDiscount,
+      netSales: omzet,
+      taxService,
+      hpp,
+      grossProfit: labaKotor,
+      expense: expenseTotal,
+      netProfit: labaBersih,
+      trxCount,
+    },
+    payments: (report?.paymentBreakdown ?? []).map((p) => ({ label: METHOD_LABEL[p.method] ?? p.method, trx: p.trx, total: p.total })),
+    categories: (report?.categoryBreakdown ?? []).map((c) => ({ name: c.category, qty: c.qty, total: c.total, hpp: c.hpp })),
     topProducts: topProducts.map(([name, value]) => ({ name, value })),
   };
 
