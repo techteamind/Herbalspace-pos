@@ -23,16 +23,20 @@ function getAdminClient() {
 
 export default createHandler({
   async GET(_req, res, auth) {
-    if (auth.role !== "owner" && auth.role !== "manager") {
-      res.status(403).json({ error: "Hanya owner/manager yang bisa melihat karyawan" });
-      return;
-    }
+    // Owner/manajer: data lengkap (kelola karyawan). Kasir: HANYA roster kasir
+    // (nama + hasPin) untuk landing PIN — tanpa email/PII/pin_hash/role lain.
+    const isPrivileged = auth.role === "owner" || auth.role === "manager";
     try {
       const rows = await db.query.profiles.findMany({
         where: eq(profiles.tenantId, auth.tenantId),
         orderBy: desc(profiles.createdAt),
         with: { outlet: true },
       });
+      if (!isPrivileged) {
+        res.json(rows.filter((r) => r.role === "cashier")
+          .map((r) => ({ id: r.id, fullName: r.fullName, role: r.role, isActive: r.isActive, hasPin: !!r.pinHash })));
+        return;
+      }
       // JANGAN bocorkan pin_hash ke klien; ekspos hanya flag hasPin.
       res.json(rows.map(({ pinHash, pinFailedAttempts, pinLockedUntil, ...r }) => ({ ...r, hasPin: !!pinHash })));
     } catch {
@@ -43,7 +47,10 @@ export default createHandler({
         FROM profiles WHERE tenant_id = ${auth.tenantId}::uuid
         ORDER BY created_at DESC
       `);
-      res.json(rows.map((r: any) => ({ ...r, outletId: null, outlet: null })));
+      const mapped = rows.map((r: any) => ({ ...r, outletId: null, outlet: null }));
+      res.json(isPrivileged ? mapped
+        : mapped.filter((r: any) => r.role === "cashier")
+            .map((r: any) => ({ id: r.id, fullName: r.fullName, role: r.role, isActive: r.isActive, hasPin: r.hasPin })));
     }
   },
 
