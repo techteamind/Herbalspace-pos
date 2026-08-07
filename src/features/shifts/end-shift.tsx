@@ -125,7 +125,7 @@ export function EndShiftFlow({ onClose }: { onClose: () => void }): JSX.Element 
         ) : (
           <>
             <h2 className="font-h2 text-h2 text-on-surface">Akhiri Shift</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">Hitung uang di laci untuk rekonsiliasi kas.</p>
+            <p className="font-body-md text-body-md text-on-surface-variant">Hitung <b>uang tunai fisik</b> di laci. QRIS/kartu/transfer tidak masuk laci — jangan masukkan omzet.</p>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
               <input autoFocus inputMode="numeric" value={closingCash}

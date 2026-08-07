@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 // Auto-kunci sesi yang ditinggal idle → balik ke layar PIN. Shift TIDAK ditutup
 // (itu tugas tombol Keluar); re-PIN dgn shift terbuka langsung masuk (lihat picker).
 // Owner/manajer (akses sensitif) dikunci lebih cepat dari kasir yang sedang melayani.
-const IDLE_MS = { privileged: 90_000, cashier: 5 * 60_000 };
+const IDLE_MS = { privileged: 180_000, cashier: 5 * 60_000 };
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, loading, needsOutletSelection, mode, role, exitToPicker } = useAuth();
