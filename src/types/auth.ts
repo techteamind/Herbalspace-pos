@@ -43,6 +43,10 @@ export interface AuthContextValue {
   commitActive: () => void;
   enterAsBase: () => void;
   exitToPicker: () => void;
+  // Kunci layar (idle) — tanpa menutup shift; unlock pakai PIN user yang sedang aktif.
+  locked: boolean;
+  lock: () => void;
+  unlockWithPin: (pin: string) => Promise<void>;
 }
 
 export interface LoginRequest {

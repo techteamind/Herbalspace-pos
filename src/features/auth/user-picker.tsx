@@ -29,6 +29,12 @@ export function UserPickerGate(): JSX.Element {
   }, []);
 
   const deviceStaff = useMemo(() => (staff ?? []).find((s) => s.id === user?.id), [staff, user]);
+  const cashiers = useMemo(() => (staff ?? []).filter((s) => s.role === "cashier"), [staff]);
+  // Landing PIN hanya untuk kasir. Owner/manajer sudah terautentikasi via email →
+  // langsung masuk sebagai dirinya, tak perlu pilih-user/PIN.
+  useEffect(() => {
+    if (deviceStaff && deviceStaff.role !== "cashier") enterAsBase();
+  }, [deviceStaff, enterAsBase]);
 
   function selectStaff(s: Staff): void {
     if (!s.hasPin) { toast("PIN belum diatur untuk " + s.fullName + ". Owner atur dulu di menu Karyawan.", "error"); return; }
@@ -124,9 +130,11 @@ export function UserPickerGate(): JSX.Element {
       <p className="font-body-md text-body-md text-on-surface-variant text-center">Pilih nama Anda untuk mulai bekerja</p>
       {staff === null ? (
         <p className="text-center text-on-surface-variant py-6">Memuat…</p>
+      ) : cashiers.length === 0 ? (
+        <p className="text-center text-on-surface-variant py-6">Belum ada akun kasir. Owner tambahkan kasir di menu Karyawan.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {staff.map((s) => (
+          {cashiers.map((s) => (
             <button key={s.id} onClick={() => selectStaff(s)}
               className={`p-4 rounded-2xl border text-left active:scale-[0.98] transition-transform ${s.hasPin ? "bg-surface-container-lowest border-outline-variant shadow-card" : "bg-surface-container-low border-outline-variant/40 opacity-60"}`}>
               <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center mb-2">

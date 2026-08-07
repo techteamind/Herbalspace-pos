@@ -53,6 +53,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [assignedOutletId, setAssignedOutletId] = useState<string | null>(null);
   const [mode, setModeState] = useState<ActiveMode>(getMode());
   const [pinUser, setPinUserState] = useState<PinUser | null>(getPinUserLS());
+  const [locked, setLocked] = useState(false);
 
   const setOutletId = useCallback((id: string | null) => {
     setActiveOutletId(id);
@@ -145,7 +146,18 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setModeLS(null); setModeState(null);
     setRole(null); setCachedRole(null); setProfileName(null);
     setOutletId(null);
+    setLocked(false);
   }, [setOutletId]);
+
+  // Kunci layar saat idle: sesi & shift TETAP, hanya UI diblok sampai user aktif
+  // memasukkan PIN-nya lagi (verifikasi ke server; lockout server tetap berlaku).
+  const lock = useCallback((): void => { setLocked(true); }, []);
+  const unlockWithPin = useCallback(async (pin: string): Promise<void> => {
+    const uid = pinUser?.id ?? session?.user?.id ?? null;
+    if (!uid) throw new Error("Sesi tidak dikenal — silakan login ulang");
+    await pinLogin(uid, pin); // lempar kalau PIN salah / terkunci
+    setLocked(false);
+  }, [pinUser, session, pinLogin]);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
     setError(null);
@@ -181,6 +193,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     clearPersistedCache();
     if (pending === 0) await clearQueue().catch(() => {});
     setPinToken(null); setPinUserLS(null); setPinUserState(null); setModeLS(null); setModeState(null);
+    setLocked(false);
     setSession(null);
     setOutletId(null);
   }, [setOutletId]);
@@ -207,8 +220,11 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       commitActive,
       enterAsBase,
       exitToPicker,
+      locked,
+      lock,
+      unlockWithPin,
     }),
-    [session, loading, error, login, logout, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection, mode, pinUser, pinLogin, commitActive, enterAsBase, exitToPicker],
+    [session, loading, error, login, logout, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection, mode, pinUser, pinLogin, commitActive, enterAsBase, exitToPicker, locked, lock, unlockWithPin],
   );
 
   return (
@@ -236,6 +252,9 @@ const defaultAuthValue: AuthContextValue = {
   commitActive: () => {},
   enterAsBase: () => {},
   exitToPicker: () => {},
+  locked: false,
+  lock: () => {},
+  unlockWithPin: async () => {},
 };
 
 export function useAuth(): AuthContextValue {
