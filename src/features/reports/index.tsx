@@ -7,8 +7,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { exportReportExcel, exportReportPdf, type ReportData } from "@/lib/export";
 
 type Tab = "laba-rugi" | "neraca";
-type Period = "Harian" | "Mingguan" | "Bulanan" | "Tahunan";
-const PERIODS: Period[] = ["Harian", "Mingguan", "Bulanan", "Tahunan"];
+type Period = "Harian" | "Mingguan" | "Bulanan" | "Tahunan" | "Custom";
+const PERIODS: Period[] = ["Harian", "Mingguan", "Bulanan", "Tahunan", "Custom"];
+const PERIOD_LABEL: Record<Period, string> = { Harian: "Harian", Mingguan: "Mingguan", Bulanan: "Bulanan", Tahunan: "Tahunan", Custom: "Pilih Tanggal" };
+const TODAY_WIB = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+
+// Rentang bebas dari dua tanggal (YYYY-MM-DD) dengan batas hari WIB — to eksklusif
+// (tengah malam WIB hari SETELAH tanggal akhir), konsisten dgn rangeFor & penomoran.
+function wibRange(fromStr: string, toStr: string): { from: Date; to: Date } {
+  const WIB_MS = 7 * 3600_000;
+  const [fy, fm, fd] = fromStr.split("-").map(Number) as [number, number, number];
+  const [ty, tm, td] = toStr.split("-").map(Number) as [number, number, number];
+  const from = new Date(Date.UTC(fy, fm - 1, fd) - WIB_MS);
+  const to = new Date(Date.UTC(ty, tm - 1, td + 1) - WIB_MS);
+  return { from, to };
+}
 
 // Batas hari dihitung dalam WIB (bukan zona device) supaya konsisten dgn dashboard
 // & penomoran struk — sale jam 23:30 WIB tak bocor ke hari lain kalau device UTC.
@@ -35,8 +48,13 @@ export function ReportsPage(): JSX.Element {
   const toast = useToast();
   const [tab, setTab] = useState<Tab>("laba-rugi");
   const [period, setPeriod] = useState<Period>("Bulanan");
+  const [customFrom, setCustomFrom] = useState(TODAY_WIB);
+  const [customTo, setCustomTo] = useState(TODAY_WIB);
   const onExportErr = (e: unknown) => toast(e instanceof Error ? e.message : "Gagal ekspor laporan", "error");
-  const { from, to } = useMemo(() => rangeFor(period), [period]);
+  const { from, to } = useMemo(
+    () => (period === "Custom" ? wibRange(customFrom, customTo) : rangeFor(period)),
+    [period, customFrom, customTo],
+  );
 
   const { data: report, isLoading } = useReport(from.toISOString(), to.toISOString());
 
@@ -107,9 +125,20 @@ export function ReportsPage(): JSX.Element {
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {PERIODS.map((p) => (
             <button key={p} onClick={() => setPeriod(p)}
-              className={`h-9 px-4 rounded-full font-label-caps text-label-caps whitespace-nowrap shrink-0 ${period === p ? "bg-primary-container text-on-primary-container shadow-card" : "bg-surface-container text-on-surface-variant border border-outline-variant"}`}>{p}</button>
+              className={`h-9 px-4 rounded-full font-label-caps text-label-caps whitespace-nowrap shrink-0 ${period === p ? "bg-primary-container text-on-primary-container shadow-card" : "bg-surface-container text-on-surface-variant border border-outline-variant"}`}>{PERIOD_LABEL[p]}</button>
           ))}
         </div>
+
+        {/* Rentang tanggal bebas */}
+        {period === "Custom" && (
+          <div className="flex items-center gap-2">
+            <input type="date" value={customFrom} max={customTo} onChange={(e) => setCustomFrom(e.target.value)}
+              className="flex-1 min-w-0 h-11 px-3 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:border-primary" />
+            <span className="text-on-surface-variant font-body-md text-body-md shrink-0">s/d</span>
+            <input type="date" value={customTo} min={customFrom} max={TODAY_WIB} onChange={(e) => setCustomTo(e.target.value)}
+              className="flex-1 min-w-0 h-11 px-3 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:border-primary" />
+          </div>
+        )}
 
         {isLoading ? <ListSkeleton rows={3} /> : tab === "laba-rugi" ? (
           <>
