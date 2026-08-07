@@ -15,17 +15,19 @@ interface ProtectedRouteProps {
 const IDLE_MS = { privileged: 180_000, cashier: 5 * 60_000 };
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, needsOutletSelection, mode, role, locked, lock } = useAuth();
+  const { isAuthenticated, loading, needsOutletSelection, mode, role, locked, lock, hasPin } = useAuth();
 
   useEffect(() => {
-    if (mode === null || locked) return; // di layar PIN, atau sudah terkunci
+    // Jangan auto-kunci kalau identitas aktif tak punya PIN (mis. owner/manajer
+    // base yang belum set PIN) — takkan bisa unlock. Kunci baru aktif setelah set PIN.
+    if (mode === null || locked || !hasPin) return; // layar PIN / sudah terkunci / tak bisa unlock
     const ms = role === "cashier" ? IDLE_MS.cashier : IDLE_MS.privileged;
     let timer = window.setTimeout(lock, ms);
     const reset = (): void => { clearTimeout(timer); timer = window.setTimeout(lock, ms); };
     const events = ["pointerdown", "keydown", "touchstart", "scroll", "wheel"];
     events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
     return () => { clearTimeout(timer); events.forEach((e) => window.removeEventListener(e, reset)); };
-  }, [mode, role, locked, lock]);
+  }, [mode, role, locked, lock, hasPin]);
 
   if (loading) {
     return (

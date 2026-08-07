@@ -14,6 +14,7 @@ export default createHandler({
       fullName: profile?.fullName ?? auth.profileName,
       email: profile?.email ?? "",
       outletId: auth.outletId,
+      hasPin: !!profile?.pinHash,
     });
   },
 

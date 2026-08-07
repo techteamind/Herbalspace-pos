@@ -54,6 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [mode, setModeState] = useState<ActiveMode>(getMode());
   const [pinUser, setPinUserState] = useState<PinUser | null>(getPinUserLS());
   const [locked, setLocked] = useState(false);
+  const [hasPin, setHasPin] = useState(false);
 
   const setOutletId = useCallback((id: string | null) => {
     setActiveOutletId(id);
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   }, []);
 
   useEffect(() => {
-    if (!session) { setRole(null); setCachedRole(null); setProfileName(null); setAssignedOutletId(null); return; }
+    if (!session) { setRole(null); setCachedRole(null); setProfileName(null); setHasPin(false); setAssignedOutletId(null); return; }
     let cancelled = false;
     let timer: number | undefined;
     let attempt = 0;
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         setRole(data.role);
         setCachedRole(data.role);
         setProfileName(data.profileName);
+        setHasPin(!!data.hasPin);
         setAssignedOutletId(data.outletId ?? null);
         if (data.outletId && data.role !== "owner") setOutletId(data.outletId);
       }).catch(() => {
@@ -232,8 +234,9 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       locked,
       lock,
       unlockWithPin,
+      hasPin,
     }),
-    [session, loading, error, login, logout, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection, mode, pinUser, pinLogin, commitActive, enterAsBase, exitToPicker, locked, lock, unlockWithPin],
+    [session, loading, error, login, logout, role, profileName, effectiveOutletId, setOutletId, needsOutletSelection, mode, pinUser, pinLogin, commitActive, enterAsBase, exitToPicker, locked, lock, unlockWithPin, hasPin],
   );
 
   return (
@@ -264,6 +267,7 @@ const defaultAuthValue: AuthContextValue = {
   locked: false,
   lock: () => {},
   unlockWithPin: async () => {},
+  hasPin: false,
 };
 
 export function useAuth(): AuthContextValue {

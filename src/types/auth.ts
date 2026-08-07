@@ -47,6 +47,7 @@ export interface AuthContextValue {
   locked: boolean;
   lock: () => void;
   unlockWithPin: (pin: string) => Promise<void>;
+  hasPin: boolean; // identitas aktif punya PIN (untuk memutuskan boleh auto-kunci)
 }
 
 export interface LoginRequest {
