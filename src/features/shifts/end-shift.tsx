@@ -10,11 +10,13 @@ import { printShiftReport } from "@/lib/thermal-printer";
 
 interface Shift { id: string; openingCash: string; openedAt: string }
 interface PayRow { method: string; total: string }
+interface ProductRow { name: string; qty: number; total: string }
 interface Closed {
   id: string; closingCash: string; expectedCash: string; totalSales: string;
   openingCash: string; openedAt: string; closedAt: string;
   cashierName: string | null; totalTransactions: number | null;
   paymentBreakdown?: PayRow[];
+  products?: ProductRow[];
 }
 
 const METHOD_LABEL: Record<string, string> = { cash: "Tunai", qris: "QRIS", card: "Kartu", transfer: "Transfer" };
@@ -50,6 +52,7 @@ export function EndShiftFlow({ onClose }: { onClose: () => void }): JSX.Element 
       totalSales: Number(c.totalSales),
       txnCount: c.totalTransactions ?? 0,
       breakdown: (c.paymentBreakdown ?? []).map((b) => ({ label: METHOD_LABEL[b.method] ?? b.method, amount: Number(b.total) })),
+      products: (c.products ?? []).map((p) => ({ name: p.name, qty: p.qty, total: Number(p.total) })),
       expectedCash: Number(c.expectedCash),
       countedCash: Number(c.closingCash),
       difference: Number(c.closingCash) - Number(c.expectedCash),

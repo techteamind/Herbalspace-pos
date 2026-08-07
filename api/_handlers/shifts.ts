@@ -1,6 +1,6 @@
 import { eq, and, desc, gte, sql, isNull } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { shifts, transactions, payments, settings } from "../../db/schema.js";
+import { shifts, transactions, transactionItems, payments, settings } from "../../db/schema.js";
 import { createHandler } from "../_lib/handler.js";
 import { logAudit } from "../_lib/audit.js";
 import { outletFilter } from "../_lib/auth.js";
@@ -175,6 +175,26 @@ export default createHandler({
         )
         .groupBy(payments.method);
 
+      // Daftar produk terjual (nama, qty, total harga) untuk laporan tutup shift.
+      const products = await db
+        .select({
+          name: transactionItems.productName,
+          qty: sql<number>`sum(${transactionItems.quantity})::int`,
+          total: sql<string>`coalesce(sum(${transactionItems.lineTotal}), 0)`,
+        })
+        .from(transactionItems)
+        .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
+        .where(
+          and(
+            eq(transactions.tenantId, auth.tenantId),
+            eq(transactions.status, "paid"),
+            gte(transactions.createdAt, shift.openedAt),
+            ...(shiftOutletId ? [eq(transactions.outletId, shiftOutletId)] : []),
+          ),
+        )
+        .groupBy(transactionItems.productName)
+        .orderBy(desc(sql`sum(${transactionItems.lineTotal})`));
+
       const totalSales = salesResult[0]?.total ?? "0";
       const txnCount = salesResult[0]?.count ?? 0;
       const expectedCash = Number(shift.openingCash) + Number(cashPayments[0]?.total ?? 0);
@@ -189,7 +209,7 @@ export default createHandler({
       }).where(and(eq(shifts.id, id), eq(shifts.tenantId, auth.tenantId))).returning();
 
       await logAudit(auth, "close", "shift", id, { closingCash: String(closingCash ?? 0), totalSales, txnCount });
-      res.json({ ...updated, paymentBreakdown: methodBreakdown });
+      res.json({ ...updated, paymentBreakdown: methodBreakdown, products });
       return;
     }
 

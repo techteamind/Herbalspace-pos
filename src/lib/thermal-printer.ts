@@ -175,6 +175,7 @@ export interface ThermalShiftReport {
   totalSales: number;
   txnCount: number;
   breakdown: { label: string; amount: number }[]; // per metode bayar
+  products: { name: string; qty: number; total: number }[]; // menu terjual
   expectedCash: number;
   countedCash: number;
   difference: number;
@@ -214,6 +215,25 @@ function buildShiftReportBytes(d: ThermalShiftReport): Uint8Array {
   row("Kas dihitung", fmt(d.countedCash));
   push(cmd(ESC, 0x45, 1));
   row("Selisih", fmt(d.difference));
+  push(cmd(ESC, 0x45, 0));
+
+  // ---- Penjualan menu (produk terjual) ----
+  push(encode("================================\n"));
+  push(cmd(ESC, 0x61, 1)); push(cmd(ESC, 0x45, 1));
+  push(encode("PENJUALAN MENU\n"));
+  push(cmd(ESC, 0x45, 0)); push(cmd(ESC, 0x61, 0));
+  push(encode("--------------------------------\n"));
+  let totalQty = 0;
+  for (const p of d.products) {
+    totalQty += p.qty;
+    const name = p.name.length > 24 ? p.name.slice(0, 24) : p.name;
+    push(encode(name + "\n"));
+    push(encode(`  ${p.qty}x`.padEnd(18) + fmt(p.total).padStart(14) + "\n"));
+  }
+  if (d.products.length === 0) push(encode("  (tidak ada)\n"));
+  push(encode("--------------------------------\n"));
+  push(cmd(ESC, 0x45, 1));
+  row("Total item", String(totalQty));
   push(cmd(ESC, 0x45, 0));
 
   push(encode("\n\n"));
